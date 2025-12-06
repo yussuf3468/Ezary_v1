@@ -36,10 +36,10 @@ export default function Auth() {
           </div>
 
           <h1 className="text-3xl font-bold text-center text-gray-800 mb-2">
-            MyMoney Tracker
+            KeshaTrack
           </h1>
           <p className="text-center text-gray-600 mb-8">
-            {isSignUp ? 'Create your account' : 'Welcome back'}
+            Yussuf Muse's Finance Manager
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">

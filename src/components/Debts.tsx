@@ -139,7 +139,9 @@ export default function Debts() {
         insertData.notes = debtFormData.notes;
       }
 
-      const { error: debtError } = await supabase.from("debts").insert(insertData);
+      const { error: debtError } = await supabase
+        .from("debts")
+        .insert(insertData);
 
       if (debtError) {
         console.error("Error adding debt:", debtError);
@@ -160,7 +162,11 @@ export default function Debts() {
         console.error("Error recording income:", incomeError);
         alert("Debt recorded but failed to add income entry");
       } else {
-        alert(`Debt recorded! ${formatCurrency(parseCurrency(debtFormData.amount))} added as income.`);
+        alert(
+          `Debt recorded! ${formatCurrency(
+            parseCurrency(debtFormData.amount)
+          )} added as income.`
+        );
       }
 
       setDebtFormData({

@@ -90,7 +90,7 @@ export default function Layout({
                   KeshaTrack
                 </h1>
                 <p className="text-xs text-gray-500 -mt-0.5">
-                  Personal Finance Manager
+                  Yussuf Muse's Finance
                 </p>
               </div>
             </div>
@@ -138,6 +138,7 @@ export default function Layout({
               <h1 className="text-base font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
                 KeshaTrack
               </h1>
+              <p className="text-xs text-gray-500 -mt-0.5">Yussuf Muse</p>
             </div>
           </div>
           <button

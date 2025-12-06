@@ -1,18 +1,18 @@
-import { useState } from 'react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import Auth from './components/Auth';
-import Layout from './components/Layout';
-import Dashboard from './components/Dashboard';
-import Income from './components/Income';
-import Expenses from './components/Expenses';
-import Debts from './components/Debts';
-import Rent from './components/Rent';
-import ExpectedExpenses from './components/ExpectedExpenses';
-import Reports from './components/Reports';
+import { useState } from "react";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import Auth from "./components/Auth";
+import Layout from "./components/Layout";
+import Dashboard from "./components/Dashboard";
+import Income from "./components/Income";
+import Expenses from "./components/Expenses";
+import Debts from "./components/Debts";
+import Rent from "./components/Rent";
+import ExpectedExpenses from "./components/ExpectedExpenses";
+import Reports from "./components/Reports";
 
 function AppContent() {
   const { user, loading } = useAuth();
-  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [currentPage, setCurrentPage] = useState("dashboard");
 
   if (loading) {
     return (
@@ -28,19 +28,19 @@ function AppContent() {
 
   const renderPage = () => {
     switch (currentPage) {
-      case 'dashboard':
+      case "dashboard":
         return <Dashboard />;
-      case 'income':
+      case "income":
         return <Income />;
-      case 'expenses':
+      case "expenses":
         return <Expenses />;
-      case 'debts':
+      case "debts":
         return <Debts />;
-      case 'rent':
+      case "rent":
         return <Rent />;
-      case 'expected-expenses':
+      case "expected-expenses":
         return <ExpectedExpenses />;
-      case 'reports':
+      case "reports":
         return <Reports />;
       default:
         return <Dashboard />;

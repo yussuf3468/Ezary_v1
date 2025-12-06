@@ -223,28 +223,29 @@ export default function Reports() {
     const balance = totalIncome - totalExpenses;
 
     // Fetch additional data for comprehensive report
-    const [debtsResult, loansResult, expectedExpensesResult, rentResult] = await Promise.all([
-      supabase
-        .from("debts")
-        .select("*")
-        .eq("user_id", user!.id)
-        .neq("status", "cleared"),
-      supabase
-        .from("debts")
-        .select("*")
-        .eq("user_id", user!.id)
-        .eq("status", "cleared"),
-      supabase
-        .from("expected_expenses")
-        .select("*")
-        .eq("user_id", user!.id)
-        .order("due_date", { ascending: true }),
-      supabase
-        .from("rent_settings")
-        .select("*")
-        .eq("user_id", user!.id)
-        .maybeSingle(),
-    ]);
+    const [debtsResult, loansResult, expectedExpensesResult, rentResult] =
+      await Promise.all([
+        supabase
+          .from("debts")
+          .select("*")
+          .eq("user_id", user!.id)
+          .neq("status", "cleared"),
+        supabase
+          .from("debts")
+          .select("*")
+          .eq("user_id", user!.id)
+          .eq("status", "cleared"),
+        supabase
+          .from("expected_expenses")
+          .select("*")
+          .eq("user_id", user!.id)
+          .order("due_date", { ascending: true }),
+        supabase
+          .from("rent_settings")
+          .select("*")
+          .eq("user_id", user!.id)
+          .maybeSingle(),
+      ]);
 
     const activeDebts = debtsResult.data || [];
     const clearedDebts = loansResult.data || [];
@@ -256,13 +257,14 @@ export default function Reports() {
       0
     );
     const totalExpected = expectedExpenses
-      .filter(e => e.status === 'pending')
+      .filter((e) => e.status === "pending")
       .reduce((sum, exp) => sum + Number(exp.amount), 0);
-    
+
     // Calculate financial health status
-    const savingsRate = totalIncome > 0 ? ((balance / totalIncome) * 100) : 0;
-    const debtToIncomeRatio = totalIncome > 0 ? ((totalDebt / totalIncome) * 100) : 0;
-    
+    const savingsRate = totalIncome > 0 ? (balance / totalIncome) * 100 : 0;
+    const debtToIncomeRatio =
+      totalIncome > 0 ? (totalDebt / totalIncome) * 100 : 0;
+
     let financialStatus = "";
     let statusColor = "";
     if (savingsRate >= 20 && debtToIncomeRatio < 30) {
@@ -313,6 +315,7 @@ export default function Reports() {
       </head>
       <body>
         <h1>Comprehensive Financial Report</h1>
+        <p><strong>Prepared for:</strong> Yussuf Muse</p>
         <p><strong>Period:</strong> ${new Date(startDate).toLocaleDateString(
           "en-KE"
         )} - ${new Date(endDate).toLocaleDateString("en-KE")}</p>
@@ -349,11 +352,23 @@ export default function Reports() {
         <div class="metric-grid">
           <div class="metric-box">
             <div class="metric-label">Savings Rate</div>
-            <div class="metric-value" style="color: ${savingsRate >= 20 ? '#059669' : savingsRate >= 10 ? '#0891b2' : '#f59e0b'};">${savingsRate.toFixed(1)}%</div>
+            <div class="metric-value" style="color: ${
+              savingsRate >= 20
+                ? "#059669"
+                : savingsRate >= 10
+                ? "#0891b2"
+                : "#f59e0b"
+            };">${savingsRate.toFixed(1)}%</div>
           </div>
           <div class="metric-box">
             <div class="metric-label">Debt-to-Income Ratio</div>
-            <div class="metric-value" style="color: ${debtToIncomeRatio < 30 ? '#059669' : debtToIncomeRatio < 50 ? '#f59e0b' : '#dc2626'};">${debtToIncomeRatio.toFixed(1)}%</div>
+            <div class="metric-value" style="color: ${
+              debtToIncomeRatio < 30
+                ? "#059669"
+                : debtToIncomeRatio < 50
+                ? "#f59e0b"
+                : "#dc2626"
+            };">${debtToIncomeRatio.toFixed(1)}%</div>
           </div>
           <div class="metric-box">
             <div class="metric-label">Total Outstanding Debt</div>
@@ -361,11 +376,15 @@ export default function Reports() {
           </div>
           <div class="metric-box">
             <div class="metric-label">Expected Expenses Due</div>
-            <div class="metric-value" style="color: #f59e0b;">${formatCurrency(totalExpected)}</div>
+            <div class="metric-value" style="color: #f59e0b;">${formatCurrency(
+              totalExpected
+            )}</div>
           </div>
         </div>
 
-        ${totalExpected > 0 ? `
+        ${
+          totalExpected > 0
+            ? `
         <h2>Expected/Upcoming Expenses</h2>
         <table>
           <thead>
@@ -383,10 +402,15 @@ export default function Reports() {
                 (exp) => `
               <tr>
                 <td>${exp.title}</td>
-                <td style="text-transform: capitalize;">${exp.category.replace('_', ' ')}</td>
+                <td style="text-transform: capitalize;">${exp.category.replace(
+                  "_",
+                  " "
+                )}</td>
                 <td>${new Date(exp.due_date).toLocaleDateString("en-KE")}</td>
                 <td>${formatCurrency(exp.amount)}</td>
-                <td><span style="background: ${exp.status === 'pending' ? '#fef3c7' : '#d1fae5'}; padding: 4px 8px; border-radius: 4px; font-size: 11px;">${exp.status.toUpperCase()}</span></td>
+                <td><span style="background: ${
+                  exp.status === "pending" ? "#fef3c7" : "#d1fae5"
+                }; padding: 4px 8px; border-radius: 4px; font-size: 11px;">${exp.status.toUpperCase()}</span></td>
               </tr>
             `
               )
@@ -398,9 +422,13 @@ export default function Reports() {
             </tr>
           </tbody>
         </table>
-        ` : ''}
+        `
+            : ""
+        }
 
-        ${activeDebts.length > 0 ? `
+        ${
+          activeDebts.length > 0
+            ? `
         <h2>Active Debts & Loans</h2>
         <table>
           <thead>
@@ -420,8 +448,14 @@ export default function Reports() {
                 <td>${debt.creditor_name || debt.debtor_name}</td>
                 <td>${formatCurrency(debt.amount)}</td>
                 <td class="income">${formatCurrency(debt.amount_paid)}</td>
-                <td class="expense">${formatCurrency(Number(debt.amount) - Number(debt.amount_paid))}</td>
-                <td>${debt.due_date ? new Date(debt.due_date).toLocaleDateString("en-KE") : 'N/A'}</td>
+                <td class="expense">${formatCurrency(
+                  Number(debt.amount) - Number(debt.amount_paid)
+                )}</td>
+                <td>${
+                  debt.due_date
+                    ? new Date(debt.due_date).toLocaleDateString("en-KE")
+                    : "N/A"
+                }</td>
               </tr>
             `
               )
@@ -433,14 +467,20 @@ export default function Reports() {
             </tr>
           </tbody>
         </table>
-        ` : ''}
+        `
+            : ""
+        }
 
-        ${rentSettings ? `
+        ${
+          rentSettings
+            ? `
         <h2>Rent Information</h2>
         <div class="metric-grid" style="grid-template-columns: repeat(3, 1fr);">
           <div class="metric-box">
             <div class="metric-label">Monthly Rent</div>
-            <div class="metric-value">${formatCurrency(rentSettings.monthly_amount)}</div>
+            <div class="metric-value">${formatCurrency(
+              rentSettings.monthly_amount
+            )}</div>
           </div>
           <div class="metric-box">
             <div class="metric-label">Due Day</div>
@@ -448,10 +488,14 @@ export default function Reports() {
           </div>
           <div class="metric-box">
             <div class="metric-label">Annual Rent</div>
-            <div class="metric-value">${formatCurrency(Number(rentSettings.monthly_amount) * 12)}</div>
+            <div class="metric-value">${formatCurrency(
+              Number(rentSettings.monthly_amount) * 12
+            )}</div>
           </div>
         </div>
-        ` : ''}
+        `
+            : ""
+        }
 
         <h2>Expense Breakdown by Category</h2>
         <table>
@@ -572,7 +616,7 @@ export default function Reports() {
         }
 
         <div class="footer">
-          <p>MyFinance - Personal Finance Manager</p>
+          <p>KeshaTrack - Personal Finance Manager</p>
           <p>This report is confidential and for your personal use only.</p>
         </div>
       </body>

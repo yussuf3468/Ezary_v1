@@ -11,13 +11,16 @@
 ## ⚡ IMMEDIATE FIX - Clear Browser Cache
 
 ### Option 1: Hard Refresh (FASTEST)
+
 1. **Windows/Linux:** Press `Ctrl + Shift + R`
 2. **Mac:** Press `Cmd + Shift + R`
 
 This forces the browser to reload all JavaScript files.
 
 ### Option 2: Clear Cache & Hard Reload
+
 1. **Chrome/Edge:**
+
    - Press `F12` to open DevTools
    - **Right-click** the refresh button
    - Select **"Empty Cache and Hard Reload"**
@@ -29,6 +32,7 @@ This forces the browser to reload all JavaScript files.
    - Then refresh the page
 
 ### Option 3: Incognito/Private Mode
+
 1. Open a new **Incognito** window (`Ctrl + Shift + N`)
 2. Go to your app URL
 3. Test adding a debt
@@ -38,16 +42,18 @@ This forces the browser to reload all JavaScript files.
 ## 🧪 How to Verify It's Fixed
 
 ### Before Hard Refresh:
+
 ```json
 {
-  "status": "unpaid"  // ❌ OLD CACHED CODE
+  "status": "unpaid" // ❌ OLD CACHED CODE
 }
 ```
 
 ### After Hard Refresh:
+
 ```json
 {
-  "status": "active"  // ✅ NEW CODE LOADED
+  "status": "active" // ✅ NEW CODE LOADED
 }
 ```
 
@@ -79,6 +85,7 @@ If you're running `npm run dev`:
 ## ✅ Success Indicators
 
 After clearing cache, you should see:
+
 1. Payload shows `"status": "active"` ✅
 2. Debt is created successfully ✅
 3. No more 400 error ✅
@@ -89,6 +96,7 @@ After clearing cache, you should see:
 ## 🔍 Still Not Working?
 
 ### Check the Network Tab:
+
 1. Open DevTools (F12)
 2. Go to **Network** tab
 3. Click **"Disable cache"** checkbox
@@ -98,7 +106,9 @@ After clearing cache, you should see:
 7. Check **Payload** - should show `"status": "active"`
 
 ### Verify Code is Deployed:
+
 If using production deployment:
+
 1. Run `npm run build`
 2. Re-deploy the `dist` folder
 3. Hard refresh browser
@@ -108,6 +118,7 @@ If using production deployment:
 ## 🎯 Quick Test Command
 
 Run this in your browser console (F12 → Console):
+
 ```javascript
 // This should return "active"
 console.log(validateStatus("active"));

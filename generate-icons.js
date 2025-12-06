@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
 // Simple icon generator for KeshaTrack PWA
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-console.log('📱 Creating app icons for KeshaTrack...\n');
+console.log("📱 Creating app icons for KeshaTrack...\n");
 
 // Create SVG icon
 const svgIcon = `
@@ -27,20 +27,20 @@ const svgIcon = `
 </svg>
 `;
 
-const publicDir = path.join(__dirname, 'public');
+const publicDir = path.join(__dirname, "public");
 if (!fs.existsSync(publicDir)) {
   fs.mkdirSync(publicDir, { recursive: true });
 }
 
 // Save SVG
-fs.writeFileSync(path.join(publicDir, 'icon.svg'), svgIcon.trim());
-console.log('✅ Created icon.svg');
+fs.writeFileSync(path.join(publicDir, "icon.svg"), svgIcon.trim());
+console.log("✅ Created icon.svg");
 
-console.log('\n📝 Next steps to generate PNG icons:');
-console.log('   1. Install sharp: npm install --save-dev sharp');
-console.log('   2. Or use online converter: https://svgtopng.com');
-console.log('   3. Convert icon.svg to:');
-console.log('      - icon-192.png (192x192)');
-console.log('      - icon-512.png (512x512)');
-console.log('      - apple-touch-icon.png (180x180)');
-console.log('\n💡 Or I can create a converter script if you install sharp!\n');
+console.log("\n📝 Next steps to generate PNG icons:");
+console.log("   1. Install sharp: npm install --save-dev sharp");
+console.log("   2. Or use online converter: https://svgtopng.com");
+console.log("   3. Convert icon.svg to:");
+console.log("      - icon-192.png (192x192)");
+console.log("      - icon-512.png (512x512)");
+console.log("      - apple-touch-icon.png (180x180)");
+console.log("\n💡 Or I can create a converter script if you install sharp!\n");

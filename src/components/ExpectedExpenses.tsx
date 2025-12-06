@@ -43,7 +43,9 @@ const categories = [
 
 export default function ExpectedExpenses() {
   const { user } = useAuth();
-  const [expectedExpenses, setExpectedExpenses] = useState<ExpectedExpense[]>([]);
+  const [expectedExpenses, setExpectedExpenses] = useState<ExpectedExpense[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -112,7 +114,10 @@ export default function ExpectedExpenses() {
   };
 
   const handleMarkAsPaid = async (expense: ExpectedExpense) => {
-    if (!confirm(`Mark "${expense.title}" as paid and record as actual expense?`)) return;
+    if (
+      !confirm(`Mark "${expense.title}" as paid and record as actual expense?`)
+    )
+      return;
 
     try {
       // Update status to paid
@@ -127,7 +132,8 @@ export default function ExpectedExpenses() {
       const { error: expenseError } = await supabase.from("expenses").insert({
         user_id: user!.id,
         amount: expense.amount,
-        category: expense.category === "tuition" ? "education" : expense.category,
+        category:
+          expense.category === "tuition" ? "education" : expense.category,
         description: expense.title,
         date: new Date().toISOString().split("T")[0],
       });
@@ -143,7 +149,8 @@ export default function ExpectedExpenses() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this expected expense?")) return;
+    if (!confirm("Are you sure you want to delete this expected expense?"))
+      return;
 
     try {
       const { error } = await supabase
@@ -163,9 +170,14 @@ export default function ExpectedExpenses() {
     return <div className="text-gray-500">Loading...</div>;
   }
 
-  const pendingExpenses = expectedExpenses.filter((e) => e.status === "pending");
+  const pendingExpenses = expectedExpenses.filter(
+    (e) => e.status === "pending"
+  );
   const paidExpenses = expectedExpenses.filter((e) => e.status === "paid");
-  const totalPending = pendingExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
+  const totalPending = pendingExpenses.reduce(
+    (sum, e) => sum + Number(e.amount),
+    0
+  );
   const today = new Date().toISOString().split("T")[0];
   const overdueExpenses = pendingExpenses.filter((e) => e.due_date < today);
 
@@ -197,11 +209,17 @@ export default function ExpectedExpenses() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl shadow-lg p-4 sm:p-6 text-white">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm sm:text-base opacity-90">Total Pending</span>
+            <span className="text-sm sm:text-base opacity-90">
+              Total Pending
+            </span>
             <Clock className="w-5 h-5 opacity-75" />
           </div>
-          <p className="text-2xl sm:text-3xl font-bold">{formatCurrency(totalPending)}</p>
-          <p className="text-xs sm:text-sm opacity-75 mt-1">{pendingExpenses.length} items</p>
+          <p className="text-2xl sm:text-3xl font-bold">
+            {formatCurrency(totalPending)}
+          </p>
+          <p className="text-xs sm:text-sm opacity-75 mt-1">
+            {pendingExpenses.length} items
+          </p>
         </div>
 
         <div className="bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl shadow-lg p-4 sm:p-6 text-white">
@@ -209,9 +227,13 @@ export default function ExpectedExpenses() {
             <span className="text-sm sm:text-base opacity-90">Overdue</span>
             <AlertCircle className="w-5 h-5 opacity-75" />
           </div>
-          <p className="text-2xl sm:text-3xl font-bold">{overdueExpenses.length}</p>
+          <p className="text-2xl sm:text-3xl font-bold">
+            {overdueExpenses.length}
+          </p>
           <p className="text-xs sm:text-sm opacity-75 mt-1">
-            {formatCurrency(overdueExpenses.reduce((sum, e) => sum + Number(e.amount), 0))}
+            {formatCurrency(
+              overdueExpenses.reduce((sum, e) => sum + Number(e.amount), 0)
+            )}
           </p>
         </div>
 
@@ -220,7 +242,9 @@ export default function ExpectedExpenses() {
             <span className="text-sm sm:text-base opacity-90">Paid</span>
             <CheckCircle className="w-5 h-5 opacity-75" />
           </div>
-          <p className="text-2xl sm:text-3xl font-bold">{paidExpenses.length}</p>
+          <p className="text-2xl sm:text-3xl font-bold">
+            {paidExpenses.length}
+          </p>
           <p className="text-xs sm:text-sm opacity-75 mt-1">This month</p>
         </div>
       </div>
@@ -229,13 +253,16 @@ export default function ExpectedExpenses() {
       {pendingExpenses.length > 0 && (
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div className="p-4 sm:p-6 border-b border-gray-100 bg-gradient-to-r from-orange-50 to-amber-50">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800">Pending Expenses</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800">
+              Pending Expenses
+            </h2>
           </div>
           <div className="divide-y divide-gray-100">
             {pendingExpenses.map((expense) => {
               const isOverdue = expense.due_date < today;
               const daysUntil = Math.ceil(
-                (new Date(expense.due_date).getTime() - new Date(today).getTime()) /
+                (new Date(expense.due_date).getTime() -
+                  new Date(today).getTime()) /
                   (1000 * 60 * 60 * 24)
               );
 
@@ -253,7 +280,10 @@ export default function ExpectedExpenses() {
                           {expense.title}
                         </h3>
                         <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full">
-                          {categories.find((c) => c.value === expense.category)?.label}
+                          {
+                            categories.find((c) => c.value === expense.category)
+                              ?.label
+                          }
                         </span>
                       </div>
                       <p className="text-xl sm:text-2xl font-bold text-orange-600 mb-2">
@@ -262,16 +292,25 @@ export default function ExpectedExpenses() {
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm text-gray-600">
                         <div className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
-                          <span>Due: {new Date(expense.due_date).toLocaleDateString()}</span>
+                          <span>
+                            Due:{" "}
+                            {new Date(expense.due_date).toLocaleDateString()}
+                          </span>
                         </div>
                         {isOverdue ? (
-                          <span className="text-red-600 font-semibold">Overdue!</span>
+                          <span className="text-red-600 font-semibold">
+                            Overdue!
+                          </span>
                         ) : daysUntil === 0 ? (
-                          <span className="text-amber-600 font-semibold">Due today</span>
+                          <span className="text-amber-600 font-semibold">
+                            Due today
+                          </span>
                         ) : daysUntil === 1 ? (
                           <span className="text-amber-600">Due tomorrow</span>
                         ) : (
-                          <span className="text-gray-500">In {daysUntil} days</span>
+                          <span className="text-gray-500">
+                            In {daysUntil} days
+                          </span>
                         )}
                       </div>
                       {expense.notes && (
@@ -307,7 +346,9 @@ export default function ExpectedExpenses() {
       {paidExpenses.length > 0 && (
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div className="p-4 sm:p-6 border-b border-gray-100 bg-gradient-to-r from-emerald-50 to-teal-50">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800">Paid Expenses</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800">
+              Paid Expenses
+            </h2>
           </div>
           <div className="divide-y divide-gray-100">
             {paidExpenses.map((expense) => (
@@ -316,7 +357,9 @@ export default function ExpectedExpenses() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <CheckCircle className="w-5 h-5 text-emerald-600" />
-                      <h3 className="font-bold text-gray-800">{expense.title}</h3>
+                      <h3 className="font-bold text-gray-800">
+                        {expense.title}
+                      </h3>
                     </div>
                     <p className="text-lg font-bold text-gray-600">
                       {formatCurrency(expense.amount)}
@@ -342,19 +385,29 @@ export default function ExpectedExpenses() {
         <div className="text-center py-12 bg-white rounded-2xl shadow-lg border border-gray-100">
           <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-500 text-lg mb-2">No expected expenses yet</p>
-          <p className="text-gray-400 text-sm">Add upcoming bills and payments to track them</p>
+          <p className="text-gray-400 text-sm">
+            Add upcoming bills and payments to track them
+          </p>
         </div>
       )}
 
       {/* Add Form Modal */}
-      <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="Add Expected Expense">
+      <Modal
+        isOpen={showForm}
+        onClose={() => setShowForm(false)}
+        title="Add Expected Expense"
+      >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Title</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Title
+            </label>
             <input
               type="text"
               value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, title: e.target.value })
+              }
               required
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
               placeholder="e.g., College Tuition Fee"
@@ -382,13 +435,17 @@ export default function ExpectedExpenses() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Due Date</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Due Date
+            </label>
             <div className="relative">
               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="date"
                 value={formData.due_date}
-                onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, due_date: e.target.value })
+                }
                 required
                 className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
               />
@@ -396,10 +453,14 @@ export default function ExpectedExpenses() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Category</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Category
+            </label>
             <select
               value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, category: e.target.value })
+              }
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
             >
               {categories.map((cat) => (
@@ -416,7 +477,9 @@ export default function ExpectedExpenses() {
             </label>
             <textarea
               value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, notes: e.target.value })
+              }
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
               rows={3}
               placeholder="Additional details..."

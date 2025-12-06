@@ -65,12 +65,12 @@ export default function Dashboard() {
   useEffect(() => {
     if (user) {
       loadFinancialSummary();
-      
+
       // Refresh dashboard every 5 seconds when active
       const interval = setInterval(() => {
         loadFinancialSummary();
       }, 5000);
-      
+
       return () => clearInterval(interval);
     }
   }, [user]);
@@ -184,7 +184,9 @@ export default function Dashboard() {
         ? Number(rentResult.data.monthly_amount)
         : 0;
 
-      const hasRentPayment = !!(rentPaymentResult.data && rentPaymentResult.data.length > 0);
+      const hasRentPayment = !!(
+        rentPaymentResult.data && rentPaymentResult.data.length > 0
+      );
       setRentPaidThisMonth(hasRentPayment);
 
       if (rentResult.data) {
@@ -295,7 +297,7 @@ export default function Dashboard() {
       {/* Header */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
-          Dashboard
+          Welcome, Yussuf Muse
         </h1>
         <p className="text-sm sm:text-base text-gray-600 mt-1">
           Your financial overview for this month
