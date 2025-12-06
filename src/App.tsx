@@ -7,6 +7,7 @@ import Income from './components/Income';
 import Expenses from './components/Expenses';
 import Debts from './components/Debts';
 import Rent from './components/Rent';
+import ExpectedExpenses from './components/ExpectedExpenses';
 import Reports from './components/Reports';
 
 function AppContent() {
@@ -37,6 +38,8 @@ function AppContent() {
         return <Debts />;
       case 'rent':
         return <Rent />;
+      case 'expected-expenses':
+        return <ExpectedExpenses />;
       case 'reports':
         return <Reports />;
       default:

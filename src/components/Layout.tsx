@@ -6,6 +6,7 @@ import {
   TrendingDown,
   CreditCard,
   Home,
+  Calendar,
   PieChart,
   LogOut,
   Wallet,
@@ -54,6 +55,12 @@ export default function Layout({
       label: "Rent",
       icon: Home,
       color: "from-orange-500 to-amber-600",
+    },
+    {
+      id: "expected-expenses",
+      label: "Expected",
+      icon: Calendar,
+      color: "from-amber-500 to-yellow-600",
     },
     {
       id: "reports",
