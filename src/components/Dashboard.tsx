@@ -52,6 +52,7 @@ export default function Dashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [rentDue, setRentDue] = useState(false);
+  const [rentPaidThisMonth, setRentPaidThisMonth] = useState(false);
   const [recentTransactions, setRecentTransactions] = useState<
     RecentTransaction[]
   >([]);
@@ -83,6 +84,7 @@ export default function Dashboard() {
         expensesResult,
         debtsResult,
         rentResult,
+        rentPaymentResult,
         prevExpensesResult,
         recentIncomeResult,
         recentExpensesResult,
@@ -108,6 +110,12 @@ export default function Dashboard() {
           .select("monthly_amount, due_day")
           .eq("user_id", user.id)
           .maybeSingle(),
+        supabase
+          .from("expenses")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("category", "rent")
+          .gte("date", `${currentMonth}-01`),
         supabase
           .from("expenses")
           .select("amount")
@@ -169,11 +177,14 @@ export default function Dashboard() {
         ? Number(rentResult.data.monthly_amount)
         : 0;
 
+      const hasRentPayment = !!(rentPaymentResult.data && rentPaymentResult.data.length > 0);
+      setRentPaidThisMonth(hasRentPayment);
+
       if (rentResult.data) {
         const today = new Date();
         const dueDay = rentResult.data.due_day;
         const currentDay = today.getDate();
-        setRentDue(currentDay >= dueDay);
+        setRentDue(currentDay >= dueDay && !hasRentPayment);
       }
 
       const prevExpenses =

@@ -25,6 +25,7 @@ export default function Rent() {
   const [rentSettings, setRentSettings] = useState<RentSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [rentPaidThisMonth, setRentPaidThisMonth] = useState(false);
+  const [recordingPayment, setRecordingPayment] = useState(false);
   const [formData, setFormData] = useState({
     monthly_amount: "",
     due_day: "1",
@@ -124,8 +125,9 @@ export default function Rent() {
   };
 
   const addRentExpense = async () => {
-    if (!user || !rentSettings) return;
+    if (!user || !rentSettings || recordingPayment) return;
 
+    setRecordingPayment(true);
     try {
       const today = new Date();
       const { error } = await supabase.from("expenses").insert({
@@ -138,10 +140,12 @@ export default function Rent() {
 
       if (error) throw error;
       alert("Rent payment recorded successfully!");
-      checkRentPayment(); // Refresh the rent payment status
+      await checkRentPayment(); // Refresh the rent payment status
     } catch (error) {
       console.error("Error recording rent payment:", error);
       alert("Failed to record rent payment");
+    } finally {
+      setRecordingPayment(false);
     }
   };
 
@@ -213,9 +217,10 @@ export default function Rent() {
                   </p>
                   <button
                     onClick={addRentExpense}
-                    className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl font-semibold"
+                    disabled={recordingPayment}
+                    className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Record Rent Payment
+                    {recordingPayment ? "Recording..." : "Record Rent Payment"}
                   </button>
                 </div>
               </div>
