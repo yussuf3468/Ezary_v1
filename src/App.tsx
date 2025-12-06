@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Auth from "./components/Auth";
+import BiometricLock from "./components/BiometricLock";
 import Layout from "./components/Layout";
 import Dashboard from "./components/Dashboard";
 import Income from "./components/Income";
@@ -13,6 +14,44 @@ import Reports from "./components/Reports";
 function AppContent() {
   const { user, loading } = useAuth();
   const [currentPage, setCurrentPage] = useState("dashboard");
+  const [biometricUnlocked, setBiometricUnlocked] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+
+  useEffect(() => {
+    // Check if user should see biometric lock
+    const checkBiometric = async () => {
+      try {
+        // Check if WebAuthn is supported
+        if (!window.PublicKeyCredential) {
+          setBiometricUnlocked(true);
+          return;
+        }
+
+        // Check if platform authenticator is available
+        const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        
+        if (!available) {
+          setBiometricUnlocked(true);
+          return;
+        }
+
+        // Check if already unlocked in this session
+        const unlockedTimestamp = sessionStorage.getItem('biometric_unlocked');
+        if (unlockedTimestamp) {
+          setBiometricUnlocked(true);
+        } else {
+          setBiometricAvailable(true);
+        }
+      } catch (err) {
+        console.error('Error checking biometric:', err);
+        setBiometricUnlocked(true);
+      }
+    };
+
+    if (user) {
+      checkBiometric();
+    }
+  }, [user]);
 
   if (loading) {
     return (
@@ -24,6 +63,11 @@ function AppContent() {
 
   if (!user) {
     return <Auth />;
+  }
+
+  // Show biometric lock if user is logged in but hasn't unlocked with Face ID
+  if (user && biometricAvailable && !biometricUnlocked) {
+    return <BiometricLock onUnlock={() => setBiometricUnlocked(true)} />;
   }
 
   const renderPage = () => {
