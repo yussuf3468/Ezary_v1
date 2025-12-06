@@ -152,7 +152,7 @@ export default function Debts() {
         user_id: user.id,
         amount: parseCurrency(debtFormData.amount),
         description: `Debt from ${debtFormData.creditor_name}`,
-        type: "once",
+        type: "one-time",
         date: new Date().toISOString().split("T")[0],
       });
 
