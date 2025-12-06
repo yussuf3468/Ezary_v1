@@ -28,22 +28,23 @@ function AppContent() {
         }
 
         // Check if platform authenticator is available
-        const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-        
+        const available =
+          await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+
         if (!available) {
           setBiometricUnlocked(true);
           return;
         }
 
         // Check if already unlocked in this session
-        const unlockedTimestamp = sessionStorage.getItem('biometric_unlocked');
+        const unlockedTimestamp = sessionStorage.getItem("biometric_unlocked");
         if (unlockedTimestamp) {
           setBiometricUnlocked(true);
         } else {
           setBiometricAvailable(true);
         }
       } catch (err) {
-        console.error('Error checking biometric:', err);
+        console.error("Error checking biometric:", err);
         setBiometricUnlocked(true);
       }
     };

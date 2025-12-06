@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Fingerprint, Lock, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { Fingerprint, Lock, AlertCircle } from "lucide-react";
 
 interface BiometricLockProps {
   onUnlock: () => void;
@@ -13,7 +13,7 @@ const stringToArrayBuffer = (str: string) => {
 // Helper to convert ArrayBuffer to base64
 const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
   const bytes = new Uint8Array(buffer);
-  let binary = '';
+  let binary = "";
   for (let i = 0; i < bytes.byteLength; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
@@ -35,6 +35,10 @@ export default function BiometricLock({ onUnlock }: BiometricLockProps) {
   const [error, setError] = useState<string | null>(null);
   const [isSupported, setIsSupported] = useState(true);
 
+  // Note: This component stores the credential ID in localStorage.
+  // If localStorage is cleared, a new credential will be automatically registered.
+  // The user will be prompted with Face ID again to set up the new credential.
+
   useEffect(() => {
     checkSupport();
   }, []);
@@ -46,7 +50,8 @@ export default function BiometricLock({ onUnlock }: BiometricLockProps) {
         return;
       }
 
-      const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+      const available =
+        await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
       setIsSupported(available);
 
       if (available) {
@@ -56,7 +61,7 @@ export default function BiometricLock({ onUnlock }: BiometricLockProps) {
         }, 500);
       }
     } catch (err) {
-      console.error('Error checking biometric support:', err);
+      console.error("Error checking biometric support:", err);
       setIsSupported(false);
     }
   };
@@ -67,32 +72,47 @@ export default function BiometricLock({ onUnlock }: BiometricLockProps) {
 
     try {
       // Check if credential exists
-      const storedCredentialId = localStorage.getItem('risq_credential_id');
+      const storedCredentialId = localStorage.getItem("risq_credential_id");
 
       if (!storedCredentialId) {
         // Register new credential
         await registerBiometric();
       } else {
-        // Authenticate with existing credential
-        await authenticateBiometric(storedCredentialId);
+        try {
+          // Try to authenticate with existing credential
+          await authenticateBiometric(storedCredentialId);
+        } catch (authErr: any) {
+          // If authentication fails, the credential might be invalid
+          // Clear it and try registering a new one
+          if (
+            authErr.name === "NotAllowedError" &&
+            authErr.message.includes("not found")
+          ) {
+            console.log("Credential not found, re-registering...");
+            localStorage.removeItem("risq_credential_id");
+            await registerBiometric();
+          } else {
+            throw authErr; // Re-throw other errors
+          }
+        }
       }
 
-      sessionStorage.setItem('biometric_unlocked', Date.now().toString());
+      sessionStorage.setItem("biometric_unlocked", Date.now().toString());
       onUnlock();
     } catch (err: any) {
-      console.error('Biometric authentication error:', err);
-      
+      console.error("Biometric authentication error:", err);
+
       // Handle specific error cases
-      if (err.name === 'NotAllowedError') {
-        setError('Authentication cancelled or timed out. Please try again.');
-      } else if (err.name === 'InvalidStateError') {
+      if (err.name === "NotAllowedError") {
+        setError("Authentication cancelled or timed out. Please try again.");
+      } else if (err.name === "InvalidStateError") {
         // Credential might be corrupted, clear it
-        localStorage.removeItem('risq_credential_id');
-        setError('Authentication setup needs to be reset. Please try again.');
+        localStorage.removeItem("risq_credential_id");
+        setError("Authentication setup needs to be reset. Please try again.");
       } else {
-        setError(err.message || 'Authentication failed. Please try again.');
+        setError(err.message || "Authentication failed. Please try again.");
       }
-      
+
       setIsAuthenticating(false);
     }
   };
@@ -104,33 +124,33 @@ export default function BiometricLock({ onUnlock }: BiometricLockProps) {
     const publicKeyOptions: PublicKeyCredentialCreationOptions = {
       challenge,
       rp: {
-        name: 'Risq Finance',
+        name: "Risq Finance",
         id: window.location.hostname,
       },
       user: {
-        id: stringToArrayBuffer('yussuf_muse'),
-        name: 'Yussuf Muse',
-        displayName: 'Yussuf Muse',
+        id: stringToArrayBuffer("yussuf_muse"),
+        name: "Yussuf Muse",
+        displayName: "Yussuf Muse",
       },
       pubKeyCredParams: [
-        { alg: -7, type: 'public-key' },  // ES256
-        { alg: -257, type: 'public-key' }, // RS256
+        { alg: -7, type: "public-key" }, // ES256
+        { alg: -257, type: "public-key" }, // RS256
       ],
       authenticatorSelection: {
-        authenticatorAttachment: 'platform',
-        userVerification: 'required',
+        authenticatorAttachment: "platform",
+        userVerification: "required",
       },
       timeout: 60000,
-      attestation: 'none',
+      attestation: "none",
     };
 
-    const credential = await navigator.credentials.create({
+    const credential = (await navigator.credentials.create({
       publicKey: publicKeyOptions,
-    }) as PublicKeyCredential;
+    })) as PublicKeyCredential;
 
     if (credential) {
       const credentialId = arrayBufferToBase64(credential.rawId);
-      localStorage.setItem('risq_credential_id', credentialId);
+      localStorage.setItem("risq_credential_id", credentialId);
     }
   };
 
@@ -143,11 +163,11 @@ export default function BiometricLock({ onUnlock }: BiometricLockProps) {
       allowCredentials: [
         {
           id: base64ToArrayBuffer(credentialId),
-          type: 'public-key',
-          transports: ['internal'],
+          type: "public-key",
+          transports: ["internal"],
         },
       ],
-      userVerification: 'required',
+      userVerification: "required",
       timeout: 60000,
     };
 
@@ -162,7 +182,7 @@ export default function BiometricLock({ onUnlock }: BiometricLockProps) {
 
   if (!isSupported) {
     // Fallback for unsupported devices
-    sessionStorage.setItem('biometric_unlocked', Date.now().toString());
+    sessionStorage.setItem("biometric_unlocked", Date.now().toString());
     onUnlock();
     return null;
   }
@@ -203,9 +223,18 @@ export default function BiometricLock({ onUnlock }: BiometricLockProps) {
                 Authenticating
               </p>
               <div className="flex items-center justify-center gap-1">
-                <div className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                <div
+                  className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce"
+                  style={{ animationDelay: "0ms" }}
+                ></div>
+                <div
+                  className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce"
+                  style={{ animationDelay: "150ms" }}
+                ></div>
+                <div
+                  className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce"
+                  style={{ animationDelay: "300ms" }}
+                ></div>
               </div>
             </div>
           ) : (
@@ -213,9 +242,7 @@ export default function BiometricLock({ onUnlock }: BiometricLockProps) {
               <p className="text-lg font-medium text-gray-900 mb-2">
                 Touch to Unlock
               </p>
-              <p className="text-sm text-gray-500">
-                Use Face ID or Touch ID
-              </p>
+              <p className="text-sm text-gray-500">Use Face ID or Touch ID</p>
             </div>
           )}
 
