@@ -41,6 +41,15 @@ interface LoanRecord {
 
 type ActiveTab = "overview" | "debts" | "loans";
 
+// Valid status values for debts and loans
+const VALID_STATUSES = ["active", "paying", "cleared", "pending"] as const;
+type ValidStatus = typeof VALID_STATUSES[number];
+
+// Helper function to ensure status is valid
+const validateStatus = (status: any): ValidStatus => {
+  return VALID_STATUSES.includes(status) ? status : "active";
+};
+
 export default function Debts() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
@@ -122,7 +131,7 @@ export default function Debts() {
         amount: parseCurrency(debtFormData.amount),
         amount_paid: 0,
         due_date: debtFormData.due_date || null,
-        status: "active",
+        // Don't send status, let database default apply
       };
 
       // Only add notes if the column exists (it might not be in older schemas)
@@ -162,12 +171,15 @@ export default function Debts() {
     const newAmountPaid = Number(debt.amount_paid) + paymentValue;
     const remaining = Number(debt.amount) - newAmountPaid;
 
-    let newStatus: "active" | "paying" | "cleared" = "active";
+    let newStatus: ValidStatus = "active";
     if (remaining <= 0) {
       newStatus = "cleared";
     } else if (newAmountPaid > 0) {
       newStatus = "paying";
     }
+
+    // Validate status before sending to database
+    const validatedStatus = validateStatus(newStatus);
 
     try {
       const { error } = await supabase
@@ -177,7 +189,7 @@ export default function Debts() {
             newAmountPaid >= Number(debt.amount)
               ? Number(debt.amount)
               : newAmountPaid,
-          status: newStatus,
+          status: validatedStatus,
         })
         .eq("id", debtId);
 
@@ -215,7 +227,7 @@ export default function Debts() {
         amount: parseCurrency(loanFormData.amount),
         amount_received: 0,
         due_date: loanFormData.due_date || null,
-        status: "active",
+        // Don't send status, let database default apply
       };
 
       // Only add notes if the column exists (it might not be in older schemas)
@@ -250,12 +262,15 @@ export default function Debts() {
     const newAmountReceived = Number(loan.amount_received) + paymentValue;
     const remaining = Number(loan.amount) - newAmountReceived;
 
-    let newStatus: "active" | "paying" | "cleared" = "active";
+    let newStatus: ValidStatus = "active";
     if (remaining <= 0) {
       newStatus = "cleared";
     } else if (newAmountReceived > 0) {
       newStatus = "paying";
     }
+
+    // Validate status before sending to database
+    const validatedStatus = validateStatus(newStatus);
 
     try {
       const { error } = await supabase
@@ -265,7 +280,7 @@ export default function Debts() {
             newAmountReceived >= Number(loan.amount)
               ? Number(loan.amount)
               : newAmountReceived,
-          status: newStatus,
+          status: validatedStatus,
         })
         .eq("id", loanId);
 
@@ -586,16 +601,16 @@ export default function Debts() {
                       className={`text-xs font-medium px-2 py-1 rounded ${
                         debt.status === "cleared"
                           ? "bg-emerald-100 text-emerald-700"
-                          : debt.status === "partially_paid"
+                          : debt.status === "paying"
                           ? "bg-amber-100 text-amber-700"
                           : "bg-red-100 text-red-700"
                       }`}
                     >
                       {debt.status === "cleared"
                         ? "Cleared"
-                        : debt.status === "partially_paid"
-                        ? "Partial"
-                        : "Unpaid"}
+                        : debt.status === "paying"
+                        ? "Paying"
+                        : "Active"}
                     </span>
                   </div>
 
@@ -738,16 +753,16 @@ export default function Debts() {
                             className={`text-xs font-medium px-3 py-1 rounded-full ${
                               debt.status === "cleared"
                                 ? "bg-emerald-100 text-emerald-700"
-                                : debt.status === "partially_paid"
+                                : debt.status === "paying"
                                 ? "bg-amber-100 text-amber-700"
                                 : "bg-red-100 text-red-700"
                             }`}
                           >
                             {debt.status === "cleared"
                               ? "Cleared"
-                              : debt.status === "partially_paid"
-                              ? "Partial"
-                              : "Unpaid"}
+                              : debt.status === "paying"
+                              ? "Paying"
+                              : "Active"}
                           </span>
                         </td>
                         <td className="py-3 px-4">
@@ -838,16 +853,16 @@ export default function Debts() {
                       className={`text-xs font-medium px-2 py-1 rounded ${
                         loan.status === "cleared"
                           ? "bg-emerald-100 text-emerald-700"
-                          : loan.status === "partially_paid"
+                          : loan.status === "paying"
                           ? "bg-amber-100 text-amber-700"
                           : "bg-red-100 text-red-700"
                       }`}
                     >
                       {loan.status === "cleared"
                         ? "Cleared"
-                        : loan.status === "partially_paid"
-                        ? "Partial"
-                        : "Unpaid"}
+                        : loan.status === "paying"
+                        ? "Paying"
+                        : "Active"}
                     </span>
                   </div>
 
@@ -991,16 +1006,16 @@ export default function Debts() {
                             className={`text-xs font-medium px-3 py-1 rounded-full ${
                               loan.status === "cleared"
                                 ? "bg-emerald-100 text-emerald-700"
-                                : loan.status === "partially_paid"
+                                : loan.status === "paying"
                                 ? "bg-amber-100 text-amber-700"
                                 : "bg-red-100 text-red-700"
                             }`}
                           >
                             {loan.status === "cleared"
                               ? "Cleared"
-                              : loan.status === "partially_paid"
-                              ? "Partial"
-                              : "Unpaid"}
+                              : loan.status === "paying"
+                              ? "Paying"
+                              : "Active"}
                           </span>
                         </td>
                         <td className="py-3 px-4">
