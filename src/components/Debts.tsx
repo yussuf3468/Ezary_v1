@@ -139,12 +139,26 @@ export default function Debts() {
         insertData.notes = debtFormData.notes;
       }
 
-      const { error } = await supabase.from("debts").insert(insertData);
+      const { error: debtError } = await supabase.from("debts").insert(insertData);
 
-      if (error) {
-        console.error("Error adding debt:", error);
-        alert(`Error adding debt: ${error.message}`);
+      if (debtError) {
+        console.error("Error adding debt:", debtError);
+        alert(`Error adding debt: ${debtError.message}`);
         return;
+      }
+
+      // Record as income since money entered your account
+      const { error: incomeError } = await supabase.from("income").insert({
+        user_id: user.id,
+        amount: parseCurrency(debtFormData.amount),
+        description: `Debt from ${debtFormData.creditor_name}`,
+        type: "once",
+        date: new Date().toISOString().split("T")[0],
+      });
+
+      if (incomeError) {
+        console.error("Error recording income:", incomeError);
+        // Don't block the debt creation, just log the error
       }
 
       setDebtFormData({
