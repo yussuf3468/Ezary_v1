@@ -158,7 +158,9 @@ export default function Debts() {
 
       if (incomeError) {
         console.error("Error recording income:", incomeError);
-        // Don't block the debt creation, just log the error
+        alert("Debt recorded but failed to add income entry");
+      } else {
+        alert(`Debt recorded! ${formatCurrency(parseCurrency(debtFormData.amount))} added as income.`);
       }
 
       setDebtFormData({
