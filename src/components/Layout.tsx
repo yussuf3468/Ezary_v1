@@ -129,7 +129,7 @@ export default function Layout({
             </div>
             <div>
               <h1 className="text-base font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                MyFinance
+                KeshaTrack
               </h1>
             </div>
           </div>
