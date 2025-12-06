@@ -131,7 +131,7 @@ export default function Debts() {
         amount: parseCurrency(debtFormData.amount),
         amount_paid: 0,
         due_date: debtFormData.due_date || null,
-        status: validateStatus('active'), // Explicitly set valid status
+        status: validateStatus("active"), // Explicitly set valid status
       };
 
       // Only add notes if the column exists (it might not be in older schemas)
@@ -227,7 +227,7 @@ export default function Debts() {
         amount: parseCurrency(loanFormData.amount),
         amount_received: 0,
         due_date: loanFormData.due_date || null,
-        status: validateStatus('active'), // Explicitly set valid status
+        status: validateStatus("active"), // Explicitly set valid status
       };
 
       // Only add notes if the column exists (it might not be in older schemas)
