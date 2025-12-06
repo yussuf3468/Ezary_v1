@@ -5,6 +5,7 @@
 **KeshaTrack** (formerly MyFinance) is a beautiful, mobile-first personal finance management application designed specifically for Kenya. The name combines "Kesha" (Swahili word meaning "dawn" or "new beginning") with "Track" - symbolizing a fresh start in managing your finances.
 
 ### 🌐 GitHub Repository
+
 - **URL**: https://github.com/yussuf3468/myFinance
 - **Branch**: main
 - **Version**: 1.0.0
@@ -15,17 +16,20 @@
 ## ✨ Key Features Implemented
 
 ### 💰 Currency System (KES)
+
 - ✅ Complete Kenya Shillings (KES) support throughout
 - ✅ Proper formatting: KES 10,000.00
 - ✅ Currency utilities: `formatCurrency()`, `parseCurrency()`, `formatNumberInput()`
 
 ### 📱 Mobile-First Design
+
 - ✅ Bottom navigation on mobile (app-like experience)
 - ✅ Responsive cards on mobile, tables on desktop
 - ✅ 2-column stat grid optimized for mobile screens
 - ✅ Touch-friendly buttons and interactions
 
 ### 📊 Dashboard
+
 - ✅ 4 summary cards (2x2 grid on mobile)
 - ✅ Spending trends visualization
 - ✅ Savings rate indicator
@@ -34,6 +38,7 @@
 - ✅ Gradient backgrounds with glass-morphism
 
 ### 💵 Income Tracking
+
 - ✅ Add/edit/delete income entries
 - ✅ Categories: Salary, Freelance, Business, Investments, Other
 - ✅ Frequency: Daily, Monthly, Yearly
@@ -41,6 +46,7 @@
 - ✅ Real-time totals
 
 ### 💸 Expense Management
+
 - ✅ 10 comprehensive categories:
   - Food & Dining
   - Transportation
@@ -57,6 +63,7 @@
 - ✅ Notes field for details
 
 ### 💳 Debts & Loans Manager (NEW!)
+
 - ✅ **3-tab interface**:
   1. **Overview**: Net position, summary cards, quick lists
   2. **Debts Tab**: Track what you owe (creditors)
@@ -70,12 +77,14 @@
 - ✅ Clear net position calculation
 
 ### 🏠 Rent Management
+
 - ✅ Set monthly rent amount
 - ✅ Track payment history
 - ✅ Mark payments as paid/unpaid
 - ✅ Due date tracking
 
 ### 📈 Reports & Analytics
+
 - ✅ **PDF Export** (HTML format)
 - ✅ **5 Period Filters**:
   - This Month
@@ -90,6 +99,7 @@
 - ✅ Mobile-optimized views
 
 ### 🎨 Design System
+
 - ✅ Gradient cards (rose, emerald, cyan, amber, purple)
 - ✅ Glass-morphism effects
 - ✅ Smooth animations and transitions
@@ -98,6 +108,7 @@
 - ✅ Shadow and hover effects
 
 ### 🔐 Security
+
 - ✅ Supabase authentication
 - ✅ Row Level Security (RLS) policies
 - ✅ User data isolation
@@ -108,6 +119,7 @@
 ## 🗄️ Database Schema
 
 ### Tables Created:
+
 1. **profiles** - User profile data
 2. **income** - Income entries
 3. **expenses** - Expense records
@@ -120,6 +132,7 @@
 10. **budgets** - Budget planning
 
 All tables have:
+
 - RLS policies enabled
 - Proper indexes for performance
 - Foreign key relationships
@@ -173,6 +186,7 @@ KeshaTrack/
 ## 🚀 Deployment Status
 
 ### ✅ Completed:
+
 - [x] Local development server running (port 5174)
 - [x] All features implemented and tested
 - [x] Database schema finalized
@@ -181,6 +195,7 @@ KeshaTrack/
 - [x] **Pushed to GitHub** ✨
 
 ### 📝 Next Steps (Optional):
+
 - [ ] Deploy to Vercel/Netlify for production
 - [ ] Set up custom domain
 - [ ] Add progressive web app (PWA) features
@@ -207,12 +222,14 @@ KeshaTrack/
 Your scenario is now fully supported:
 
 **Your Situation:**
+
 - You owe Guy1: KES 100,000
 - You owe Shop1: KES 20,000
 - Guy2 owes you: KES 67,000
 - Guy3 owes you: KES 10,000
 
 **In KeshaTrack:**
+
 1. Go to **Debts & Loans** section
 2. Click **Debts Tab** → Add Debt → Enter Guy1 (100k) and Shop1 (20k)
 3. Click **Loans Tab** → Add Loan → Enter Guy2 (67k) and Guy3 (10k)
@@ -236,9 +253,10 @@ Your scenario is now fully supported:
 
 ## 🙏 Project Completion
 
-The project is now **COMPLETE** and **LIVE ON GITHUB**! 
+The project is now **COMPLETE** and **LIVE ON GITHUB**!
 
 All features requested have been implemented:
+
 - ✅ Cloned and set up
 - ✅ Made extremely visually attractive
 - ✅ Implemented smart mobile-first design

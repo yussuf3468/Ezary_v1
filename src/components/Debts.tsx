@@ -116,17 +116,27 @@ export default function Debts() {
     if (!user) return;
 
     try {
-      const { error } = await supabase.from("debts").insert({
+      const insertData: any = {
         user_id: user.id,
         creditor_name: debtFormData.creditor_name,
         amount: parseCurrency(debtFormData.amount),
         amount_paid: 0,
         due_date: debtFormData.due_date || null,
         status: "unpaid",
-        notes: debtFormData.notes || null,
-      });
+      };
 
-      if (error) throw error;
+      // Only add notes if the column exists (it might not be in older schemas)
+      if (debtFormData.notes) {
+        insertData.notes = debtFormData.notes;
+      }
+
+      const { error } = await supabase.from("debts").insert(insertData);
+
+      if (error) {
+        console.error("Error adding debt:", error);
+        alert(`Error adding debt: ${error.message}`);
+        return;
+      }
 
       setDebtFormData({
         creditor_name: "",
@@ -136,8 +146,9 @@ export default function Debts() {
       });
       setShowDebtForm(false);
       loadData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding debt:", error);
+      alert(`Error adding debt: ${error.message || "Unknown error"}`);
     }
   };
 
@@ -198,23 +209,34 @@ export default function Debts() {
     if (!user) return;
 
     try {
-      const { error } = await supabase.from("loans").insert({
+      const insertData: any = {
         user_id: user.id,
         debtor_name: loanFormData.debtor_name,
         amount: parseCurrency(loanFormData.amount),
         amount_received: 0,
         due_date: loanFormData.due_date || null,
         status: "unpaid",
-        notes: loanFormData.notes || null,
-      });
+      };
 
-      if (error) throw error;
+      // Only add notes if the column exists (it might not be in older schemas)
+      if (loanFormData.notes) {
+        insertData.notes = loanFormData.notes;
+      }
+
+      const { error } = await supabase.from("loans").insert(insertData);
+
+      if (error) {
+        console.error("Error adding loan:", error);
+        alert(`Error adding loan: ${error.message}`);
+        return;
+      }
 
       setLoanFormData({ debtor_name: "", amount: "", due_date: "", notes: "" });
       setShowLoanForm(false);
       loadData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding loan:", error);
+      alert(`Error adding loan: ${error.message || "Unknown error"}`);
     }
   };
 
