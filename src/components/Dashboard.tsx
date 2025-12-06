@@ -65,6 +65,13 @@ export default function Dashboard() {
   useEffect(() => {
     if (user) {
       loadFinancialSummary();
+      
+      // Refresh dashboard every 5 seconds when active
+      const interval = setInterval(() => {
+        loadFinancialSummary();
+      }, 5000);
+      
+      return () => clearInterval(interval);
     }
   }, [user]);
 
