@@ -62,7 +62,7 @@ export default function Rent() {
     }
   };
 
-  const loadRentSettings = async () {
+  const loadRentSettings = async () => {
     if (!user) return;
 
     try {
