@@ -83,7 +83,7 @@ export default function Layout({
                   KeshaTrack
                 </h1>
                 <p className="text-xs text-gray-500 -mt-0.5">
-                  Manage Your Money
+                  Personal Finance Manager
                 </p>
               </div>
             </div>
