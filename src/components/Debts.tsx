@@ -25,7 +25,7 @@ interface DebtRecord {
   amount: number;
   amount_paid: number;
   due_date: string | null;
-  status: "active" | "paying" | "cleared";
+  status: "active" | "paying" | "cleared" | "pending";
   notes?: string;
 }
 
@@ -35,7 +35,7 @@ interface LoanRecord {
   amount: number;
   amount_received: number;
   due_date: string | null;
-  status: "active" | "paying" | "cleared";
+  status: "active" | "paying" | "cleared" | "pending";
   notes?: string;
 }
 
@@ -43,7 +43,7 @@ type ActiveTab = "overview" | "debts" | "loans";
 
 // Valid status values for debts and loans
 const VALID_STATUSES = ["active", "paying", "cleared", "pending"] as const;
-type ValidStatus = typeof VALID_STATUSES[number];
+type ValidStatus = (typeof VALID_STATUSES)[number];
 
 // Helper function to ensure status is valid
 const validateStatus = (status: any): ValidStatus => {
@@ -131,7 +131,7 @@ export default function Debts() {
         amount: parseCurrency(debtFormData.amount),
         amount_paid: 0,
         due_date: debtFormData.due_date || null,
-        // Don't send status, let database default apply
+        status: validateStatus('active'), // Explicitly set valid status
       };
 
       // Only add notes if the column exists (it might not be in older schemas)
@@ -227,7 +227,7 @@ export default function Debts() {
         amount: parseCurrency(loanFormData.amount),
         amount_received: 0,
         due_date: loanFormData.due_date || null,
-        // Don't send status, let database default apply
+        status: validateStatus('active'), // Explicitly set valid status
       };
 
       // Only add notes if the column exists (it might not be in older schemas)

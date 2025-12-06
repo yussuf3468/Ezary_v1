@@ -154,7 +154,7 @@ CREATE TABLE IF NOT EXISTS debts (
   amount numeric NOT NULL CHECK (amount >= 0),
   amount_paid numeric DEFAULT 0 CHECK (amount_paid >= 0),
   due_date date,
-  status text NOT NULL DEFAULT 'unpaid' CHECK (status IN ('unpaid', 'partially_paid', 'cleared')),
+  status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paying', 'cleared', 'pending')),
   created_at timestamptz DEFAULT now()
 );
 

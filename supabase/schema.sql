@@ -116,7 +116,7 @@ CREATE TABLE IF NOT EXISTS debts (
   amount DECIMAL(12, 2) NOT NULL CHECK (amount >= 0),
   amount_paid DECIMAL(12, 2) DEFAULT 0 CHECK (amount_paid >= 0),
   due_date DATE,
-  status TEXT DEFAULT 'unpaid' CHECK (status IN ('unpaid', 'partially_paid', 'cleared')),
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'paying', 'cleared', 'pending')),
   notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -181,7 +181,7 @@ CREATE TABLE IF NOT EXISTS loans (
   amount DECIMAL(12, 2) NOT NULL CHECK (amount >= 0),
   amount_received DECIMAL(12, 2) DEFAULT 0 CHECK (amount_received >= 0),
   due_date DATE,
-  status TEXT DEFAULT 'unpaid' CHECK (status IN ('unpaid', 'partially_paid', 'cleared')),
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'paying', 'cleared', 'pending')),
   notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
