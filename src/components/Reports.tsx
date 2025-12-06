@@ -218,9 +218,66 @@ export default function Reports() {
     }
   };
 
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
     const { startDate, endDate } = getDateRange();
     const balance = totalIncome - totalExpenses;
+
+    // Fetch additional data for comprehensive report
+    const [debtsResult, loansResult, expectedExpensesResult, rentResult] = await Promise.all([
+      supabase
+        .from("debts")
+        .select("*")
+        .eq("user_id", user!.id)
+        .neq("status", "cleared"),
+      supabase
+        .from("debts")
+        .select("*")
+        .eq("user_id", user!.id)
+        .eq("status", "cleared"),
+      supabase
+        .from("expected_expenses")
+        .select("*")
+        .eq("user_id", user!.id)
+        .order("due_date", { ascending: true }),
+      supabase
+        .from("rent_settings")
+        .select("*")
+        .eq("user_id", user!.id)
+        .maybeSingle(),
+    ]);
+
+    const activeDebts = debtsResult.data || [];
+    const clearedDebts = loansResult.data || [];
+    const expectedExpenses = expectedExpensesResult.data || [];
+    const rentSettings = rentResult.data;
+
+    const totalDebt = activeDebts.reduce(
+      (sum, debt) => sum + (Number(debt.amount) - Number(debt.amount_paid)),
+      0
+    );
+    const totalExpected = expectedExpenses
+      .filter(e => e.status === 'pending')
+      .reduce((sum, exp) => sum + Number(exp.amount), 0);
+    
+    // Calculate financial health status
+    const savingsRate = totalIncome > 0 ? ((balance / totalIncome) * 100) : 0;
+    const debtToIncomeRatio = totalIncome > 0 ? ((totalDebt / totalIncome) * 100) : 0;
+    
+    let financialStatus = "";
+    let statusColor = "";
+    if (savingsRate >= 20 && debtToIncomeRatio < 30) {
+      financialStatus = "Excellent";
+      statusColor = "#059669";
+    } else if (savingsRate >= 10 && debtToIncomeRatio < 50) {
+      financialStatus = "Good";
+      statusColor = "#0891b2";
+    } else if (savingsRate >= 5 || debtToIncomeRatio < 70) {
+      financialStatus = "Fair";
+      statusColor = "#f59e0b";
+    } else {
+      financialStatus = "Needs Improvement";
+      statusColor = "#dc2626";
+    }
 
     // Create HTML content for PDF
     let htmlContent = `
@@ -241,21 +298,28 @@ export default function Reports() {
           .income { color: #059669; }
           .expense { color: #dc2626; }
           .balance { color: ${balance >= 0 ? "#0891b2" : "#f59e0b"}; }
+          .status-badge { display: inline-block; padding: 8px 16px; border-radius: 20px; background: ${statusColor}20; color: ${statusColor}; font-weight: bold; }
+          .warning { background: #fef3c7; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b; margin: 20px 0; }
           table { width: 100%; border-collapse: collapse; margin: 20px 0; }
           th { background: #f3f4f6; padding: 12px; text-align: left; border-bottom: 2px solid #d1d5db; }
           td { padding: 10px; border-bottom: 1px solid #e5e7eb; }
           tr:hover { background: #f9fafb; }
           .footer { margin-top: 40px; text-align: center; color: #666; font-size: 12px; }
+          .metric-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin: 20px 0; }
+          .metric-box { background: #f9fafb; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb; }
+          .metric-label { font-size: 13px; color: #666; margin-bottom: 5px; }
+          .metric-value { font-size: 20px; font-weight: bold; color: #111; }
         </style>
       </head>
       <body>
-        <h1>Financial Report</h1>
+        <h1>Comprehensive Financial Report</h1>
         <p><strong>Period:</strong> ${new Date(startDate).toLocaleDateString(
           "en-KE"
         )} - ${new Date(endDate).toLocaleDateString("en-KE")}</p>
         <p><strong>Generated:</strong> ${new Date().toLocaleDateString(
           "en-KE"
         )} ${new Date().toLocaleTimeString("en-KE")}</p>
+        <p><strong>Financial Status:</strong> <span class="status-badge">${financialStatus}</span></p>
         
         <div class="summary">
           <h2 style="margin-top: 0;">Financial Summary</h2>
@@ -280,6 +344,114 @@ export default function Reports() {
             </div>
           </div>
         </div>
+
+        <h2>Financial Health Metrics</h2>
+        <div class="metric-grid">
+          <div class="metric-box">
+            <div class="metric-label">Savings Rate</div>
+            <div class="metric-value" style="color: ${savingsRate >= 20 ? '#059669' : savingsRate >= 10 ? '#0891b2' : '#f59e0b'};">${savingsRate.toFixed(1)}%</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Debt-to-Income Ratio</div>
+            <div class="metric-value" style="color: ${debtToIncomeRatio < 30 ? '#059669' : debtToIncomeRatio < 50 ? '#f59e0b' : '#dc2626'};">${debtToIncomeRatio.toFixed(1)}%</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Total Outstanding Debt</div>
+            <div class="metric-value expense">${formatCurrency(totalDebt)}</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Expected Expenses Due</div>
+            <div class="metric-value" style="color: #f59e0b;">${formatCurrency(totalExpected)}</div>
+          </div>
+        </div>
+
+        ${totalExpected > 0 ? `
+        <h2>Expected/Upcoming Expenses</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Category</th>
+              <th>Due Date</th>
+              <th>Amount</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${expectedExpenses
+              .map(
+                (exp) => `
+              <tr>
+                <td>${exp.title}</td>
+                <td style="text-transform: capitalize;">${exp.category.replace('_', ' ')}</td>
+                <td>${new Date(exp.due_date).toLocaleDateString("en-KE")}</td>
+                <td>${formatCurrency(exp.amount)}</td>
+                <td><span style="background: ${exp.status === 'pending' ? '#fef3c7' : '#d1fae5'}; padding: 4px 8px; border-radius: 4px; font-size: 11px;">${exp.status.toUpperCase()}</span></td>
+              </tr>
+            `
+              )
+              .join("")}
+            <tr style="background: #f9fafb; font-weight: bold;">
+              <td colspan="3">Total Pending</td>
+              <td style="color: #f59e0b;">${formatCurrency(totalExpected)}</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+        ` : ''}
+
+        ${activeDebts.length > 0 ? `
+        <h2>Active Debts & Loans</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Creditor/Debtor</th>
+              <th>Total Amount</th>
+              <th>Paid</th>
+              <th>Remaining</th>
+              <th>Due Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${activeDebts
+              .map(
+                (debt) => `
+              <tr>
+                <td>${debt.creditor_name || debt.debtor_name}</td>
+                <td>${formatCurrency(debt.amount)}</td>
+                <td class="income">${formatCurrency(debt.amount_paid)}</td>
+                <td class="expense">${formatCurrency(Number(debt.amount) - Number(debt.amount_paid))}</td>
+                <td>${debt.due_date ? new Date(debt.due_date).toLocaleDateString("en-KE") : 'N/A'}</td>
+              </tr>
+            `
+              )
+              .join("")}
+            <tr style="background: #f9fafb; font-weight: bold;">
+              <td colspan="3">Total Outstanding</td>
+              <td class="expense">${formatCurrency(totalDebt)}</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+        ` : ''}
+
+        ${rentSettings ? `
+        <h2>Rent Information</h2>
+        <div class="metric-grid" style="grid-template-columns: repeat(3, 1fr);">
+          <div class="metric-box">
+            <div class="metric-label">Monthly Rent</div>
+            <div class="metric-value">${formatCurrency(rentSettings.monthly_amount)}</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Due Day</div>
+            <div class="metric-value">${rentSettings.due_day}</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Annual Rent</div>
+            <div class="metric-value">${formatCurrency(Number(rentSettings.monthly_amount) * 12)}</div>
+          </div>
+        </div>
+        ` : ''}
 
         <h2>Expense Breakdown by Category</h2>
         <table>
