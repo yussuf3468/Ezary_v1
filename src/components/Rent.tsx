@@ -24,6 +24,7 @@ export default function Rent() {
   const { user } = useAuth();
   const [rentSettings, setRentSettings] = useState<RentSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [rentPaidThisMonth, setRentPaidThisMonth] = useState(false);
   const [formData, setFormData] = useState({
     monthly_amount: "",
     due_day: "1",
@@ -33,10 +34,35 @@ export default function Rent() {
   useEffect(() => {
     if (user) {
       loadRentSettings();
+      checkRentPayment();
     }
   }, [user]);
 
-  const loadRentSettings = async () => {
+  const checkRentPayment = async () => {
+    if (!user) return;
+
+    try {
+      const today = new Date();
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+      const { data, error } = await supabase
+        .from("expenses")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("category", "rent")
+        .gte("date", startOfMonth.toISOString().split("T")[0])
+        .lte("date", endOfMonth.toISOString().split("T")[0]);
+
+      if (error) throw error;
+
+      setRentPaidThisMonth((data && data.length > 0) || false);
+    } catch (error) {
+      console.error("Error checking rent payment:", error);
+    }
+  };
+
+  const loadRentSettings = async () {
     if (!user) return;
 
     try {
@@ -112,6 +138,7 @@ export default function Rent() {
 
       if (error) throw error;
       alert("Rent payment recorded successfully!");
+      checkRentPayment(); // Refresh the rent payment status
     } catch (error) {
       console.error("Error recording rent payment:", error);
       alert("Failed to record rent payment");
@@ -125,7 +152,7 @@ export default function Rent() {
   const today = new Date();
   const currentDay = today.getDate();
   const dueDay = rentSettings ? rentSettings.due_day : 1;
-  const isDue = currentDay >= dueDay;
+  const isDue = currentDay >= dueDay && !rentPaidThisMonth;
   const daysUntilDue = isDue ? 0 : dueDay - currentDay;
 
   return (

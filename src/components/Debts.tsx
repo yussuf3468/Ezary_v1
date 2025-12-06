@@ -25,7 +25,7 @@ interface DebtRecord {
   amount: number;
   amount_paid: number;
   due_date: string | null;
-  status: "unpaid" | "partially_paid" | "cleared";
+  status: "active" | "paying" | "cleared";
   notes?: string;
 }
 
@@ -35,7 +35,7 @@ interface LoanRecord {
   amount: number;
   amount_received: number;
   due_date: string | null;
-  status: "unpaid" | "partially_paid" | "cleared";
+  status: "active" | "paying" | "cleared";
   notes?: string;
 }
 
@@ -122,7 +122,7 @@ export default function Debts() {
         amount: parseCurrency(debtFormData.amount),
         amount_paid: 0,
         due_date: debtFormData.due_date || null,
-        status: "unpaid",
+        status: "active",
       };
 
       // Only add notes if the column exists (it might not be in older schemas)
@@ -162,11 +162,11 @@ export default function Debts() {
     const newAmountPaid = Number(debt.amount_paid) + paymentValue;
     const remaining = Number(debt.amount) - newAmountPaid;
 
-    let newStatus: "unpaid" | "partially_paid" | "cleared" = "unpaid";
+    let newStatus: "active" | "paying" | "cleared" = "active";
     if (remaining <= 0) {
       newStatus = "cleared";
     } else if (newAmountPaid > 0) {
-      newStatus = "partially_paid";
+      newStatus = "paying";
     }
 
     try {
@@ -215,7 +215,7 @@ export default function Debts() {
         amount: parseCurrency(loanFormData.amount),
         amount_received: 0,
         due_date: loanFormData.due_date || null,
-        status: "unpaid",
+        status: "active",
       };
 
       // Only add notes if the column exists (it might not be in older schemas)
@@ -250,11 +250,11 @@ export default function Debts() {
     const newAmountReceived = Number(loan.amount_received) + paymentValue;
     const remaining = Number(loan.amount) - newAmountReceived;
 
-    let newStatus: "unpaid" | "partially_paid" | "cleared" = "unpaid";
+    let newStatus: "active" | "paying" | "cleared" = "active";
     if (remaining <= 0) {
       newStatus = "cleared";
     } else if (newAmountReceived > 0) {
-      newStatus = "partially_paid";
+      newStatus = "paying";
     }
 
     try {
