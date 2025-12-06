@@ -6,8 +6,8 @@
     </linearGradient>
   </defs>
   <rect width="512" height="512" rx="115" fill="url(#grad)"/>
-  <text x="256" y="360" font-family="Arial, sans-serif" font-size="280" font-weight="bold" fill="white" text-anchor="middle">K</text>
-  <circle cx="256" cy="160" r="40" fill="white" opacity="0.9"/>
-  <circle cx="180" cy="200" r="25" fill="white" opacity="0.7"/>
-  <circle cx="332" cy="200" r="25" fill="white" opacity="0.7"/>
+  <text x="256" y="370" font-family="Arial, sans-serif" font-size="240" font-weight="bold" fill="white" text-anchor="middle">R</text>
+  <circle cx="380" cy="180" r="35" fill="white" opacity="0.9"/>
+  <circle cx="320" cy="150" r="25" fill="white" opacity="0.7"/>
+  <circle cx="420" cy="150" r="20" fill="white" opacity="0.6"/>
 </svg>
