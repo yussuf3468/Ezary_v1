@@ -87,7 +87,7 @@ export default function Layout({
               </div>
               <div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                  KeshaTrack
+                  Risq
                 </h1>
                 <p className="text-xs text-gray-500 -mt-0.5">
                   Yussuf Muse's Finance
@@ -136,7 +136,7 @@ export default function Layout({
             </div>
             <div>
               <h1 className="text-base font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                KeshaTrack
+                Risq
               </h1>
               <p className="text-xs text-gray-500 -mt-0.5">Yussuf Muse</p>
             </div>

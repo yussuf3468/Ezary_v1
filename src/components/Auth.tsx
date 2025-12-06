@@ -1,18 +1,18 @@
-import { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { DollarSign } from 'lucide-react';
+import { useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { DollarSign } from "lucide-react";
 
 export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     const { error } = isSignUp
@@ -36,7 +36,7 @@ export default function Auth() {
           </div>
 
           <h1 className="text-3xl font-bold text-center text-gray-800 mb-2">
-            KeshaTrack
+            Risq
           </h1>
           <p className="text-center text-gray-600 mb-8">
             Yussuf Muse's Finance Manager
@@ -44,7 +44,10 @@ export default function Auth() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Email
               </label>
               <input
@@ -59,7 +62,10 @@ export default function Auth() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Password
               </label>
               <input
@@ -85,7 +91,7 @@ export default function Auth() {
               disabled={loading}
               className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-3 rounded-lg font-semibold hover:from-emerald-600 hover:to-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
             >
-              {loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
+              {loading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
             </button>
           </form>
 
@@ -93,11 +99,13 @@ export default function Auth() {
             <button
               onClick={() => {
                 setIsSignUp(!isSignUp);
-                setError('');
+                setError("");
               }}
               className="text-emerald-600 hover:text-emerald-700 text-sm font-medium"
             >
-              {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+              {isSignUp
+                ? "Already have an account? Sign in"
+                : "Don't have an account? Sign up"}
             </button>
           </div>
         </div>

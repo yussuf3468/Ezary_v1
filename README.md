@@ -1,4 +1,4 @@
-# 💰 KeshaTrack - Smart Finance Manager
+# 💰 Risq - Smart Finance Manager
 
 A beautiful, mobile-first personal finance management application designed for Kenya. Track your money in **KES (Kenya Shillings)** with an intuitive interface built with React, TypeScript, Tailwind CSS, and Supabase.
 

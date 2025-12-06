@@ -616,7 +616,7 @@ export default function Reports() {
         }
 
         <div class="footer">
-          <p>KeshaTrack - Personal Finance Manager</p>
+          <p>Risq - Personal Finance Manager</p>
           <p>This report is confidential and for your personal use only.</p>
         </div>
       </body>
