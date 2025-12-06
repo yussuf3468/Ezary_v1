@@ -80,7 +80,7 @@ export default function Layout({
               </div>
               <div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                  MyFinance
+                  KeshaTrack
                 </h1>
                 <p className="text-xs text-gray-500 -mt-0.5">
                   Manage Your Money
