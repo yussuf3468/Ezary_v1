@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   X,
   TrendingUp,
+  ArrowDownCircle,
 } from "lucide-react";
 import {
   formatCurrency,
@@ -35,9 +36,12 @@ export default function SavingsGoals() {
   const [loading, setLoading] = useState(true);
   const [showAddGoalModal, setShowAddGoalModal] = useState(false);
   const [showContributionModal, setShowContributionModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<SavingsGoal | null>(null);
   const [contributionAmount, setContributionAmount] = useState("");
   const [contributionNote, setContributionNote] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawNote, setWithdrawNote] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     target_amount: "",
@@ -207,7 +211,53 @@ export default function SavingsGoals() {
     }
   };
 
-  const handleDeleteGoal = async (id: string) => {
+  const handleWithdraw = async () => {
+    const amount = parseCurrency(withdrawAmount);
+    if (amount <= 0 || !selectedGoal) {
+      alert("Please enter a valid amount");
+      return;
+    }
+
+    if (amount > selectedGoal.current_amount) {
+      alert("Withdrawal amount cannot exceed current savings");
+      return;
+    }
+
+    try {
+      const newAmount = selectedGoal.current_amount - amount;
+
+      const { error: updateError } = await supabase
+        .from("savings_goals")
+        .update({ current_amount: newAmount })
+        .eq("id", selectedGoal.id);
+
+      if (updateError) throw updateError;
+
+      const { error: incomeError } = await supabase.from("income").insert([
+        {
+          user_id: user?.id,
+          description: `Savings Withdrawal: ${selectedGoal.goal_name}${
+            withdrawNote ? ` - ${withdrawNote}` : ""
+          }`,
+          amount,
+          type: "one-time",
+          date: new Date().toISOString().split("T")[0],
+        },
+      ]);
+
+      if (incomeError) throw incomeError;
+
+      setWithdrawAmount("");
+      setWithdrawNote("");
+      setShowWithdrawModal(false);
+      setSelectedGoal(null);
+      loadGoals();
+    } catch (error: any) {
+      alert("Error withdrawing: " + error.message);
+    }
+  };
+
+  const handleDeleteGoal = async (id: string) {
     if (!confirm("Are you sure you want to delete this savings goal?")) return;
 
     try {
@@ -413,17 +463,30 @@ export default function SavingsGoals() {
                   </div>
                 )}
 
-                {/* Add Contribution Button */}
-                <button
-                  onClick={() => {
-                    setSelectedGoal(goal);
-                    setShowContributionModal(true);
-                  }}
-                  className="w-full bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 py-3 rounded-xl hover:from-indigo-100 hover:to-purple-100 transition-all flex items-center justify-center gap-2 font-semibold border border-indigo-200 active:scale-95 transform"
-                >
-                  <Plus className="w-5 h-5" />
-                  Add Money
-                </button>
+                {/* Action Buttons */}
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => {
+                      setSelectedGoal(goal);
+                      setShowContributionModal(true);
+                    }}
+                    className="bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 py-3 rounded-xl hover:from-green-100 hover:to-emerald-100 transition-all flex items-center justify-center gap-2 font-semibold border border-green-200 active:scale-95 transform"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Add Money
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedGoal(goal);
+                      setShowWithdrawModal(true);
+                    }}
+                    disabled={goal.current_amount <= 0}
+                    className="bg-gradient-to-r from-orange-50 to-red-50 text-orange-700 py-3 rounded-xl hover:from-orange-100 hover:to-red-100 transition-all flex items-center justify-center gap-2 font-semibold border border-orange-200 active:scale-95 transform disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ArrowDownCircle className="w-5 h-5" />
+                    Withdraw
+                  </button>
+                </div>
               </div>
             );
           })}
@@ -655,6 +718,114 @@ export default function SavingsGoals() {
                   className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 rounded-xl hover:from-green-600 hover:to-emerald-700 active:scale-95 transition-all font-semibold shadow-lg"
                 >
                   Add Money
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Withdraw Modal */}
+      {showWithdrawModal && selectedGoal && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+          onClick={() => {
+            setShowWithdrawModal(false);
+            setSelectedGoal(null);
+            setWithdrawAmount("");
+            setWithdrawNote("");
+          }}
+        >
+          <div
+            className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-gradient-to-r from-orange-500 to-red-600 text-white p-4 rounded-t-3xl sm:rounded-t-2xl">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white/20 p-2 rounded-xl">
+                    <ArrowDownCircle className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-xl font-bold">Withdraw Money</h3>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowWithdrawModal(false);
+                    setSelectedGoal(null);
+                    setWithdrawAmount("");
+                    setWithdrawNote("");
+                  }}
+                  className="p-2 hover:bg-white/20 rounded-xl transition-colors active:scale-90"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="flex items-center gap-2 bg-white/10 rounded-xl p-3 backdrop-blur-sm">
+                <span className="text-3xl">
+                  {categories.find((c) => c.value === selectedGoal.category)
+                    ?.icon || "🎯"}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold truncate">
+                    {selectedGoal.goal_name}
+                  </p>
+                  <p className="text-sm text-orange-100">
+                    Available: {formatCurrency(selectedGoal.current_amount)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 pb-6 space-y-4 max-h-[60vh] overflow-y-auto">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Amount (KES) *
+                </label>
+                <input
+                  type="text"
+                  value={withdrawAmount}
+                  onChange={(e) =>
+                    setWithdrawAmount(formatNumberInput(e.target.value))
+                  }
+                  placeholder="5,000"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all text-lg font-semibold"
+                  autoFocus
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Max: {formatCurrency(selectedGoal.current_amount)}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Reason (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={withdrawNote}
+                  onChange={(e) => setWithdrawNote(e.target.value)}
+                  placeholder="Emergency expense"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4 pb-24 sm:pb-4">
+                <button
+                  onClick={() => {
+                    setShowWithdrawModal(false);
+                    setSelectedGoal(null);
+                    setWithdrawAmount("");
+                    setWithdrawNote("");
+                  }}
+                  className="flex-1 px-6 py-3 border-2 border-gray-200 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleWithdraw}
+                  className="flex-1 bg-gradient-to-r from-orange-500 to-red-600 text-white py-3 rounded-xl hover:from-orange-600 hover:to-red-700 active:scale-95 transition-all font-semibold shadow-lg"
+                >
+                  Withdraw
                 </button>
               </div>
             </div>
