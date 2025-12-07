@@ -21,7 +21,6 @@ interface FinancialSummary {
   totalExpenses: number;
   balance: number;
   totalDebt: number;
-  monthlyRent: number;
 }
 
 interface RecentTransaction {
@@ -48,11 +47,8 @@ export default function Dashboard() {
     totalExpenses: 0,
     balance: 0,
     totalDebt: 0,
-    monthlyRent: 0,
   });
   const [loading, setLoading] = useState(true);
-  const [rentDue, setRentDue] = useState(false);
-  const [rentPaidThisMonth, setRentPaidThisMonth] = useState(false);
   const [recentTransactions, setRecentTransactions] = useState<
     RecentTransaction[]
   >([]);
@@ -90,8 +86,6 @@ export default function Dashboard() {
         incomeResult,
         expensesResult,
         debtsResult,
-        rentResult,
-        rentPaymentResult,
         prevExpensesResult,
         recentIncomeResult,
         recentExpensesResult,
@@ -110,19 +104,8 @@ export default function Dashboard() {
         supabase
           .from("debts")
           .select("amount, amount_paid")
-          .eq("user_id", user.id)
-          .neq("status", "cleared"),
-        supabase
-          .from("rent_settings")
-          .select("monthly_amount, due_day")
-          .eq("user_id", user.id)
-          .maybeSingle(),
-        supabase
-          .from("expenses")
-          .select("id")
-          .eq("user_id", user.id)
-          .eq("category", "rent")
-          .gte("date", `${currentMonth}-01`),
+          .eq("status", "active")
+          .eq("user_id", user.id),
         supabase
           .from("expenses")
           .select("amount")
@@ -180,22 +163,6 @@ export default function Dashboard() {
           0
         ) || 0;
 
-      const monthlyRent = rentResult.data
-        ? Number(rentResult.data.monthly_amount)
-        : 0;
-
-      const hasRentPayment = !!(
-        rentPaymentResult.data && rentPaymentResult.data.length > 0
-      );
-      setRentPaidThisMonth(hasRentPayment);
-
-      if (rentResult.data) {
-        const today = new Date();
-        const dueDay = rentResult.data.due_day;
-        const currentDay = today.getDate();
-        setRentDue(currentDay >= dueDay && !hasRentPayment);
-      }
-
       const prevExpenses =
         prevExpensesResult.data?.reduce(
           (sum, expense) => sum + Number(expense.amount),
@@ -241,7 +208,6 @@ export default function Dashboard() {
         totalExpenses,
         balance: totalIncome - totalExpenses,
         totalDebt,
-        monthlyRent,
       });
     } catch (error) {
       console.error("Error loading financial summary:", error);
@@ -303,22 +269,6 @@ export default function Dashboard() {
           Your financial overview for this month
         </p>
       </div>
-
-      {/* Rent Alert */}
-      {rentDue && summary.monthlyRent > 0 && (
-        <div className="bg-amber-50 border-2 border-amber-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 flex items-start gap-3">
-          <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-          <div className="min-w-0">
-            <h3 className="font-semibold text-amber-900 text-sm sm:text-base">
-              Rent Payment Due
-            </h3>
-            <p className="text-xs sm:text-sm text-amber-700 mt-1">
-              Your monthly rent of {formatCurrency(summary.monthlyRent)} is due
-              this month.
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Stats Cards - Compact Mobile, Grid Desktop */}
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
