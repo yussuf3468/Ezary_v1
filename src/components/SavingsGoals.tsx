@@ -183,19 +183,19 @@ export default function SavingsGoals() {
 
       if (updateError) throw updateError;
 
-      const { error: incomeError } = await supabase.from("income").insert([
+      const { error: expenseError } = await supabase.from("expenses").insert([
         {
           user_id: user?.id,
           description: `Savings: ${selectedGoal.goal_name}${
             contributionNote ? ` - ${contributionNote}` : ""
           }`,
           amount,
-          type: "one-time",
+          category: "savings",
           date: new Date().toISOString().split("T")[0],
         },
       ]);
 
-      if (incomeError) throw incomeError;
+      if (expenseError) throw expenseError;
 
       setContributionAmount("");
       setContributionNote("");
