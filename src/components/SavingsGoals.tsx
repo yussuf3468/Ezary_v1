@@ -257,7 +257,7 @@ export default function SavingsGoals() {
     }
   };
 
-  const handleDeleteGoal = async (id: string) {
+  const handleDeleteGoal = async (id: string) => {
     if (!confirm("Are you sure you want to delete this savings goal?")) return;
 
     try {
