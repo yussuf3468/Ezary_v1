@@ -259,28 +259,28 @@ export default function SavingsGoals() {
           </div>
           <h2 className="text-xl sm:text-2xl font-bold">Savings Goals</h2>
         </div>
-        <div className="grid grid-cols-3 gap-3 sm:gap-4">
-          <div className="bg-white/10 rounded-xl p-3 sm:p-4 backdrop-blur-sm overflow-hidden">
-            <p className="text-indigo-100 text-xs sm:text-sm mb-1 truncate">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+          <div className="bg-white/10 rounded-xl p-3 sm:p-5 md:p-6 backdrop-blur-sm">
+            <p className="text-indigo-100 text-[10px] sm:text-xs md:text-sm mb-1">
               Saved
             </p>
-            <p className="text-sm sm:text-base md:text-lg font-bold text-white truncate">
+            <p className="text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-white break-all leading-tight">
               {formatCurrency(totalSaved)}
             </p>
           </div>
-          <div className="bg-white/10 rounded-xl p-3 sm:p-4 backdrop-blur-sm overflow-hidden">
-            <p className="text-indigo-100 text-xs sm:text-sm mb-1 truncate">
+          <div className="bg-white/10 rounded-xl p-3 sm:p-5 md:p-6 backdrop-blur-sm">
+            <p className="text-indigo-100 text-[10px] sm:text-xs md:text-sm mb-1">
               Target
             </p>
-            <p className="text-sm sm:text-base md:text-lg font-bold text-white truncate">
+            <p className="text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-white break-all leading-tight">
               {formatCurrency(totalTarget)}
             </p>
           </div>
-          <div className="bg-white/10 rounded-xl p-3 sm:p-4 backdrop-blur-sm overflow-hidden">
-            <p className="text-indigo-100 text-xs sm:text-sm mb-1 truncate">
+          <div className="bg-white/10 rounded-xl p-3 sm:p-5 md:p-6 backdrop-blur-sm col-span-2 md:col-span-1">
+            <p className="text-indigo-100 text-[10px] sm:text-xs md:text-sm mb-1">
               Progress
             </p>
-            <p className="text-sm sm:text-base md:text-lg font-bold text-white truncate">
+            <p className="text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-white">
               {overallProgress.toFixed(0)}%
             </p>
           </div>
