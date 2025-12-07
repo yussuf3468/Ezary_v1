@@ -214,21 +214,21 @@ export default function SavingsGoals() {
           <h2 className="text-xl sm:text-2xl font-bold">Savings Goals</h2>
         </div>
         <div className="grid grid-cols-3 gap-3 sm:gap-4">
-          <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
-            <p className="text-indigo-100 text-xs sm:text-sm mb-1">Saved</p>
-            <p className="text-base sm:text-xl md:text-2xl lg:text-3xl font-bold break-all leading-tight">
+          <div className="bg-white/10 rounded-xl p-4 sm:p-5 backdrop-blur-sm">
+            <p className="text-indigo-100 text-xs sm:text-sm mb-2">Saved</p>
+            <p className="text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-white whitespace-nowrap">
               {formatCurrency(totalSaved)}
             </p>
           </div>
-          <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
-            <p className="text-indigo-100 text-xs sm:text-sm mb-1">Target</p>
-            <p className="text-base sm:text-xl md:text-2xl lg:text-3xl font-bold break-all leading-tight">
+          <div className="bg-white/10 rounded-xl p-4 sm:p-5 backdrop-blur-sm">
+            <p className="text-indigo-100 text-xs sm:text-sm mb-2">Target</p>
+            <p className="text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-white whitespace-nowrap">
               {formatCurrency(totalTarget)}
             </p>
           </div>
-          <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
-            <p className="text-indigo-100 text-xs sm:text-sm mb-1">Progress</p>
-            <p className="text-base sm:text-xl md:text-2xl lg:text-3xl font-bold">{overallProgress.toFixed(0)}%</p>
+          <div className="bg-white/10 rounded-xl p-4 sm:p-5 backdrop-blur-sm">
+            <p className="text-indigo-100 text-xs sm:text-sm mb-2">Progress</p>
+            <p className="text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-white whitespace-nowrap">{overallProgress.toFixed(0)}%</p>
           </div>
         </div>
       </div>
