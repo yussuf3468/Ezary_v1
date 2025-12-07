@@ -46,15 +46,60 @@ export default function SavingsGoals() {
   });
 
   const categories = [
-    { value: "emergency_fund", label: "Emergency Fund", icon: "🛡️", color: "from-blue-500 to-cyan-600" },
-    { value: "investment", label: "Investment", icon: "📈", color: "from-green-500 to-emerald-600" },
-    { value: "vacation", label: "Vacation", icon: "✈️", color: "from-sky-500 to-blue-600" },
-    { value: "car", label: "Car/Vehicle", icon: "🚗", color: "from-orange-500 to-amber-600" },
-    { value: "house", label: "House/Property", icon: "🏠", color: "from-purple-500 to-pink-600" },
-    { value: "education", label: "Education", icon: "🎓", color: "from-indigo-500 to-purple-600" },
-    { value: "gadget", label: "Gadget/Electronics", icon: "💻", color: "from-gray-500 to-slate-600" },
-    { value: "business", label: "Business", icon: "💼", color: "from-teal-500 to-cyan-600" },
-    { value: "other", label: "Other", icon: "🎯", color: "from-pink-500 to-rose-600" },
+    {
+      value: "emergency_fund",
+      label: "Emergency Fund",
+      icon: "🛡️",
+      color: "from-blue-500 to-cyan-600",
+    },
+    {
+      value: "investment",
+      label: "Investment",
+      icon: "📈",
+      color: "from-green-500 to-emerald-600",
+    },
+    {
+      value: "vacation",
+      label: "Vacation",
+      icon: "✈️",
+      color: "from-sky-500 to-blue-600",
+    },
+    {
+      value: "car",
+      label: "Car/Vehicle",
+      icon: "🚗",
+      color: "from-orange-500 to-amber-600",
+    },
+    {
+      value: "house",
+      label: "House/Property",
+      icon: "🏠",
+      color: "from-purple-500 to-pink-600",
+    },
+    {
+      value: "education",
+      label: "Education",
+      icon: "🎓",
+      color: "from-indigo-500 to-purple-600",
+    },
+    {
+      value: "gadget",
+      label: "Gadget/Electronics",
+      icon: "💻",
+      color: "from-gray-500 to-slate-600",
+    },
+    {
+      value: "business",
+      label: "Business",
+      icon: "💼",
+      color: "from-teal-500 to-cyan-600",
+    },
+    {
+      value: "other",
+      label: "Other",
+      icon: "🎯",
+      color: "from-pink-500 to-rose-600",
+    },
   ];
 
   useEffect(() => {
@@ -201,7 +246,8 @@ export default function SavingsGoals() {
 
   const totalSaved = goals.reduce((sum, goal) => sum + goal.current_amount, 0);
   const totalTarget = goals.reduce((sum, goal) => sum + goal.target_amount, 0);
-  const overallProgress = totalTarget > 0 ? (totalSaved / totalTarget) * 100 : 0;
+  const overallProgress =
+    totalTarget > 0 ? (totalSaved / totalTarget) * 100 : 0;
 
   return (
     <div className="space-y-4 sm:space-y-6 pb-6">
@@ -214,21 +260,29 @@ export default function SavingsGoals() {
           <h2 className="text-xl sm:text-2xl font-bold">Savings Goals</h2>
         </div>
         <div className="grid grid-cols-3 gap-3 sm:gap-4">
-          <div className="bg-white/10 rounded-xl p-4 sm:p-5 backdrop-blur-sm">
-            <p className="text-indigo-100 text-xs sm:text-sm mb-2">Saved</p>
-            <p className="text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-white whitespace-nowrap">
+          <div className="bg-white/10 rounded-xl p-3 sm:p-4 backdrop-blur-sm overflow-hidden">
+            <p className="text-indigo-100 text-xs sm:text-sm mb-1 truncate">
+              Saved
+            </p>
+            <p className="text-sm sm:text-base md:text-lg font-bold text-white truncate">
               {formatCurrency(totalSaved)}
             </p>
           </div>
-          <div className="bg-white/10 rounded-xl p-4 sm:p-5 backdrop-blur-sm">
-            <p className="text-indigo-100 text-xs sm:text-sm mb-2">Target</p>
-            <p className="text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-white whitespace-nowrap">
+          <div className="bg-white/10 rounded-xl p-3 sm:p-4 backdrop-blur-sm overflow-hidden">
+            <p className="text-indigo-100 text-xs sm:text-sm mb-1 truncate">
+              Target
+            </p>
+            <p className="text-sm sm:text-base md:text-lg font-bold text-white truncate">
               {formatCurrency(totalTarget)}
             </p>
           </div>
-          <div className="bg-white/10 rounded-xl p-4 sm:p-5 backdrop-blur-sm">
-            <p className="text-indigo-100 text-xs sm:text-sm mb-2">Progress</p>
-            <p className="text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-white whitespace-nowrap">{overallProgress.toFixed(0)}%</p>
+          <div className="bg-white/10 rounded-xl p-3 sm:p-4 backdrop-blur-sm overflow-hidden">
+            <p className="text-indigo-100 text-xs sm:text-sm mb-1 truncate">
+              Progress
+            </p>
+            <p className="text-sm sm:text-base md:text-lg font-bold text-white truncate">
+              {overallProgress.toFixed(0)}%
+            </p>
           </div>
         </div>
       </div>
@@ -273,14 +327,20 @@ export default function SavingsGoals() {
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className={`bg-gradient-to-br ${category?.color || "from-gray-500 to-slate-600"} p-3 rounded-xl shadow-md flex-shrink-0`}>
+                    <div
+                      className={`bg-gradient-to-br ${
+                        category?.color || "from-gray-500 to-slate-600"
+                      } p-3 rounded-xl shadow-md flex-shrink-0`}
+                    >
                       <span className="text-2xl">{category?.icon || "🎯"}</span>
                     </div>
                     <div className="min-w-0 flex-1">
                       <h3 className="text-base sm:text-lg font-bold text-gray-800 truncate">
                         {goal.goal_name}
                       </h3>
-                      <p className="text-xs sm:text-sm text-gray-500">{category?.label}</p>
+                      <p className="text-xs sm:text-sm text-gray-500">
+                        {category?.label}
+                      </p>
                     </div>
                   </div>
                   <button
@@ -306,7 +366,9 @@ export default function SavingsGoals() {
                       className={`h-4 rounded-full transition-all duration-500 ${
                         isCompleted
                           ? "bg-gradient-to-r from-green-500 to-emerald-500"
-                          : `bg-gradient-to-r ${category?.color || "from-indigo-500 to-purple-500"}`
+                          : `bg-gradient-to-r ${
+                              category?.color || "from-indigo-500 to-purple-500"
+                            }`
                       }`}
                       style={{ width: `${Math.min(progress, 100)}%` }}
                     >
@@ -343,7 +405,9 @@ export default function SavingsGoals() {
                             : "bg-blue-100 text-blue-700"
                         }`}
                       >
-                        {daysRemaining < 0 ? "Overdue" : `${daysRemaining}d left`}
+                        {daysRemaining < 0
+                          ? "Overdue"
+                          : `${daysRemaining}d left`}
                       </span>
                     )}
                   </div>
@@ -368,11 +432,11 @@ export default function SavingsGoals() {
 
       {/* Add Goal Modal */}
       {showAddGoalModal && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
           onClick={() => setShowAddGoalModal(false)}
         >
-          <div 
+          <div
             className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
@@ -417,7 +481,9 @@ export default function SavingsGoals() {
                     <button
                       key={cat.value}
                       type="button"
-                      onClick={() => setFormData({ ...formData, category: cat.value })}
+                      onClick={() =>
+                        setFormData({ ...formData, category: cat.value })
+                      }
                       className={`p-3 rounded-xl border-2 transition-all flex items-center gap-2 ${
                         formData.category === cat.value
                           ? `bg-gradient-to-r ${cat.color} text-white border-transparent shadow-lg`
@@ -425,7 +491,9 @@ export default function SavingsGoals() {
                       }`}
                     >
                       <span className="text-xl">{cat.icon}</span>
-                      <span className="text-xs font-semibold truncate">{cat.label}</span>
+                      <span className="text-xs font-semibold truncate">
+                        {cat.label}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -487,7 +555,7 @@ export default function SavingsGoals() {
 
       {/* Contribution Modal */}
       {showContributionModal && selectedGoal && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
           onClick={() => {
             setShowContributionModal(false);
@@ -496,7 +564,7 @@ export default function SavingsGoals() {
             setContributionNote("");
           }}
         >
-          <div 
+          <div
             className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md"
             onClick={(e) => e.stopPropagation()}
           >
@@ -522,12 +590,16 @@ export default function SavingsGoals() {
               </div>
               <div className="flex items-center gap-2 bg-white/10 rounded-xl p-3 backdrop-blur-sm">
                 <span className="text-3xl">
-                  {categories.find((c) => c.value === selectedGoal.category)?.icon || "🎯"}
+                  {categories.find((c) => c.value === selectedGoal.category)
+                    ?.icon || "🎯"}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold truncate">{selectedGoal.goal_name}</p>
+                  <p className="font-semibold truncate">
+                    {selectedGoal.goal_name}
+                  </p>
                   <p className="text-sm text-green-100">
-                    {formatCurrency(selectedGoal.current_amount)} of {formatCurrency(selectedGoal.target_amount)}
+                    {formatCurrency(selectedGoal.current_amount)} of{" "}
+                    {formatCurrency(selectedGoal.target_amount)}
                   </p>
                 </div>
               </div>
