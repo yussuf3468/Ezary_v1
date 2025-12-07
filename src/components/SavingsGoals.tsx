@@ -362,9 +362,15 @@ export default function SavingsGoals() {
 
       {/* Add Goal Modal */}
       {showAddGoalModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-4 sm:p-6 rounded-t-2xl flex items-center justify-between">
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+          onClick={() => setShowAddGoalModal(false)}
+        >
+          <div 
+            className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-4 rounded-t-3xl sm:rounded-t-2xl flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="bg-white/20 p-2 rounded-xl">
                   <Target className="w-6 h-6" />
@@ -373,13 +379,13 @@ export default function SavingsGoals() {
               </div>
               <button
                 onClick={() => setShowAddGoalModal(false)}
-                className="p-2 hover:bg-white/20 rounded-xl transition-colors"
+                className="p-2 hover:bg-white/20 rounded-xl transition-colors active:scale-90"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-4 space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Goal Name *
@@ -457,13 +463,13 @@ export default function SavingsGoals() {
                 <button
                   type="button"
                   onClick={() => setShowAddGoalModal(false)}
-                  className="flex-1 px-6 py-3 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-colors font-semibold"
+                  className="flex-1 px-6 py-3 border-2 border-gray-200 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors font-semibold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-semibold shadow-lg"
+                  className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl hover:from-indigo-700 hover:to-purple-700 active:scale-95 transition-all font-semibold shadow-lg"
                 >
                   Create Goal
                 </button>
@@ -475,9 +481,20 @@ export default function SavingsGoals() {
 
       {/* Contribution Modal */}
       {showContributionModal && selectedGoal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-            <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-4 sm:p-6 rounded-t-2xl">
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+          onClick={() => {
+            setShowContributionModal(false);
+            setSelectedGoal(null);
+            setContributionAmount("");
+            setContributionNote("");
+          }}
+        >
+          <div 
+            className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-4 rounded-t-3xl sm:rounded-t-2xl">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="bg-white/20 p-2 rounded-xl">
@@ -492,7 +509,7 @@ export default function SavingsGoals() {
                     setContributionAmount("");
                     setContributionNote("");
                   }}
-                  className="p-2 hover:bg-white/20 rounded-xl transition-colors"
+                  className="p-2 hover:bg-white/20 rounded-xl transition-colors active:scale-90"
                 >
                   <X className="w-6 h-6" />
                 </button>
@@ -510,7 +527,7 @@ export default function SavingsGoals() {
               </div>
             </div>
 
-            <div className="p-4 sm:p-6 space-y-4">
+            <div className="p-4 space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Amount (KES) *
@@ -548,13 +565,13 @@ export default function SavingsGoals() {
                     setContributionAmount("");
                     setContributionNote("");
                   }}
-                  className="flex-1 px-6 py-3 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-colors font-semibold"
+                  className="flex-1 px-6 py-3 border-2 border-gray-200 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors font-semibold"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAddContribution}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all font-semibold shadow-lg"
+                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 rounded-xl hover:from-green-600 hover:to-emerald-700 active:scale-95 transition-all font-semibold shadow-lg"
                 >
                   Add Money
                 </button>
