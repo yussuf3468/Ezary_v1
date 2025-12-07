@@ -455,7 +455,10 @@ export default function SavingsGoals() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-4 pb-6 space-y-4 max-h-[70vh] overflow-y-auto">
+            <form
+              onSubmit={handleSubmit}
+              className="p-4 pb-6 space-y-4 max-h-[70vh] overflow-y-auto"
+            >
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Goal Name *
@@ -533,7 +536,7 @@ export default function SavingsGoals() {
                 />
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-4 pb-24 sm:pb-4">
                 <button
                   type="button"
                   onClick={() => setShowAddGoalModal(false)}
@@ -635,7 +638,7 @@ export default function SavingsGoals() {
                 />
               </div>
 
-              <div className="flex gap-3 pt-4 pb-2">
+              <div className="flex gap-3 pt-4 pb-24 sm:pb-4">
                 <button
                   onClick={() => {
                     setShowContributionModal(false);
