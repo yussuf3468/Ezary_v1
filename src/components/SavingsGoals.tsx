@@ -216,11 +216,15 @@ export default function SavingsGoals() {
         <div className="grid grid-cols-3 gap-3 sm:gap-4">
           <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
             <p className="text-indigo-100 text-xs sm:text-sm mb-1">Saved</p>
-            <p className="text-lg sm:text-2xl font-bold truncate">{formatCurrency(totalSaved)}</p>
+            <p className="text-base sm:text-2xl font-bold break-words">
+              {formatCurrency(totalSaved)}
+            </p>
           </div>
           <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
             <p className="text-indigo-100 text-xs sm:text-sm mb-1">Target</p>
-            <p className="text-lg sm:text-2xl font-bold truncate">{formatCurrency(totalTarget)}</p>
+            <p className="text-base sm:text-2xl font-bold break-words">
+              {formatCurrency(totalTarget)}
+            </p>
           </div>
           <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
             <p className="text-indigo-100 text-xs sm:text-sm mb-1">Progress</p>
