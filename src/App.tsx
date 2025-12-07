@@ -7,7 +7,7 @@ import Dashboard from "./components/Dashboard";
 import Income from "./components/Income";
 import Expenses from "./components/Expenses";
 import Debts from "./components/Debts";
-import Rent from "./components/Rent";
+import SavingsGoals from "./components/SavingsGoals";
 import ExpectedExpenses from "./components/ExpectedExpenses";
 import Reports from "./components/Reports";
 
@@ -81,8 +81,8 @@ function AppContent() {
         return <Expenses />;
       case "debts":
         return <Debts />;
-      case "rent":
-        return <Rent />;
+      case "savings":
+        return <SavingsGoals />;
       case "expected-expenses":
         return <ExpectedExpenses />;
       case "reports":
