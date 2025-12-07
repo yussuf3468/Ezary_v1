@@ -19,12 +19,14 @@ import {
 interface SavingsGoal {
   id: string;
   user_id: string;
-  name: string;
+  goal_name: string;
   target_amount: number;
   current_amount: number;
   target_date: string;
   created_at: string;
   category: string;
+  description?: string;
+  is_achieved?: boolean;
 }
 
 export default function SavingsGoals() {
@@ -96,7 +98,7 @@ export default function SavingsGoals() {
       const { error } = await supabase.from("savings_goals").insert([
         {
           user_id: user?.id,
-          name: formData.name.trim(),
+          goal_name: formData.name.trim(),
           target_amount,
           current_amount: 0,
           target_date: formData.target_date || null,
@@ -139,7 +141,7 @@ export default function SavingsGoals() {
       const { error: incomeError } = await supabase.from("income").insert([
         {
           user_id: user?.id,
-          description: `Savings: ${selectedGoal.name}${
+          description: `Savings: ${selectedGoal.goal_name}${
             contributionNote ? ` - ${contributionNote}` : ""
           }`,
           amount,
@@ -272,7 +274,7 @@ export default function SavingsGoals() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <h3 className="text-base sm:text-lg font-bold text-gray-800 truncate">
-                        {goal.name}
+                        {goal.goal_name}
                       </h3>
                       <p className="text-xs sm:text-sm text-gray-500">{category?.label}</p>
                     </div>
@@ -519,7 +521,7 @@ export default function SavingsGoals() {
                   {categories.find((c) => c.value === selectedGoal.category)?.icon || "🎯"}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold truncate">{selectedGoal.name}</p>
+                  <p className="font-semibold truncate">{selectedGoal.goal_name}</p>
                   <p className="text-sm text-green-100">
                     {formatCurrency(selectedGoal.current_amount)} of {formatCurrency(selectedGoal.target_amount)}
                   </p>
