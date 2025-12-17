@@ -1,14 +1,17 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import {
   Users,
   TrendingUp,
   DollarSign,
-  Truck,
-  ArrowRight,
   Calendar,
   AlertCircle,
+  Plus,
+  Search,
+  Eye,
+  Clock,
+  Activity,
 } from "lucide-react";
 import { formatCurrency } from "../lib/currency";
 
@@ -22,12 +25,16 @@ interface DashboardStats {
   pendingUSD: number;
 }
 
-interface RecentClient {
+interface ClientWithBalance {
   id: string;
   client_name: string;
   client_code: string;
   status: string;
   created_at: string;
+  balance_kes: number;
+  balance_usd: number;
+  transaction_count: number;
+  last_transaction_date: string | null;
 }
 
 interface UpcomingDebt {
@@ -55,10 +62,18 @@ export default function CMSDashboard({ onNavigate }: DashboardProps) {
     pendingKES: 0,
     pendingUSD: 0,
   });
-  const [recentClients, setRecentClients] = useState<RecentClient[]>([]);
+  const [clientsWithBalance, setClientsWithBalance] = useState<
+    ClientWithBalance[]
+  >([]);
   const [upcomingDebts, setUpcomingDebts] = useState<UpcomingDebt[]>([]);
   const [overdueDebts, setOverdueDebts] = useState<UpcomingDebt[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showQuickAddModal, setShowQuickAddModal] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
+  const [quickAddCurrency, setQuickAddCurrency] = useState<"KES" | "USD">(
+    "KES"
+  );
 
   const loadDashboardData = useCallback(async () => {
     if (!user) return;
@@ -78,16 +93,81 @@ export default function CMSDashboard({ onNavigate }: DashboardProps) {
       const activeClients =
         clientsData?.filter((c) => c.status === "active").length || 0;
 
-      // Get recent clients
-      const recent =
-        clientsData
-          ?.sort(
-            (a, b) =>
-              new Date(b.created_at).getTime() -
-              new Date(a.created_at).getTime()
-          )
-          .slice(0, 5) || [];
-      setRecentClients(recent);
+      // Load balances for all clients
+      const { data: kesTransactions } = await supabase
+        .from("client_transactions_kes")
+        .select("client_id, debit, credit, transaction_date")
+        .eq("user_id", user.id);
+
+      const { data: usdTransactions } = await supabase
+        .from("client_transactions_usd")
+        .select("client_id, debit, credit, transaction_date")
+        .eq("user_id", user.id);
+
+      // Calculate balances per client
+      const clientBalances = new Map<
+        string,
+        {
+          balance_kes: number;
+          balance_usd: number;
+          transaction_count: number;
+          last_transaction_date: string | null;
+        }
+      >();
+
+      kesTransactions?.forEach((txn) => {
+        const existing = clientBalances.get(txn.client_id) || {
+          balance_kes: 0,
+          balance_usd: 0,
+          transaction_count: 0,
+          last_transaction_date: null,
+        };
+        existing.balance_kes += (txn.credit || 0) - (txn.debit || 0);
+        existing.transaction_count += 1;
+        if (
+          !existing.last_transaction_date ||
+          txn.transaction_date > existing.last_transaction_date
+        ) {
+          existing.last_transaction_date = txn.transaction_date;
+        }
+        clientBalances.set(txn.client_id, existing);
+      });
+
+      usdTransactions?.forEach((txn) => {
+        const existing = clientBalances.get(txn.client_id) || {
+          balance_kes: 0,
+          balance_usd: 0,
+          transaction_count: 0,
+          last_transaction_date: null,
+        };
+        existing.balance_usd += (txn.credit || 0) - (txn.debit || 0);
+        existing.transaction_count += 1;
+        if (
+          !existing.last_transaction_date ||
+          txn.transaction_date > existing.last_transaction_date
+        ) {
+          existing.last_transaction_date = txn.transaction_date;
+        }
+        clientBalances.set(txn.client_id, existing);
+      });
+
+      // Merge clients with balances
+      const clientsWithBalanceData: ClientWithBalance[] = (
+        clientsData || []
+      ).map((client) => {
+        const balance = clientBalances.get(client.id) || {
+          balance_kes: 0,
+          balance_usd: 0,
+          transaction_count: 0,
+          last_transaction_date: null,
+        };
+        return {
+          ...client,
+          ...balance,
+        };
+      });
+
+      setClientsWithBalance(clientsWithBalanceData);
 
       // Load vehicles count
       const { data: vehiclesData, error: vehiclesError } = await supabase
@@ -213,22 +293,113 @@ export default function CMSDashboard({ onNavigate }: DashboardProps) {
     }
   }, [user, loadDashboardData]);
 
+  const handleQuickAddTransaction = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+
+    if (!selectedClientId) {
+      alert("Please select a client");
+      return;
+    }
+
+    try {
+      const table =
+        quickAddCurrency === "KES"
+          ? "client_transactions_kes"
+          : "client_transactions_usd";
+
+      const { error } = await supabase.from(table).insert({
+        user_id: user?.id,
+        client_id: selectedClientId,
+        transaction_date: formData.get("transaction_date"),
+        description: formData.get("description"),
+        debit:
+          formData.get("type") === "receivable"
+            ? Number(formData.get("amount"))
+            : 0,
+        credit:
+          formData.get("type") === "paid" ? Number(formData.get("amount")) : 0,
+        payment_method: formData.get("payment_method"),
+        reference_number: formData.get("reference_number") || null,
+        notes: formData.get("notes") || null,
+      });
+
+      if (error) throw error;
+
+      setShowQuickAddModal(false);
+      e.currentTarget.reset();
+      loadDashboardData(); // Reload to show updated balances
+      alert("Transaction added successfully!");
+    } catch (error) {
+      console.error("Error adding transaction:", error);
+      alert("Failed to add transaction");
+    }
+  };
+
+  const filteredClients = useMemo(() => {
+    if (!searchTerm.trim()) return clientsWithBalance;
+
+    const term = searchTerm.toLowerCase();
+    return clientsWithBalance.filter(
+      (client) =>
+        client.client_name.toLowerCase().includes(term) ||
+        client.client_code.toLowerCase().includes(term)
+    );
+  }, [clientsWithBalance, searchTerm]);
+
+  // Sort by most active clients (recent transactions + high counts)
+  const activeClients = useMemo(() => {
+    return [...filteredClients]
+      .filter((c) => c.status === "active")
+      .sort((a, b) => {
+        // Sort by last transaction date, then by transaction count
+        if (a.last_transaction_date && b.last_transaction_date) {
+          return (
+            new Date(b.last_transaction_date).getTime() -
+            new Date(a.last_transaction_date).getTime()
+          );
+        }
+        return b.transaction_count - a.transaction_count;
+      })
+      .slice(0, 12);
+  }, [filteredClients]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-gray-500 text-lg">Loading dashboard...</div>
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-emerald-600 border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-8">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 text-sm">
-          Here's an overview of your business
-        </p>
+    <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-6">
+      {/* Modern Header with Quick Add */}
+      <div className="bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600 rounded-2xl p-6 shadow-2xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold text-3xl">E</span>
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white">
+                Client Transaction Hub
+              </h1>
+              <p className="text-emerald-100">
+                Quick access to clients and transactions • Ezary CMS
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowQuickAddModal(true)}
+            className="flex items-center gap-2 px-6 py-3 bg-white text-emerald-600 rounded-xl hover:shadow-xl transition-all duration-200 font-semibold"
+          >
+            <Plus className="w-5 h-5" />
+            Quick Add Transaction
+          </button>
+        </div>
       </div>
 
       {/* Main Stats Grid */}
@@ -410,92 +581,63 @@ export default function CMSDashboard({ onNavigate }: DashboardProps) {
         </div>
       )}
 
-      {/* Quick Actions & Recent Clients */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Quick Actions */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            Quick Actions
-          </h2>
-          <div className="space-y-3">
-            <button
-              onClick={() => onNavigate("clients")}
-              className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl hover:shadow-md transition-all duration-200 group"
-            >
-              <div className="flex items-center gap-3">
-                <Users className="w-5 h-5 text-emerald-600" />
-                <span className="font-medium text-gray-900">
-                  View All Clients
-                </span>
-              </div>
-              <ArrowRight className="w-5 h-5 text-emerald-600 group-hover:translate-x-1 transition-transform" />
-            </button>
-
-            <button
-              onClick={() => onNavigate("vehicles")}
-              className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl hover:shadow-md transition-all duration-200 group"
-            >
-              <div className="flex items-center gap-3">
-                <Truck className="w-5 h-5 text-blue-600" />
-                <span className="font-medium text-gray-900">
-                  Manage Vehicles ({stats.totalVehicles})
-                </span>
-              </div>
-              <ArrowRight className="w-5 h-5 text-blue-600 group-hover:translate-x-1 transition-transform" />
-            </button>
-
-            <button
-              onClick={() => onNavigate("reports")}
-              className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl hover:shadow-md transition-all duration-200 group"
-            >
-              <div className="flex items-center gap-3">
-                <Calendar className="w-5 h-5 text-purple-600" />
-                <span className="font-medium text-gray-900">
-                  Generate Reports
-                </span>
-              </div>
-              <ArrowRight className="w-5 h-5 text-purple-600 group-hover:translate-x-1 transition-transform" />
-            </button>
+      {/* Active Clients with Search */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <Activity className="w-6 h-6 text-emerald-600" />
+            <h2 className="text-xl font-bold text-gray-900">Active Clients</h2>
           </div>
+          <button
+            onClick={() => onNavigate("clients")}
+            className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
+          >
+            View All ({stats.totalClients})
+          </button>
         </div>
 
-        {/* Recent Clients */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Recent Clients</h2>
+        {/* Search Bar */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Search clients by name or code..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+          />
+        </div>
+
+        {activeClients.length === 0 ? (
+          <div className="text-center py-8">
+            <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 text-sm">No clients found</p>
             <button
               onClick={() => onNavigate("clients")}
-              className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
+              className="mt-3 text-sm text-emerald-600 hover:text-emerald-700 font-medium"
             >
-              View All
+              Go to All Clients
             </button>
           </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {activeClients.map((client) => {
+              const balanceKES = client.balance_kes;
+              const balanceUSD = client.balance_usd;
 
-          {recentClients.length === 0 ? (
-            <div className="text-center py-8">
-              <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 text-sm">No clients yet</p>
-              <button
-                onClick={() => onNavigate("clients")}
-                className="mt-3 text-sm text-emerald-600 hover:text-emerald-700 font-medium"
-              >
-                Add your first client
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {recentClients.map((client) => (
-                <button
+              return (
+                <div
                   key={client.id}
                   onClick={() => onNavigate("client-detail", client.id)}
-                  className="w-full flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:border-emerald-200 hover:bg-emerald-50/30 transition-all duration-200 group"
+                  className="bg-gradient-to-br from-white to-emerald-50/20 border border-gray-200 rounded-xl p-4 hover:shadow-lg hover:border-emerald-300 transition-all duration-200 cursor-pointer group"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold">
+                  {/* Client Header */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center text-white font-bold shadow-md">
                       {client.client_name.charAt(0).toUpperCase()}
                     </div>
-                    <div className="text-left">
-                      <p className="font-medium text-gray-900 group-hover:text-emerald-600 transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-gray-900 group-hover:text-emerald-600 transition-colors truncate">
                         {client.client_name}
                       </p>
                       <p className="text-xs text-gray-500 font-mono">
@@ -503,13 +645,276 @@ export default function CMSDashboard({ onNavigate }: DashboardProps) {
                       </p>
                     </div>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+
+                  {/* Balance Info */}
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div
+                      className={`rounded-lg p-2 ${
+                        balanceKES > 0
+                          ? "bg-emerald-50 border border-emerald-200"
+                          : balanceKES < 0
+                          ? "bg-red-50 border border-red-200"
+                          : "bg-gray-50 border border-gray-200"
+                      }`}
+                    >
+                      <p className="text-xs text-gray-600 mb-1">KES Balance</p>
+                      <p
+                        className={`text-sm font-bold ${
+                          balanceKES > 0
+                            ? "text-emerald-700"
+                            : balanceKES < 0
+                            ? "text-red-700"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        {balanceKES.toLocaleString()}
+                      </p>
+                    </div>
+                    <div
+                      className={`rounded-lg p-2 ${
+                        balanceUSD > 0
+                          ? "bg-blue-50 border border-blue-200"
+                          : balanceUSD < 0
+                          ? "bg-red-50 border border-red-200"
+                          : "bg-gray-50 border border-gray-200"
+                      }`}
+                    >
+                      <p className="text-xs text-gray-600 mb-1">USD Balance</p>
+                      <p
+                        className={`text-sm font-bold ${
+                          balanceUSD > 0
+                            ? "text-blue-700"
+                            : balanceUSD < 0
+                            ? "text-red-700"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        ${balanceUSD.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Transaction Info */}
+                  <div className="flex items-center justify-between text-xs text-gray-600 pt-2 border-t border-gray-200">
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>{client.transaction_count} txns</span>
+                    </div>
+                    {client.last_transaction_date && (
+                      <span>
+                        {new Date(
+                          client.last_transaction_date
+                        ).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Quick View Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onNavigate("client-detail", client.id);
+                    }}
+                    className="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg text-xs font-medium hover:shadow-md transition-all"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    View Details
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
+
+      {/* Quick Add Transaction Modal */}
+      {showQuickAddModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-6 py-4 rounded-t-2xl">
+              <h2 className="text-2xl font-bold">Quick Add Transaction</h2>
+              <p className="text-emerald-100 text-sm">
+                Add a transaction for any client
+              </p>
+            </div>
+
+            <form
+              onSubmit={handleQuickAddTransaction}
+              className="p-6 space-y-4"
+            >
+              {/* Client Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Client *
+                </label>
+                <select
+                  value={selectedClientId}
+                  onChange={(e) => setSelectedClientId(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="">Choose a client...</option>
+                  {clientsWithBalance.map((client) => (
+                    <option key={client.id} value={client.id}>
+                      {client.client_name} ({client.client_code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Currency Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Currency *
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setQuickAddCurrency("KES")}
+                    className={`px-4 py-3 rounded-lg font-medium transition-all ${
+                      quickAddCurrency === "KES"
+                        ? "bg-emerald-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    KES
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuickAddCurrency("USD")}
+                    className={`px-4 py-3 rounded-lg font-medium transition-all ${
+                      quickAddCurrency === "USD"
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    USD
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date *
+                  </label>
+                  <input
+                    type="date"
+                    name="transaction_date"
+                    required
+                    defaultValue={new Date().toISOString().split("T")[0]}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Type *
+                  </label>
+                  <select
+                    name="type"
+                    required
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="paid">Paid (Credit)</option>
+                    <option value="receivable">Receivable (Debit)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Amount *
+                  </label>
+                  <input
+                    type="number"
+                    name="amount"
+                    required
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Payment Method
+                  </label>
+                  <select
+                    name="payment_method"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="">Select method...</option>
+                    <option value="Cash">Cash</option>
+                    <option value="M-Pesa">M-Pesa</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="Cheque">Cheque</option>
+                    <option value="Credit Card">Credit Card</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description *
+                </label>
+                <input
+                  type="text"
+                  name="description"
+                  required
+                  placeholder="e.g., Payment for services"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Reference Number
+                </label>
+                <input
+                  type="text"
+                  name="reference_number"
+                  placeholder="e.g., INV-001, TXN-123"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notes
+                </label>
+                <textarea
+                  name="notes"
+                  rows={3}
+                  placeholder="Additional notes..."
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowQuickAddModal(false)}
+                  className="flex-1 px-6 py-3 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-medium hover:shadow-lg transition-all duration-200"
+                >
+                  Add Transaction
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

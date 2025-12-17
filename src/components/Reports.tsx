@@ -11,6 +11,9 @@ import {
   Activity,
   CreditCard,
   Calendar,
+  Download,
+  FileSpreadsheet,
+  Printer,
 } from "lucide-react";
 
 interface ClientStats {
@@ -282,6 +285,203 @@ export default function Reports() {
     }
   }, [user, getDateRange, selectedPeriod, customStartDate, customEndDate]);
 
+  const exportToPDF = async () => {
+    try {
+      // Import jsPDF dynamically
+      const { default: jsPDF } = await import("jspdf");
+      await import("jspdf-autotable");
+
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      let yPosition = 15;
+
+      // Header with gradient effect
+      doc.setFillColor(16, 185, 129);
+      doc.rect(0, 0, pageWidth, 40, "F");
+
+      // Title
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(24);
+      doc.setFont("helvetica", "bold");
+      doc.text("Ezary CMS - Financial Report", pageWidth / 2, 20, {
+        align: "center",
+      });
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      const periodText =
+        selectedPeriod === "custom"
+          ? `${customStartDate} to ${customEndDate}`
+          : selectedPeriod === "current"
+          ? "Current Month"
+          : selectedPeriod === "last3"
+          ? "Last 3 Months"
+          : selectedPeriod === "last6"
+          ? "Last 6 Months"
+          : "This Year";
+      doc.text(`Period: ${periodText}`, pageWidth / 2, 30, { align: "center" });
+
+      yPosition = 50;
+
+      // Summary Statistics
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text("Summary Statistics", 14, yPosition);
+      yPosition += 10;
+
+      const summaryData = [
+        ["Metric", "Value"],
+        ["Total Clients", clientStats.totalClients.toString()],
+        ["Active Clients", clientStats.activeClients.toString()],
+        ["Total Transactions", clientStats.totalTransactions.toString()],
+        [
+          "Balance (KES)",
+          `KES ${clientStats.totalBalanceKES.toLocaleString()}`,
+        ],
+        [
+          "Balance (USD)",
+          `USD ${clientStats.totalBalanceUSD.toLocaleString()}`,
+        ],
+      ];
+
+      (doc as any).autoTable({
+        startY: yPosition,
+        head: [summaryData[0]],
+        body: summaryData.slice(1),
+        theme: "grid",
+        headStyles: {
+          fillColor: [16, 185, 129],
+          textColor: 255,
+          fontStyle: "bold",
+        },
+        alternateRowStyles: { fillColor: [240, 253, 244] },
+        margin: { left: 14, right: 14 },
+      });
+
+      yPosition = (doc as any).lastAutoTable.finalY + 15;
+
+      // Top Clients
+      if (topClients.length > 0) {
+        doc.setFontSize(16);
+        doc.setFont("helvetica", "bold");
+        doc.text("Top 10 Clients", 14, yPosition);
+        yPosition += 10;
+
+        const topClientsData = topClients.map((client) => [
+          client.client_name,
+          client.client_code,
+          `KES ${client.total_balance_kes.toLocaleString()}`,
+          `USD ${client.total_balance_usd.toLocaleString()}`,
+          client.transaction_count.toString(),
+        ]);
+
+        (doc as any).autoTable({
+          startY: yPosition,
+          head: [
+            [
+              "Client Name",
+              "Code",
+              "Balance (KES)",
+              "Balance (USD)",
+              "Transactions",
+            ],
+          ],
+          body: topClientsData,
+          theme: "striped",
+          headStyles: {
+            fillColor: [16, 185, 129],
+            textColor: 255,
+            fontStyle: "bold",
+          },
+          alternateRowStyles: { fillColor: [240, 253, 244] },
+          margin: { left: 14, right: 14 },
+        });
+      }
+
+      // Footer
+      const pageCount = (doc as any).internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(128, 128, 128);
+        doc.text(
+          `Generated on ${new Date().toLocaleDateString()} | Page ${i} of ${pageCount}`,
+          pageWidth / 2,
+          doc.internal.pageSize.getHeight() - 10,
+          { align: "center" }
+        );
+      }
+
+      // Save PDF
+      doc.save(
+        `Ezary_Financial_Report_${new Date().toISOString().split("T")[0]}.pdf`
+      );
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Failed to generate PDF report");
+    }
+  };
+
+  const exportToExcel = () => {
+    try {
+      // Create CSV content
+      let csvContent = "Ezary CMS - Financial Report\n";
+      csvContent += `Generated: ${new Date().toLocaleString()}\n\n`;
+
+      // Summary section
+      csvContent += "SUMMARY STATISTICS\n";
+      csvContent += `Total Clients,${clientStats.totalClients}\n`;
+      csvContent += `Active Clients,${clientStats.activeClients}\n`;
+      csvContent += `Inactive Clients,${clientStats.inactiveClients}\n`;
+      csvContent += `Total Transactions,${clientStats.totalTransactions}\n`;
+      csvContent += `Total Balance (KES),${clientStats.totalBalanceKES}\n`;
+      csvContent += `Total Balance (USD),${clientStats.totalBalanceUSD}\n\n`;
+
+      // Top clients section
+      if (topClients.length > 0) {
+        csvContent += "TOP CLIENTS\n";
+        csvContent +=
+          "Client Name,Client Code,Balance (KES),Balance (USD),Transaction Count\n";
+        topClients.forEach((client) => {
+          csvContent += `"${client.client_name}",${client.client_code},${client.total_balance_kes},${client.total_balance_usd},${client.transaction_count}\n`;
+        });
+        csvContent += "\n";
+      }
+
+      // Monthly trends section
+      if (monthlyTrends.length > 0) {
+        csvContent += "MONTHLY TRENDS\n";
+        csvContent +=
+          "Month,Transactions (KES),Transactions (USD),Balance (KES),Balance (USD)\n";
+        monthlyTrends.forEach((trend) => {
+          csvContent += `${trend.month},${trend.transactions_kes},${trend.transactions_usd},${trend.balance_kes},${trend.balance_usd}\n`;
+        });
+      }
+
+      // Create and download
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute(
+        "download",
+        `Ezary_Report_${new Date().toISOString().split("T")[0]}.csv`
+      );
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error exporting to Excel:", error);
+      alert("Failed to export to Excel");
+    }
+  };
+
+  const printReport = () => {
+    window.print();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -407,6 +607,41 @@ export default function Reports() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Export Actions - NEW */}
+        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-lg border border-purple-200 p-4 sm:p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg">
+              <Download className="h-5 w-5 text-white" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+              Export Options
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button
+              onClick={exportToPDF}
+              className="flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-semibold hover:shadow-xl hover:scale-105 transition-all duration-200 active:scale-95"
+            >
+              <FileText className="w-5 h-5" />
+              Export PDF
+            </button>
+            <button
+              onClick={exportToExcel}
+              className="flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-xl hover:scale-105 transition-all duration-200 active:scale-95"
+            >
+              <FileSpreadsheet className="w-5 h-5" />
+              Export Excel
+            </button>
+            <button
+              onClick={printReport}
+              className="flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl font-semibold hover:shadow-xl hover:scale-105 transition-all duration-200 active:scale-95"
+            >
+              <Printer className="w-5 h-5" />
+              Print Report
+            </button>
+          </div>
         </div>
 
         {/* Currency Filter - Ultra Modern */}
