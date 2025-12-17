@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "../lib/supabase";
+import { offlineSupabase } from "../lib/offlineSupabase";
 import { useAuth } from "../contexts/AuthContext";
+import { useToast } from "../contexts/ToastContext";
 import {
   Users,
   TrendingUp,
@@ -53,6 +55,7 @@ interface DashboardProps {
 
 export default function CMSDashboard({ onNavigate }: DashboardProps) {
   const { user } = useAuth();
+  const toast = useToast();
   const [stats, setStats] = useState<DashboardStats>({
     totalClients: 0,
     activeClients: 0,
@@ -300,17 +303,18 @@ export default function CMSDashboard({ onNavigate }: DashboardProps) {
     const formData = new FormData(e.currentTarget);
 
     if (!selectedClientId) {
-      alert("Please select a client");
+      toast.warning("Please select a client");
       return;
     }
 
     try {
+      toast.info("Adding transaction...");
       const table =
         quickAddCurrency === "KES"
           ? "client_transactions_kes"
           : "client_transactions_usd";
 
-      const { error } = await supabase.from(table).insert({
+      const transactionData = {
         user_id: user?.id,
         client_id: selectedClientId,
         transaction_date: formData.get("transaction_date"),
@@ -324,17 +328,28 @@ export default function CMSDashboard({ onNavigate }: DashboardProps) {
         payment_method: formData.get("payment_method"),
         reference_number: formData.get("reference_number") || null,
         notes: formData.get("notes") || null,
-      });
+      };
 
-      if (error) throw error;
+      const result = await offlineSupabase.insert(table, transactionData);
+
+      if (result.error) throw result.error;
 
       setShowQuickAddModal(false);
       e.currentTarget.reset();
       loadDashboardData(); // Reload to show updated balances
-      alert("Transaction added successfully!");
+
+      if (result.offline) {
+        toast.success("Transaction queued (offline). Will sync when online.");
+      } else {
+        toast.success("Transaction added successfully!");
+      }
     } catch (error) {
       console.error("Error adding transaction:", error);
-      alert("Failed to add transaction");
+      toast.error(
+        `Failed to add transaction: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   };
 
@@ -375,77 +390,77 @@ export default function CMSDashboard({ onNavigate }: DashboardProps) {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-6">
+    <div className="max-w-7xl mx-auto p-3 sm:p-4 md:p-8 space-y-4 sm:space-y-6">
       {/* Modern Header with Quick Add */}
-      <div className="bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600 rounded-2xl p-6 shadow-2xl">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-3xl">E</span>
+      <div className="bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-2xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-sm rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold text-2xl sm:text-3xl">E</span>
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white">
-                Client Transaction Hub
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
+                Client Hub
               </h1>
-              <p className="text-emerald-100">
-                Quick access to clients and transactions • Ezary CMS
+              <p className="text-xs sm:text-sm text-emerald-100">
+                Quick access • Ezary CMS
               </p>
             </div>
           </div>
           <button
             onClick={() => setShowQuickAddModal(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-white text-emerald-600 rounded-xl hover:shadow-xl transition-all duration-200 font-semibold"
+            className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-white text-emerald-600 rounded-xl hover:shadow-xl transition-all duration-200 font-semibold text-sm sm:text-base w-full md:w-auto"
           >
-            <Plus className="w-5 h-5" />
-            Quick Add Transaction
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span>Add Transaction</span>
           </button>
         </div>
       </div>
 
       {/* Main Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
         {/* Total Clients */}
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-4 text-white shadow hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <Users className="w-6 h-6 opacity-80" />
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-3 sm:p-4 text-white shadow hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-1 sm:mb-2">
+            <Users className="w-4 h-4 sm:w-6 sm:h-6 opacity-80" />
           </div>
-          <p className="text-blue-100 text-xs mb-1">Total Clients</p>
-          <p className="text-2xl font-bold">{stats.totalClients}</p>
+          <p className="text-blue-100 text-[10px] sm:text-xs mb-1">Total Clients</p>
+          <p className="text-xl sm:text-2xl font-bold">{stats.totalClients}</p>
         </div>
 
         {/* Active Clients */}
-        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg p-4 text-white shadow hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <TrendingUp className="w-6 h-6 opacity-80" />
+        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg p-3 sm:p-4 text-white shadow hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-1 sm:mb-2">
+            <TrendingUp className="w-4 h-4 sm:w-6 sm:h-6 opacity-80" />
           </div>
-          <p className="text-emerald-100 text-xs mb-1">Active Clients</p>
-          <p className="text-2xl font-bold">{stats.activeClients}</p>
+          <p className="text-emerald-100 text-[10px] sm:text-xs mb-1">Active</p>
+          <p className="text-xl sm:text-2xl font-bold">{stats.activeClients}</p>
         </div>
 
         {/* Total Revenue KES */}
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-4 text-white shadow hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <DollarSign className="w-6 h-6 opacity-80" />
-            <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-3 sm:p-4 text-white shadow hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-1 sm:mb-2">
+            <DollarSign className="w-4 h-4 sm:w-6 sm:h-6 opacity-80" />
+            <span className="text-[10px] sm:text-xs bg-white/20 px-1.5 sm:px-2 py-0.5 rounded-full">
               KES
             </span>
           </div>
-          <p className="text-purple-100 text-xs mb-1">Revenue</p>
-          <p className="text-lg font-bold">
+          <p className="text-purple-100 text-[10px] sm:text-xs mb-1">Revenue</p>
+          <p className="text-sm sm:text-lg font-bold truncate">
             {formatCurrency(stats.revenueKES, "KES")}
           </p>
         </div>
 
         {/* Total Revenue USD */}
-        <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg p-4 text-white shadow hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <DollarSign className="w-6 h-6 opacity-80" />
-            <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
+        <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg p-3 sm:p-4 text-white shadow hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-1 sm:mb-2">
+            <DollarSign className="w-4 h-4 sm:w-6 sm:h-6 opacity-80" />
+            <span className="text-[10px] sm:text-xs bg-white/20 px-1.5 sm:px-2 py-0.5 rounded-full">
               USD
             </span>
           </div>
-          <p className="text-amber-100 text-xs mb-1">Revenue</p>
-          <p className="text-lg font-bold">
+          <p className="text-amber-100 text-[10px] sm:text-xs mb-1">Revenue</p>
+          <p className="text-sm sm:text-lg font-bold truncate">
             {formatCurrency(stats.revenueUSD, "USD")}
           </p>
         </div>
@@ -582,29 +597,29 @@ export default function CMSDashboard({ onNavigate }: DashboardProps) {
       )}
 
       {/* Active Clients with Search */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <Activity className="w-6 h-6 text-emerald-600" />
-            <h2 className="text-xl font-bold text-gray-900">Active Clients</h2>
+      <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />
+            <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900">Active Clients</h2>
           </div>
           <button
             onClick={() => onNavigate("clients")}
-            className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
+            className="text-xs sm:text-sm text-emerald-600 hover:text-emerald-700 font-medium"
           >
             View All ({stats.totalClients})
           </button>
         </div>
 
         {/* Search Bar */}
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+        <div className="relative mb-3 sm:mb-4">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
           <input
             type="text"
-            placeholder="Search clients by name or code..."
+            placeholder="Search clients..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-200 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
           />
         </div>
 
@@ -629,15 +644,15 @@ export default function CMSDashboard({ onNavigate }: DashboardProps) {
                 <div
                   key={client.id}
                   onClick={() => onNavigate("client-detail", client.id)}
-                  className="bg-gradient-to-br from-white to-emerald-50/20 border border-gray-200 rounded-xl p-4 hover:shadow-lg hover:border-emerald-300 transition-all duration-200 cursor-pointer group"
+                  className="bg-gradient-to-br from-white to-emerald-50/20 border border-gray-200 rounded-xl p-3 sm:p-4 hover:shadow-lg hover:border-emerald-300 transition-all duration-200 cursor-pointer group"
                 >
                   {/* Client Header */}
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center text-white font-bold shadow-md">
+                  <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg sm:rounded-xl flex items-center justify-center text-white font-bold text-sm sm:text-base shadow-md">
                       {client.client_name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-gray-900 group-hover:text-emerald-600 transition-colors truncate">
+                      <p className="font-bold text-sm sm:text-base text-gray-900 group-hover:text-emerald-600 transition-colors truncate">
                         {client.client_name}
                       </p>
                       <p className="text-xs text-gray-500 font-mono">
@@ -647,9 +662,9 @@ export default function CMSDashboard({ onNavigate }: DashboardProps) {
                   </div>
 
                   {/* Balance Info */}
-                  <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div className="grid grid-cols-2 gap-1.5 sm:gap-2 mb-2 sm:mb-3">
                     <div
-                      className={`rounded-lg p-2 ${
+                      className={`rounded-lg p-1.5 sm:p-2 ${
                         balanceKES > 0
                           ? "bg-emerald-50 border border-emerald-200"
                           : balanceKES < 0
@@ -657,9 +672,9 @@ export default function CMSDashboard({ onNavigate }: DashboardProps) {
                           : "bg-gray-50 border border-gray-200"
                       }`}
                     >
-                      <p className="text-xs text-gray-600 mb-1">KES Balance</p>
+                      <p className="text-[10px] sm:text-xs text-gray-600 mb-0.5 sm:mb-1">KES</p>
                       <p
-                        className={`text-sm font-bold ${
+                        className={`text-xs sm:text-sm font-bold ${
                           balanceKES > 0
                             ? "text-emerald-700"
                             : balanceKES < 0
@@ -671,7 +686,7 @@ export default function CMSDashboard({ onNavigate }: DashboardProps) {
                       </p>
                     </div>
                     <div
-                      className={`rounded-lg p-2 ${
+                      className={`rounded-lg p-1.5 sm:p-2 ${
                         balanceUSD > 0
                           ? "bg-blue-50 border border-blue-200"
                           : balanceUSD < 0
@@ -679,9 +694,9 @@ export default function CMSDashboard({ onNavigate }: DashboardProps) {
                           : "bg-gray-50 border border-gray-200"
                       }`}
                     >
-                      <p className="text-xs text-gray-600 mb-1">USD Balance</p>
+                      <p className="text-[10px] sm:text-xs text-gray-600 mb-0.5 sm:mb-1">USD</p>
                       <p
-                        className={`text-sm font-bold ${
+                        className={`text-xs sm:text-sm font-bold ${
                           balanceUSD > 0
                             ? "text-blue-700"
                             : balanceUSD < 0
@@ -850,11 +865,12 @@ export default function CMSDashboard({ onNavigate }: DashboardProps) {
                     className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
                     <option value="">Select method...</option>
-                    <option value="Cash">Cash</option>
-                    <option value="M-Pesa">M-Pesa</option>
-                    <option value="Bank Transfer">Bank Transfer</option>
-                    <option value="Cheque">Cheque</option>
-                    <option value="Credit Card">Credit Card</option>
+                    <option value="cash">Cash</option>
+                    <option value="mpesa">M-Pesa</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                    <option value="cheque">Cheque</option>
+                    <option value="card">Card</option>
+                    <option value="other">Other</option>
                   </select>
                 </div>
               </div>
@@ -868,30 +884,6 @@ export default function CMSDashboard({ onNavigate }: DashboardProps) {
                   name="description"
                   required
                   placeholder="e.g., Payment for services"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Reference Number
-                </label>
-                <input
-                  type="text"
-                  name="reference_number"
-                  placeholder="e.g., INV-001, TXN-123"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Notes
-                </label>
-                <textarea
-                  name="notes"
-                  rows={3}
-                  placeholder="Additional notes..."
                   className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>

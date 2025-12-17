@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
+import { useToast } from "../contexts/ToastContext";
 import {
   FileText,
   TrendingUp,
@@ -47,6 +48,7 @@ type Currency = "KES" | "USD" | "BOTH";
 
 export default function Reports() {
   const { user } = useAuth();
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [clientStats, setClientStats] = useState<ClientStats>({
     totalClients: 0,
@@ -287,9 +289,11 @@ export default function Reports() {
 
   const exportToPDF = async () => {
     try {
+      toast.info("Generating PDF report...");
+
       // Import jsPDF dynamically
-      const { default: jsPDF } = await import("jspdf");
-      await import("jspdf-autotable");
+      const jsPDF = (await import("jspdf")).default;
+      const autoTable = (await import("jspdf-autotable")).default;
 
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
@@ -345,7 +349,7 @@ export default function Reports() {
         ],
       ];
 
-      (doc as any).autoTable({
+      autoTable(doc, {
         startY: yPosition,
         head: [summaryData[0]],
         body: summaryData.slice(1),
@@ -376,7 +380,7 @@ export default function Reports() {
           client.transaction_count.toString(),
         ]);
 
-        (doc as any).autoTable({
+        autoTable(doc, {
           startY: yPosition,
           head: [
             [
@@ -414,12 +418,18 @@ export default function Reports() {
       }
 
       // Save PDF
-      doc.save(
-        `Ezary_Financial_Report_${new Date().toISOString().split("T")[0]}.pdf`
-      );
+      const filename = `Ezary_Financial_Report_${
+        new Date().toISOString().split("T")[0]
+      }.pdf`;
+      doc.save(filename);
+      toast.success(`PDF report exported successfully: ${filename}`);
     } catch (error) {
       console.error("Error generating PDF:", error);
-      alert("Failed to generate PDF report");
+      toast.error(
+        `Failed to generate PDF report: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   };
 
@@ -474,7 +484,11 @@ export default function Reports() {
       document.body.removeChild(link);
     } catch (error) {
       console.error("Error exporting to Excel:", error);
-      alert("Failed to export to Excel");
+      toast.error(
+        `Failed to export to Excel: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   };
 

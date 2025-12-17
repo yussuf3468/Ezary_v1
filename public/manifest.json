@@ -1,12 +1,13 @@
 {
   "name": "Ezary CMS - Professional Client Management",
   "short_name": "Ezary",
-  "description": "Yussuf Muse's personal finance management in Kenya Shillings",
+  "description": "Yussuf Muse's personal finance management in Kenya Shillings with offline support",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#10b981",
   "orientation": "portrait",
+  "scope": "/",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -26,6 +27,30 @@
       "type": "image/png"
     }
   ],
-  "categories": ["finance", "productivity"],
-  "screenshots": []
+  "categories": ["finance", "productivity", "business"],
+  "screenshots": [],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Add Transaction",
+      "short_name": "Add",
+      "description": "Quickly add a new transaction",
+      "url": "/?action=add-transaction",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "View Clients",
+      "short_name": "Clients",
+      "description": "View all clients",
+      "url": "/?page=clients",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Reports",
+      "short_name": "Reports",
+      "description": "View financial reports",
+      "url": "/?page=reports",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
 }

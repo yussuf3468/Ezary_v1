@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Auth from "./components/Auth";
 import Layout from "./components/Layout";
@@ -8,11 +8,31 @@ import ClientDetail from "./components/ClientDetail";
 import Vehicles from "./components/Vehicles";
 import Reports from "./components/Reports";
 import Debts from "./components/Debts";
+import OfflineIndicator from "./components/OfflineIndicator";
+import InstallPrompt from "./components/InstallPrompt";
+import { offlineDB } from "./lib/offlineDB";
 
 function AppContent() {
   const { user, loading } = useAuth();
   const [currentPage, setCurrentPage] = useState("dashboard");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+
+  // Initialize offline database
+  useEffect(() => {
+    offlineDB.init().catch(console.error);
+
+    // Register service worker
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then((registration) => {
+          console.log("SW registered:", registration);
+        })
+        .catch((error) => {
+          console.error("SW registration failed:", error);
+        });
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -68,9 +88,13 @@ function AppContent() {
   };
 
   return (
-    <Layout currentPage={currentPage} onNavigate={setCurrentPage}>
-      {renderPage()}
-    </Layout>
+    <>
+      <Layout currentPage={currentPage} onNavigate={setCurrentPage}>
+        {renderPage()}
+      </Layout>
+      <OfflineIndicator />
+      <InstallPrompt />
+    </>
   );
 }
 
