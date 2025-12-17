@@ -1,13 +1,18 @@
-// Currency formatting utility for KES
-export const formatCurrency = (amount: number | string): string => {
+// Currency formatting utility for KES and USD
+export const formatCurrency = (
+  amount: number | string,
+  currency: "KES" | "USD" = "KES"
+): string => {
   const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
 
-  if (isNaN(numAmount)) return "KES 0.00";
+  if (isNaN(numAmount)) return `${currency} 0.00`;
 
-  return `KES ${numAmount.toLocaleString("en-KE", {
+  const formatted = numAmount.toLocaleString("en-KE", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })}`;
+  });
+
+  return currency === "USD" ? `$${formatted}` : `${formatted}`;
 };
 
 // Parse currency input (remove commas and convert to number)

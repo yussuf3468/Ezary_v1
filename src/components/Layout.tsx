@@ -2,14 +2,10 @@ import { ReactNode } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import {
   LayoutDashboard,
-  TrendingUp,
-  TrendingDown,
-  CreditCard,
-  Target,
-  Calendar,
+  Users,
+  AlertCircle,
   PieChart,
   LogOut,
-  Wallet,
 } from "lucide-react";
 
 interface LayoutProps {
@@ -33,40 +29,22 @@ export default function Layout({
       color: "from-blue-500 to-cyan-600",
     },
     {
-      id: "income",
-      label: "Income",
-      icon: TrendingUp,
+      id: "clients",
+      label: "Clients",
+      icon: Users,
       color: "from-emerald-500 to-teal-600",
-    },
-    {
-      id: "expenses",
-      label: "Expenses",
-      icon: TrendingDown,
-      color: "from-red-500 to-pink-600",
     },
     {
       id: "debts",
       label: "Debts",
-      icon: CreditCard,
-      color: "from-purple-500 to-pink-600",
-    },
-    {
-      id: "savings",
-      label: "Savings",
-      icon: Target,
-      color: "from-indigo-500 to-purple-600",
-    },
-    {
-      id: "expected-expenses",
-      label: "Expected",
-      icon: Calendar,
-      color: "from-amber-500 to-yellow-600",
+      icon: AlertCircle,
+      color: "from-red-500 to-pink-600",
     },
     {
       id: "reports",
       label: "Reports",
       icon: PieChart,
-      color: "from-indigo-500 to-purple-600",
+      color: "from-purple-500 to-pink-600",
     },
   ];
 
@@ -80,17 +58,17 @@ export default function Layout({
       <nav className="hidden md:block bg-white/80 backdrop-blur-xl shadow-lg border-b border-gray-200/50 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            {/* Logo */}
+            {/* Ezary CMS Logo */}
             <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-2.5 rounded-xl shadow-lg">
-                <Wallet className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-xl">E</span>
               </div>
               <div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                  Risq
+                  Ezary CMS
                 </h1>
                 <p className="text-xs text-gray-500 -mt-0.5">
-                  Yussuf Muse's Finance
+                  Client Management System
                 </p>
               </div>
             </div>
@@ -132,13 +110,13 @@ export default function Layout({
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-2">
             <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-2 rounded-lg shadow-md">
-              <Wallet className="w-5 h-5 text-white" />
+              <LayoutDashboard className="w-5 h-5 text-white" />
             </div>
             <div>
               <h1 className="text-base font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                Risq
+                Ezary CMS
               </h1>
-              <p className="text-xs text-gray-500 -mt-0.5">Yussuf Muse</p>
+              <p className="text-xs text-gray-500 -mt-0.5">Client Management</p>
             </div>
           </div>
           <button

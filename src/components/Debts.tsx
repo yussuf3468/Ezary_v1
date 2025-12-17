@@ -1,1371 +1,624 @@
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
-import { useAuth } from "../contexts/AuthContext";
 import {
   Plus,
+  Search,
   Trash2,
-  CreditCard,
-  Banknote,
   AlertCircle,
-  TrendingUp,
-  TrendingDown,
-  Users,
+  Calendar,
   DollarSign,
 } from "lucide-react";
+import { formatCurrency } from "../lib/currency";
 import Modal from "./Modal";
-import {
-  formatCurrency,
-  parseCurrency,
-  formatNumberInput,
-} from "../lib/currency";
 
-interface DebtRecord {
+interface DebtWithClient {
   id: string;
-  creditor_name: string;
+  client_id: string;
+  client_name: string;
+  client_code: string;
+  phone: string;
   amount: number;
-  amount_paid: number;
-  due_date: string | null;
-  status: "active" | "paying" | "cleared" | "pending";
-  notes?: string;
+  currency: "KES" | "USD";
+  balance: number;
+  description: string;
+  reference_number: string;
+  due_date: string;
+  status: "pending" | "overdue" | "paid" | "cancelled";
+  priority: "low" | "normal" | "high" | "urgent";
+  notes: string;
+  created_at: string;
 }
 
-interface LoanRecord {
-  id: string;
-  debtor_name: string;
-  amount: number;
-  amount_received: number;
-  due_date: string | null;
-  status: "active" | "paying" | "cleared" | "pending";
-  notes?: string;
+interface Stats {
+  overdue: number;
+  pending: number;
+  paid: number;
+  totalBalance: number;
 }
-
-type ActiveTab = "overview" | "debts" | "loans";
-
-// Valid status values for debts and loans
-const VALID_STATUSES = ["active", "paying", "cleared", "pending"] as const;
-type ValidStatus = (typeof VALID_STATUSES)[number];
-
-// Helper function to ensure status is valid
-const validateStatus = (status: any): ValidStatus => {
-  return VALID_STATUSES.includes(status) ? status : "active";
-};
 
 export default function Debts() {
-  const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
-  const [debts, setDebts] = useState<DebtRecord[]>([]);
-  const [loans, setLoans] = useState<LoanRecord[]>([]);
+  const [debts, setDebts] = useState<DebtWithClient[]>([]);
+  const [filteredDebts, setFilteredDebts] = useState<DebtWithClient[]>([]);
+  const [stats, setStats] = useState<Stats>({
+    overdue: 0,
+    pending: 0,
+    paid: 0,
+    totalBalance: 0,
+  });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Debt form states
-  const [showDebtForm, setShowDebtForm] = useState(false);
-  const [showDebtPaymentForm, setShowDebtPaymentForm] = useState<string | null>(
-    null
-  );
-  const [debtPaymentAmount, setDebtPaymentAmount] = useState("");
-  const [debtFormData, setDebtFormData] = useState({
-    creditor_name: "",
+  const [newDebt, setNewDebt] = useState({
+    client_id: "",
     amount: "",
+    currency: "KES" as "KES" | "USD",
+    description: "",
+    reference_number: "",
     due_date: "",
-    notes: "",
-  });
-
-  // Loan form states
-  const [showLoanForm, setShowLoanForm] = useState(false);
-  const [showLoanPaymentForm, setShowLoanPaymentForm] = useState<string | null>(
-    null
-  );
-  const [loanPaymentAmount, setLoanPaymentAmount] = useState("");
-  const [loanFormData, setLoanFormData] = useState({
-    debtor_name: "",
-    amount: "",
-    due_date: "",
+    priority: "normal" as "low" | "normal" | "high" | "urgent",
     notes: "",
   });
 
   useEffect(() => {
-    if (user) {
-      loadData();
-    }
-  }, [user]);
+    loadDebts();
+    loadClients();
+  }, []);
 
-  const loadData = async () => {
-    if (!user) return;
-    setLoading(true);
+  useEffect(() => {
+    filterDebts();
+  }, [debts, searchTerm, statusFilter]);
 
+  async function loadDebts() {
     try {
-      const [debtsResult, loansResult] = await Promise.all([
-        supabase
-          .from("debts")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("due_date", { ascending: true }),
-        supabase
-          .from("loans")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("due_date", { ascending: true }),
-      ]);
+      const { data, error } = await supabase
+        .from("client_debts")
+        .select(
+          `
+          *,
+          clients (
+            client_name,
+            client_code,
+            phone
+          )
+        `
+        )
+        .order("due_date", { ascending: true });
 
-      if (debtsResult.error) throw debtsResult.error;
-      if (loansResult.error) throw loansResult.error;
+      if (error) throw error;
 
-      setDebts(debtsResult.data || []);
-      setLoans(loansResult.data || []);
-    } catch (error) {
-      console.error("Error loading data:", error);
+      const debtsWithClients = (data || []).map((debt: any) => ({
+        ...debt,
+        client_name: debt.clients?.client_name || "Unknown",
+        client_code: debt.clients?.client_code || "",
+        phone: debt.clients?.phone || "",
+      }));
+
+      setDebts(debtsWithClients);
+      calculateStats(debtsWithClients);
+    } catch (error: any) {
+      console.error("Error loading debts:", error.message);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  // Debt operations
-  const handleDebtSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-
+  async function loadClients() {
     try {
-      const insertData: any = {
-        user_id: user.id,
-        creditor_name: debtFormData.creditor_name,
-        amount: parseCurrency(debtFormData.amount),
-        amount_paid: 0,
-        due_date: debtFormData.due_date || null,
-        status: validateStatus("active"), // Explicitly set valid status
-      };
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, client_name, client_code")
+        .eq("status", "active")
+        .order("client_name");
 
-      // Only add notes if the column exists (it might not be in older schemas)
-      if (debtFormData.notes) {
-        insertData.notes = debtFormData.notes;
-      }
-
-      const { error: debtError } = await supabase
-        .from("debts")
-        .insert(insertData);
-
-      if (debtError) {
-        console.error("Error adding debt:", debtError);
-        alert(`Error adding debt: ${debtError.message}`);
-        return;
-      }
-
-      // Record as income since money entered your account
-      const { error: incomeError } = await supabase.from("income").insert({
-        user_id: user.id,
-        amount: parseCurrency(debtFormData.amount),
-        description: `Debt from ${debtFormData.creditor_name}`,
-        type: "one-time",
-        date: new Date().toISOString().split("T")[0],
-      });
-
-      if (incomeError) {
-        console.error("Error recording income:", incomeError);
-        alert("Debt recorded but failed to add income entry");
-      } else {
-        alert(
-          `Debt recorded! ${formatCurrency(
-            parseCurrency(debtFormData.amount)
-          )} added as income.`
-        );
-      }
-
-      setDebtFormData({
-        creditor_name: "",
-        amount: "",
-        due_date: "",
-        notes: "",
-      });
-      setShowDebtForm(false);
-      loadData();
+      if (error) throw error;
+      setClients(data || []);
     } catch (error: any) {
-      console.error("Error adding debt:", error);
-      alert(`Error adding debt: ${error.message || "Unknown error"}`);
+      console.error("Error loading clients:", error.message);
     }
-  };
+  }
 
-  const handleDebtPayment = async (debtId: string) => {
-    if (!debtPaymentAmount || !user) return;
+  function calculateStats(debtsData: DebtWithClient[]) {
+    const overdue = debtsData.filter((d) => d.status === "overdue").length;
+    const pending = debtsData.filter((d) => d.status === "pending").length;
+    const paid = debtsData.filter((d) => d.status === "paid").length;
+    const totalBalance = debtsData
+      .filter((d) => d.status !== "paid" && d.status !== "cancelled")
+      .reduce((sum, d) => sum + d.balance, 0);
 
-    const debt = debts.find((d) => d.id === debtId);
-    if (!debt) return;
+    setStats({ overdue, pending, paid, totalBalance });
+  }
 
-    const paymentValue = parseCurrency(debtPaymentAmount);
-    const newAmountPaid = Number(debt.amount_paid) + paymentValue;
-    const remaining = Number(debt.amount) - newAmountPaid;
+  function filterDebts() {
+    let filtered = debts;
 
-    let newStatus: ValidStatus = "active";
-    if (remaining <= 0) {
-      newStatus = "cleared";
-    } else if (newAmountPaid > 0) {
-      newStatus = "paying";
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((d) => d.status === statusFilter);
     }
 
-    // Validate status before sending to database
-    const validatedStatus = validateStatus(newStatus);
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (d) =>
+          d.client_name.toLowerCase().includes(term) ||
+          d.client_code.toLowerCase().includes(term) ||
+          d.description.toLowerCase().includes(term)
+      );
+    }
 
+    setFilteredDebts(filtered);
+  }
+
+  function getDaysUntilDue(dueDate: string): number {
+    const today = new Date();
+    const due = new Date(dueDate);
+    const diffTime = due.getTime() - today.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+
+  function getStatusColor(status: string): string {
+    switch (status) {
+      case "overdue":
+        return "text-red-600 bg-red-50";
+      case "pending":
+        return "text-amber-600 bg-amber-50";
+      case "paid":
+        return "text-emerald-600 bg-emerald-50";
+      case "cancelled":
+        return "text-gray-600 bg-gray-50";
+      default:
+        return "text-gray-600 bg-gray-50";
+    }
+  }
+
+  function getPriorityColor(priority: string): string {
+    switch (priority) {
+      case "urgent":
+        return "text-red-600 bg-red-50";
+      case "high":
+        return "text-orange-600 bg-orange-50";
+      case "normal":
+        return "text-blue-600 bg-blue-50";
+      case "low":
+        return "text-gray-600 bg-gray-50";
+      default:
+        return "text-gray-600 bg-gray-50";
+    }
+  }
+
+  async function handleAddDebt(e: React.FormEvent) {
+    e.preventDefault();
     try {
-      const { error } = await supabase
-        .from("debts")
-        .update({
-          amount_paid:
-            newAmountPaid >= Number(debt.amount)
-              ? Number(debt.amount)
-              : newAmountPaid,
-          status: validatedStatus,
-        })
-        .eq("id", debtId);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get staff record for current user
+      const { data: staffData } = await supabase
+        .from("staff")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
+      const { error } = await supabase.from("client_debts").insert([
+        {
+          ...newDebt,
+          amount: parseFloat(newDebt.amount),
+          created_by: staffData?.id,
+          updated_by: staffData?.id,
+        },
+      ]);
 
       if (error) throw error;
 
-      setDebtPaymentAmount("");
-      setShowDebtPaymentForm(null);
-      loadData();
-    } catch (error) {
-      console.error("Error recording payment:", error);
+      setShowAddModal(false);
+      setNewDebt({
+        client_id: "",
+        amount: "",
+        currency: "KES",
+        description: "",
+        reference_number: "",
+        due_date: "",
+        priority: "normal",
+        notes: "",
+      });
+      loadDebts();
+    } catch (error: any) {
+      alert("Error adding debt: " + error.message);
     }
-  };
+  }
 
-  const handleDeleteDebt = async (id: string) => {
+  async function handleDeleteDebt(id: string) {
     if (!confirm("Are you sure you want to delete this debt?")) return;
 
     try {
-      const { error } = await supabase.from("debts").delete().eq("id", id);
-      if (error) throw error;
-      loadData();
-    } catch (error) {
-      console.error("Error deleting debt:", error);
-    }
-  };
-
-  // Loan operations
-  const handleLoanSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-
-    try {
-      const insertData: any = {
-        user_id: user.id,
-        debtor_name: loanFormData.debtor_name,
-        amount: parseCurrency(loanFormData.amount),
-        amount_received: 0,
-        due_date: loanFormData.due_date || null,
-        status: validateStatus("active"), // Explicitly set valid status
-      };
-
-      // Only add notes if the column exists (it might not be in older schemas)
-      if (loanFormData.notes) {
-        insertData.notes = loanFormData.notes;
-      }
-
-      const { error } = await supabase.from("loans").insert(insertData);
-
-      if (error) {
-        console.error("Error adding loan:", error);
-        alert(`Error adding loan: ${error.message}`);
-        return;
-      }
-
-      setLoanFormData({ debtor_name: "", amount: "", due_date: "", notes: "" });
-      setShowLoanForm(false);
-      loadData();
-    } catch (error: any) {
-      console.error("Error adding loan:", error);
-      alert(`Error adding loan: ${error.message || "Unknown error"}`);
-    }
-  };
-
-  const handleLoanPayment = async (loanId: string) => {
-    if (!loanPaymentAmount || !user) return;
-
-    const loan = loans.find((l) => l.id === loanId);
-    if (!loan) return;
-
-    const paymentValue = parseCurrency(loanPaymentAmount);
-    const newAmountReceived = Number(loan.amount_received) + paymentValue;
-    const remaining = Number(loan.amount) - newAmountReceived;
-
-    let newStatus: ValidStatus = "active";
-    if (remaining <= 0) {
-      newStatus = "cleared";
-    } else if (newAmountReceived > 0) {
-      newStatus = "paying";
-    }
-
-    // Validate status before sending to database
-    const validatedStatus = validateStatus(newStatus);
-
-    try {
       const { error } = await supabase
-        .from("loans")
-        .update({
-          amount_received:
-            newAmountReceived >= Number(loan.amount)
-              ? Number(loan.amount)
-              : newAmountReceived,
-          status: validatedStatus,
-        })
-        .eq("id", loanId);
+        .from("client_debts")
+        .delete()
+        .eq("id", id);
 
       if (error) throw error;
-
-      setLoanPaymentAmount("");
-      setShowLoanPaymentForm(null);
-      loadData();
-    } catch (error) {
-      console.error("Error recording payment:", error);
+      loadDebts();
+    } catch (error: any) {
+      alert("Error deleting debt: " + error.message);
     }
-  };
-
-  const handleDeleteLoan = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this loan?")) return;
-
-    try {
-      const { error } = await supabase.from("loans").delete().eq("id", id);
-      if (error) throw error;
-      loadData();
-    } catch (error) {
-      console.error("Error deleting loan:", error);
-    }
-  };
-
-  // Calculate totals
-  const totalDebt = debts.reduce((sum, d) => sum + Number(d.amount), 0);
-  const totalDebtPaid = debts.reduce(
-    (sum, d) => sum + Number(d.amount_paid),
-    0
-  );
-  const totalDebtRemaining = totalDebt - totalDebtPaid;
-
-  const totalLoaned = loans.reduce((sum, l) => sum + Number(l.amount), 0);
-  const totalLoanReceived = loans.reduce(
-    (sum, l) => sum + Number(l.amount_received),
-    0
-  );
-  const totalLoanRemaining = totalLoaned - totalLoanReceived;
-
-  const netPosition = totalLoanRemaining - totalDebtRemaining;
+  }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading...</div>
-      </div>
+      <div className="flex items-center justify-center h-64">Loading...</div>
     );
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 pb-20 sm:pb-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-rose-500 to-pink-600 p-4 sm:p-6 rounded-xl text-white shadow-lg">
-        <h2 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-          <CreditCard className="h-6 w-6 sm:h-8 sm:w-8" />
-          Debts & Loans Manager
-        </h2>
-        <p className="text-rose-50 text-sm mt-1">
-          Track what you owe and what's owed to you
-        </p>
+    <div className="space-y-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Overdue</p>
+              <p className="text-xl font-bold text-red-600">{stats.overdue}</p>
+            </div>
+            <AlertCircle className="w-8 h-8 text-red-600" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Pending</p>
+              <p className="text-xl font-bold text-amber-600">
+                {stats.pending}
+              </p>
+            </div>
+            <Calendar className="w-8 h-8 text-amber-600" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Paid</p>
+              <p className="text-xl font-bold text-emerald-600">{stats.paid}</p>
+            </div>
+            <DollarSign className="w-8 h-8 text-emerald-600" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Total Balance</p>
+              <p className="text-xl font-bold text-blue-600">
+                {formatCurrency(stats.totalBalance, "KES")}
+              </p>
+            </div>
+            <DollarSign className="w-8 h-8 text-blue-600" />
+          </div>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="bg-white rounded-xl shadow-md p-1 flex gap-1">
-        <button
-          onClick={() => setActiveTab("overview")}
-          className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === "overview"
-              ? "bg-gradient-to-r from-rose-500 to-pink-600 text-white"
-              : "text-gray-700 hover:bg-gray-100"
-          }`}
-        >
-          Overview
-        </button>
-        <button
-          onClick={() => setActiveTab("debts")}
-          className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === "debts"
-              ? "bg-gradient-to-r from-rose-500 to-pink-600 text-white"
-              : "text-gray-700 hover:bg-gray-100"
-          }`}
-        >
-          I Owe ({debts.filter((d) => d.status !== "cleared").length})
-        </button>
-        <button
-          onClick={() => setActiveTab("loans")}
-          className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === "loans"
-              ? "bg-gradient-to-r from-rose-500 to-pink-600 text-white"
-              : "text-gray-700 hover:bg-gray-100"
-          }`}
-        >
-          Owed to Me ({loans.filter((l) => l.status !== "cleared").length})
-        </button>
+      {/* Toolbar */}
+      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search by client name, code, or description..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All Status</option>
+            <option value="overdue">Overdue</option>
+            <option value="pending">Pending</option>
+            <option value="paid">Paid</option>
+          </select>
+
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <Plus className="w-5 h-5" />
+            Add Debt
+          </button>
+        </div>
       </div>
 
-      {/* Overview Tab */}
-      {activeTab === "overview" && (
-        <div className="space-y-4">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Total I Owe */}
-            <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-4 text-white shadow-lg">
-              <div className="flex items-center justify-between mb-2">
-                <TrendingDown className="h-8 w-8 opacity-80" />
-              </div>
-              <p className="text-red-100 text-xs sm:text-sm">Total I Owe</p>
-              <p className="text-xl sm:text-2xl font-bold mt-1">
-                {formatCurrency(totalDebtRemaining)}
-              </p>
-              <p className="text-xs text-red-100 mt-1">
-                of {formatCurrency(totalDebt)}
-              </p>
-            </div>
-
-            {/* Owed to Me */}
-            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg">
-              <div className="flex items-center justify-between mb-2">
-                <TrendingUp className="h-8 w-8 opacity-80" />
-              </div>
-              <p className="text-emerald-100 text-xs sm:text-sm">Owed to Me</p>
-              <p className="text-xl sm:text-2xl font-bold mt-1">
-                {formatCurrency(totalLoanRemaining)}
-              </p>
-              <p className="text-xs text-emerald-100 mt-1">
-                of {formatCurrency(totalLoaned)}
-              </p>
-            </div>
-
-            {/* Net Position */}
-            <div
-              className={`bg-gradient-to-br ${
-                netPosition >= 0
-                  ? "from-cyan-500 to-cyan-600"
-                  : "from-amber-500 to-amber-600"
-              } rounded-xl p-4 text-white shadow-lg`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <DollarSign className="h-8 w-8 opacity-80" />
-              </div>
-              <p className="text-white/90 text-xs sm:text-sm">Net Position</p>
-              <p className="text-xl sm:text-2xl font-bold mt-1">
-                {formatCurrency(Math.abs(netPosition))}
-              </p>
-              <p className="text-xs text-white/80 mt-1">
-                {netPosition >= 0 ? "In your favor" : "You owe more"}
-              </p>
-            </div>
-
-            {/* Active Items */}
-            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg">
-              <div className="flex items-center justify-between mb-2">
-                <Users className="h-8 w-8 opacity-80" />
-              </div>
-              <p className="text-purple-100 text-xs sm:text-sm">Active Items</p>
-              <p className="text-xl sm:text-2xl font-bold mt-1">
-                {debts.filter((d) => d.status !== "cleared").length +
-                  loans.filter((l) => l.status !== "cleared").length}
-              </p>
-              <p className="text-xs text-purple-100 mt-1">
-                {debts.filter((d) => d.status !== "cleared").length} debts,{" "}
-                {loans.filter((l) => l.status !== "cleared").length} loans
-              </p>
-            </div>
-          </div>
-
-          {/* Quick Overview Lists */}
-          <div className="grid md:grid-cols-2 gap-4">
-            {/* Active Debts */}
-            <div className="bg-white rounded-xl shadow-md p-4 sm:p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-red-600" />
-                What I Owe (Active)
-              </h3>
-              <div className="space-y-2">
-                {debts
-                  .filter((d) => d.status !== "cleared")
-                  .slice(0, 5)
-                  .map((debt) => {
-                    const remaining =
-                      Number(debt.amount) - Number(debt.amount_paid);
-                    return (
-                      <div
-                        key={debt.id}
-                        className="flex justify-between items-center p-3 bg-red-50 rounded-lg"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 truncate">
-                            {debt.creditor_name}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            Due:{" "}
-                            {debt.due_date
-                              ? new Date(debt.due_date).toLocaleDateString(
-                                  "en-KE"
-                                )
-                              : "No date"}
-                          </p>
-                        </div>
-                        <span className="text-sm font-bold text-red-600 ml-2">
-                          {formatCurrency(remaining)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                {debts.filter((d) => d.status !== "cleared").length === 0 && (
-                  <p className="text-gray-500 text-sm text-center py-4">
-                    No active debts
-                  </p>
-                )}
-                {debts.filter((d) => d.status !== "cleared").length > 5 && (
-                  <button
-                    onClick={() => setActiveTab("debts")}
-                    className="w-full text-center text-sm text-rose-600 hover:text-rose-700 font-medium mt-2"
-                  >
-                    View all{" "}
-                    {debts.filter((d) => d.status !== "cleared").length} debts →
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Active Loans */}
-            <div className="bg-white rounded-xl shadow-md p-4 sm:p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-                <Banknote className="h-5 w-5 text-emerald-600" />
-                Owed to Me (Active)
-              </h3>
-              <div className="space-y-2">
-                {loans
-                  .filter((l) => l.status !== "cleared")
-                  .slice(0, 5)
-                  .map((loan) => {
-                    const remaining =
-                      Number(loan.amount) - Number(loan.amount_received);
-                    return (
-                      <div
-                        key={loan.id}
-                        className="flex justify-between items-center p-3 bg-emerald-50 rounded-lg"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 truncate">
-                            {loan.debtor_name}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            Due:{" "}
-                            {loan.due_date
-                              ? new Date(loan.due_date).toLocaleDateString(
-                                  "en-KE"
-                                )
-                              : "No date"}
-                          </p>
-                        </div>
-                        <span className="text-sm font-bold text-emerald-600 ml-2">
-                          {formatCurrency(remaining)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                {loans.filter((l) => l.status !== "cleared").length === 0 && (
-                  <p className="text-gray-500 text-sm text-center py-4">
-                    No active loans
-                  </p>
-                )}
-                {loans.filter((l) => l.status !== "cleared").length > 5 && (
-                  <button
-                    onClick={() => setActiveTab("loans")}
-                    className="w-full text-center text-sm text-emerald-600 hover:text-emerald-700 font-medium mt-2"
-                  >
-                    View all{" "}
-                    {loans.filter((l) => l.status !== "cleared").length} loans →
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Debts Tab */}
-      {activeTab === "debts" && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-bold text-gray-900">What I Owe</h3>
-            <button
-              onClick={() => setShowDebtForm(true)}
-              className="flex items-center gap-2 bg-gradient-to-r from-rose-500 to-pink-600 text-white px-4 py-2 rounded-lg hover:from-rose-600 hover:to-pink-700 transition-colors font-semibold shadow-md"
-            >
-              <Plus className="h-4 w-4" />
-              Add Debt
-            </button>
-          </div>
-
-          {/* Mobile: Cards */}
-          <div className="block sm:hidden space-y-3">
-            {debts.map((debt) => {
-              const remaining = Number(debt.amount) - Number(debt.amount_paid);
-              const progress =
-                (Number(debt.amount_paid) / Number(debt.amount)) * 100;
-              return (
-                <div
-                  key={debt.id}
-                  className="bg-white rounded-lg shadow-md p-4"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex-1">
-                      <h4 className="font-bold text-gray-900">
-                        {debt.creditor_name}
-                      </h4>
-                      {debt.notes && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          {debt.notes}
+      {/* Debts List */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Client
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Amount
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Balance
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Due Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Priority
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Description
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredDebts.map((debt) => {
+                const daysUntilDue = getDaysUntilDue(debt.due_date);
+                return (
+                  <tr key={debt.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {debt.client_name}
                         </p>
-                      )}
-                    </div>
-                    <span
-                      className={`text-xs font-medium px-2 py-1 rounded ${
-                        debt.status === "cleared"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : debt.status === "paying"
-                          ? "bg-amber-100 text-amber-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {debt.status === "cleared"
-                        ? "Cleared"
-                        : debt.status === "paying"
-                        ? "Paying"
-                        : "Active"}
-                    </span>
-                  </div>
-
-                  <div className="space-y-2 mb-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Total:</span>
-                      <span className="font-semibold">
-                        {formatCurrency(debt.amount)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Paid:</span>
-                      <span className="font-semibold text-emerald-600">
-                        {formatCurrency(debt.amount_paid)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Remaining:</span>
-                      <span className="font-semibold text-red-600">
-                        {formatCurrency(remaining)}
-                      </span>
-                    </div>
-                    {debt.due_date && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Due:</span>
-                        <span className="text-gray-900">
-                          {new Date(debt.due_date).toLocaleDateString("en-KE")}
-                        </span>
+                        <p className="text-sm text-gray-500">
+                          {debt.client_code}
+                        </p>
                       </div>
-                    )}
-                  </div>
-
-                  <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
-                    <div
-                      className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-
-                  <div className="flex gap-2">
-                    {debt.status !== "cleared" && (
-                      <button
-                        onClick={() => setShowDebtPaymentForm(debt.id)}
-                        className="flex-1 bg-emerald-500 text-white px-3 py-2 rounded-lg hover:bg-emerald-600 transition-colors text-sm font-medium"
-                      >
-                        Make Payment
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleDeleteDebt(debt.id)}
-                      className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-            {debts.length === 0 && (
-              <p className="text-gray-500 text-center py-8">
-                No debts recorded. Click "Add Debt" to start tracking what you
-                owe.
-              </p>
-            )}
-          </div>
-
-          {/* Desktop: Table */}
-          <div className="hidden sm:block bg-white rounded-xl shadow-md overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                      Creditor
-                    </th>
-                    <th className="text-right py-3 px-4 font-semibold text-gray-700">
-                      Total Amount
-                    </th>
-                    <th className="text-right py-3 px-4 font-semibold text-gray-700">
-                      Paid
-                    </th>
-                    <th className="text-right py-3 px-4 font-semibold text-gray-700">
-                      Remaining
-                    </th>
-                    <th className="text-center py-3 px-4 font-semibold text-gray-700">
-                      Due Date
-                    </th>
-                    <th className="text-center py-3 px-4 font-semibold text-gray-700">
-                      Status
-                    </th>
-                    <th className="text-center py-3 px-4 font-semibold text-gray-700">
-                      Progress
-                    </th>
-                    <th className="text-center py-3 px-4 font-semibold text-gray-700">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {debts.map((debt) => {
-                    const remaining =
-                      Number(debt.amount) - Number(debt.amount_paid);
-                    const progress =
-                      (Number(debt.amount_paid) / Number(debt.amount)) * 100;
-                    return (
-                      <tr
-                        key={debt.id}
-                        className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                      >
-                        <td className="py-3 px-4">
-                          <div>
-                            <p className="font-medium text-gray-900">
-                              {debt.creditor_name}
-                            </p>
-                            {debt.notes && (
-                              <p className="text-xs text-gray-500 mt-1">
-                                {debt.notes}
-                              </p>
-                            )}
-                          </div>
-                        </td>
-                        <td className="text-right py-3 px-4 font-semibold">
-                          {formatCurrency(debt.amount)}
-                        </td>
-                        <td className="text-right py-3 px-4 text-emerald-600 font-semibold">
-                          {formatCurrency(debt.amount_paid)}
-                        </td>
-                        <td className="text-right py-3 px-4 text-red-600 font-semibold">
-                          {formatCurrency(remaining)}
-                        </td>
-                        <td className="text-center py-3 px-4 text-gray-600">
-                          {debt.due_date
-                            ? new Date(debt.due_date).toLocaleDateString(
-                                "en-KE"
-                              )
-                            : "-"}
-                        </td>
-                        <td className="text-center py-3 px-4">
-                          <span
-                            className={`text-xs font-medium px-3 py-1 rounded-full ${
-                              debt.status === "cleared"
-                                ? "bg-emerald-100 text-emerald-700"
-                                : debt.status === "paying"
-                                ? "bg-amber-100 text-amber-700"
-                                : "bg-red-100 text-red-700"
+                    </td>
+                    <td className="px-6 py-4 text-gray-900">
+                      {formatCurrency(debt.amount, debt.currency)}
+                    </td>
+                    <td className="px-6 py-4 font-medium text-gray-900">
+                      {formatCurrency(debt.balance, debt.currency)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="text-gray-900">
+                          {new Date(debt.due_date).toLocaleDateString()}
+                        </p>
+                        {debt.status !== "paid" && (
+                          <p
+                            className={`text-sm ${
+                              daysUntilDue < 0
+                                ? "text-red-600"
+                                : daysUntilDue <= 7
+                                ? "text-amber-600"
+                                : "text-gray-500"
                             }`}
                           >
-                            {debt.status === "cleared"
-                              ? "Cleared"
-                              : debt.status === "paying"
-                              ? "Paying"
-                              : "Active"}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 bg-gray-200 rounded-full h-2">
-                              <div
-                                className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${progress}%` }}
-                              />
-                            </div>
-                            <span className="text-xs text-gray-600 w-12 text-right">
-                              {progress.toFixed(0)}%
-                            </span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center justify-center gap-2">
-                            {debt.status !== "cleared" && (
-                              <button
-                                onClick={() => setShowDebtPaymentForm(debt.id)}
-                                className="bg-emerald-500 text-white px-3 py-1 rounded-lg hover:bg-emerald-600 transition-colors text-sm"
-                              >
-                                Pay
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleDeleteDebt(debt.id)}
-                              className="text-red-600 hover:text-red-700 transition-colors"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            {debts.length === 0 && (
-              <p className="text-gray-500 text-center py-8">
-                No debts recorded. Click "Add Debt" to start tracking what you
-                owe.
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Loans Tab */}
-      {activeTab === "loans" && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-bold text-gray-900">Owed to Me</h3>
-            <button
-              onClick={() => setShowLoanForm(true)}
-              className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 py-2 rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-colors font-semibold shadow-md"
-            >
-              <Plus className="h-4 w-4" />
-              Add Loan
-            </button>
-          </div>
-
-          {/* Mobile: Cards */}
-          <div className="block sm:hidden space-y-3">
-            {loans.map((loan) => {
-              const remaining =
-                Number(loan.amount) - Number(loan.amount_received);
-              const progress =
-                (Number(loan.amount_received) / Number(loan.amount)) * 100;
-              return (
-                <div
-                  key={loan.id}
-                  className="bg-white rounded-lg shadow-md p-4"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex-1">
-                      <h4 className="font-bold text-gray-900">
-                        {loan.debtor_name}
-                      </h4>
-                      {loan.notes && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          {loan.notes}
-                        </p>
-                      )}
-                    </div>
-                    <span
-                      className={`text-xs font-medium px-2 py-1 rounded ${
-                        loan.status === "cleared"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : loan.status === "paying"
-                          ? "bg-amber-100 text-amber-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {loan.status === "cleared"
-                        ? "Cleared"
-                        : loan.status === "paying"
-                        ? "Paying"
-                        : "Active"}
-                    </span>
-                  </div>
-
-                  <div className="space-y-2 mb-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Total:</span>
-                      <span className="font-semibold">
-                        {formatCurrency(loan.amount)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Received:</span>
-                      <span className="font-semibold text-emerald-600">
-                        {formatCurrency(loan.amount_received)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Remaining:</span>
-                      <span className="font-semibold text-amber-600">
-                        {formatCurrency(remaining)}
-                      </span>
-                    </div>
-                    {loan.due_date && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Due:</span>
-                        <span className="text-gray-900">
-                          {new Date(loan.due_date).toLocaleDateString("en-KE")}
-                        </span>
+                            {daysUntilDue < 0
+                              ? `${Math.abs(daysUntilDue)} days overdue`
+                              : daysUntilDue === 0
+                              ? "Due today"
+                              : `${daysUntilDue} days left`}
+                          </p>
+                        )}
                       </div>
-                    )}
-                  </div>
-
-                  <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
-                    <div
-                      className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-
-                  <div className="flex gap-2">
-                    {loan.status !== "cleared" && (
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
+                          debt.status
+                        )}`}
+                      >
+                        {debt.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(
+                          debt.priority
+                        )}`}
+                      >
+                        {debt.priority}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-gray-900 max-w-xs truncate">
+                      {debt.description}
+                    </td>
+                    <td className="px-6 py-4">
                       <button
-                        onClick={() => setShowLoanPaymentForm(loan.id)}
-                        className="flex-1 bg-emerald-500 text-white px-3 py-2 rounded-lg hover:bg-emerald-600 transition-colors text-sm font-medium"
+                        onClick={() => handleDeleteDebt(debt.id)}
+                        className="text-red-600 hover:text-red-700"
                       >
-                        Record Payment
+                        <Trash2 className="w-5 h-5" />
                       </button>
-                    )}
-                    <button
-                      onClick={() => handleDeleteLoan(loan.id)}
-                      className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-            {loans.length === 0 && (
-              <p className="text-gray-500 text-center py-8">
-                No loans recorded. Click "Add Loan" to track money others owe
-                you.
-              </p>
-            )}
-          </div>
-
-          {/* Desktop: Table */}
-          <div className="hidden sm:block bg-white rounded-xl shadow-md overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                      Debtor
-                    </th>
-                    <th className="text-right py-3 px-4 font-semibold text-gray-700">
-                      Total Amount
-                    </th>
-                    <th className="text-right py-3 px-4 font-semibold text-gray-700">
-                      Received
-                    </th>
-                    <th className="text-right py-3 px-4 font-semibold text-gray-700">
-                      Remaining
-                    </th>
-                    <th className="text-center py-3 px-4 font-semibold text-gray-700">
-                      Due Date
-                    </th>
-                    <th className="text-center py-3 px-4 font-semibold text-gray-700">
-                      Status
-                    </th>
-                    <th className="text-center py-3 px-4 font-semibold text-gray-700">
-                      Progress
-                    </th>
-                    <th className="text-center py-3 px-4 font-semibold text-gray-700">
-                      Actions
-                    </th>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {loans.map((loan) => {
-                    const remaining =
-                      Number(loan.amount) - Number(loan.amount_received);
-                    const progress =
-                      (Number(loan.amount_received) / Number(loan.amount)) *
-                      100;
-                    return (
-                      <tr
-                        key={loan.id}
-                        className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                      >
-                        <td className="py-3 px-4">
-                          <div>
-                            <p className="font-medium text-gray-900">
-                              {loan.debtor_name}
-                            </p>
-                            {loan.notes && (
-                              <p className="text-xs text-gray-500 mt-1">
-                                {loan.notes}
-                              </p>
-                            )}
-                          </div>
-                        </td>
-                        <td className="text-right py-3 px-4 font-semibold">
-                          {formatCurrency(loan.amount)}
-                        </td>
-                        <td className="text-right py-3 px-4 text-emerald-600 font-semibold">
-                          {formatCurrency(loan.amount_received)}
-                        </td>
-                        <td className="text-right py-3 px-4 text-amber-600 font-semibold">
-                          {formatCurrency(remaining)}
-                        </td>
-                        <td className="text-center py-3 px-4 text-gray-600">
-                          {loan.due_date
-                            ? new Date(loan.due_date).toLocaleDateString(
-                                "en-KE"
-                              )
-                            : "-"}
-                        </td>
-                        <td className="text-center py-3 px-4">
-                          <span
-                            className={`text-xs font-medium px-3 py-1 rounded-full ${
-                              loan.status === "cleared"
-                                ? "bg-emerald-100 text-emerald-700"
-                                : loan.status === "paying"
-                                ? "bg-amber-100 text-amber-700"
-                                : "bg-red-100 text-red-700"
-                            }`}
-                          >
-                            {loan.status === "cleared"
-                              ? "Cleared"
-                              : loan.status === "paying"
-                              ? "Paying"
-                              : "Active"}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 bg-gray-200 rounded-full h-2">
-                              <div
-                                className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${progress}%` }}
-                              />
-                            </div>
-                            <span className="text-xs text-gray-600 w-12 text-right">
-                              {progress.toFixed(0)}%
-                            </span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center justify-center gap-2">
-                            {loan.status !== "cleared" && (
-                              <button
-                                onClick={() => setShowLoanPaymentForm(loan.id)}
-                                className="bg-emerald-500 text-white px-3 py-1 rounded-lg hover:bg-emerald-600 transition-colors text-sm"
-                              >
-                                Receive
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleDeleteLoan(loan.id)}
-                              className="text-red-600 hover:text-red-700 transition-colors"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            {loans.length === 0 && (
-              <p className="text-gray-500 text-center py-8">
-                No loans recorded. Click "Add Loan" to track money others owe
-                you.
-              </p>
-            )}
-          </div>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-      )}
+
+        {filteredDebts.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-500">No debts found</p>
+          </div>
+        )}
+      </div>
 
       {/* Add Debt Modal */}
-      <Modal
-        isOpen={showDebtForm}
-        onClose={() => setShowDebtForm(false)}
-        title="Add New Debt"
-      >
-        <form onSubmit={handleDebtSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Creditor Name *
-            </label>
-            <input
-              type="text"
-              required
-              value={debtFormData.creditor_name}
-              onChange={(e) =>
-                setDebtFormData({
-                  ...debtFormData,
-                  creditor_name: e.target.value,
-                })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
-              placeholder="e.g., Guy1, Shop1"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Amount *
-            </label>
-            <input
-              type="text"
-              required
-              value={debtFormData.amount}
-              onChange={(e) =>
-                setDebtFormData({
-                  ...debtFormData,
-                  amount: formatNumberInput(e.target.value),
-                })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
-              placeholder="100,000.00"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Due Date (Optional)
-            </label>
-            <input
-              type="date"
-              value={debtFormData.due_date}
-              onChange={(e) =>
-                setDebtFormData({ ...debtFormData, due_date: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notes (Optional)
-            </label>
-            <textarea
-              value={debtFormData.notes}
-              onChange={(e) =>
-                setDebtFormData({ ...debtFormData, notes: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
-              placeholder="Any additional details..."
-              rows={3}
-            />
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setShowDebtForm(false)}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 bg-gradient-to-r from-rose-500 to-pink-600 text-white px-4 py-2 rounded-lg hover:from-rose-600 hover:to-pink-700 transition-colors font-semibold"
-            >
-              Add Debt
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Debt Payment Modal */}
-      <Modal
-        isOpen={showDebtPaymentForm !== null}
-        onClose={() => {
-          setShowDebtPaymentForm(null);
-          setDebtPaymentAmount("");
-        }}
-        title="Record Debt Payment"
-      >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (showDebtPaymentForm) handleDebtPayment(showDebtPaymentForm);
-          }}
-          className="space-y-4"
+      {showAddModal && (
+        <Modal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          title="Add New Debt"
         >
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Payment Amount
-            </label>
-            <input
-              type="text"
-              required
-              value={debtPaymentAmount}
-              onChange={(e) =>
-                setDebtPaymentAmount(formatNumberInput(e.target.value))
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              placeholder="10,000.00"
-            />
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setShowDebtPaymentForm(null);
-                setDebtPaymentAmount("");
-              }}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 transition-colors font-semibold"
-            >
-              Record Payment
-            </button>
-          </div>
-        </form>
-      </Modal>
+          <form onSubmit={handleAddDebt} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Client
+              </label>
+              <select
+                required
+                value={newDebt.client_id}
+                onChange={(e) =>
+                  setNewDebt({ ...newDebt, client_id: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select client</option>
+                {clients.map((client) => (
+                  <option key={client.id} value={client.id}>
+                    {client.client_name} ({client.client_code})
+                  </option>
+                ))}
+              </select>
+            </div>
 
-      {/* Add Loan Modal */}
-      <Modal
-        isOpen={showLoanForm}
-        onClose={() => setShowLoanForm(false)}
-        title="Add New Loan"
-      >
-        <form onSubmit={handleLoanSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Debtor Name *
-            </label>
-            <input
-              type="text"
-              required
-              value={loanFormData.debtor_name}
-              onChange={(e) =>
-                setLoanFormData({
-                  ...loanFormData,
-                  debtor_name: e.target.value,
-                })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              placeholder="e.g., Guy2, Guy3"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Amount *
-            </label>
-            <input
-              type="text"
-              required
-              value={loanFormData.amount}
-              onChange={(e) =>
-                setLoanFormData({
-                  ...loanFormData,
-                  amount: formatNumberInput(e.target.value),
-                })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              placeholder="67,000.00"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Due Date (Optional)
-            </label>
-            <input
-              type="date"
-              value={loanFormData.due_date}
-              onChange={(e) =>
-                setLoanFormData({ ...loanFormData, due_date: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notes (Optional)
-            </label>
-            <textarea
-              value={loanFormData.notes}
-              onChange={(e) =>
-                setLoanFormData({ ...loanFormData, notes: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              placeholder="Any additional details..."
-              rows={3}
-            />
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setShowLoanForm(false)}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 py-2 rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-colors font-semibold"
-            >
-              Add Loan
-            </button>
-          </div>
-        </form>
-      </Modal>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Amount
+                </label>
+                <input
+                  type="number"
+                  required
+                  step="0.01"
+                  value={newDebt.amount}
+                  onChange={(e) =>
+                    setNewDebt({ ...newDebt, amount: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
 
-      {/* Loan Payment Modal */}
-      <Modal
-        isOpen={showLoanPaymentForm !== null}
-        onClose={() => {
-          setShowLoanPaymentForm(null);
-          setLoanPaymentAmount("");
-        }}
-        title="Record Loan Payment Received"
-      >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (showLoanPaymentForm) handleLoanPayment(showLoanPaymentForm);
-          }}
-          className="space-y-4"
-        >
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Payment Amount Received
-            </label>
-            <input
-              type="text"
-              required
-              value={loanPaymentAmount}
-              onChange={(e) =>
-                setLoanPaymentAmount(formatNumberInput(e.target.value))
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              placeholder="10,000.00"
-            />
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setShowLoanPaymentForm(null);
-                setLoanPaymentAmount("");
-              }}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 transition-colors font-semibold"
-            >
-              Record Payment
-            </button>
-          </div>
-        </form>
-      </Modal>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Currency
+                </label>
+                <select
+                  value={newDebt.currency}
+                  onChange={(e) =>
+                    setNewDebt({
+                      ...newDebt,
+                      currency: e.target.value as "KES" | "USD",
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="KES">KES</option>
+                  <option value="USD">USD</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description
+              </label>
+              <input
+                type="text"
+                required
+                value={newDebt.description}
+                onChange={(e) =>
+                  setNewDebt({ ...newDebt, description: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Reference Number
+                </label>
+                <input
+                  type="text"
+                  value={newDebt.reference_number}
+                  onChange={(e) =>
+                    setNewDebt({ ...newDebt, reference_number: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Due Date
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={newDebt.due_date}
+                  onChange={(e) =>
+                    setNewDebt({ ...newDebt, due_date: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Priority
+              </label>
+              <select
+                value={newDebt.priority}
+                onChange={(e) =>
+                  setNewDebt({ ...newDebt, priority: e.target.value as any })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="low">Low</option>
+                <option value="normal">Normal</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Notes
+              </label>
+              <textarea
+                value={newDebt.notes}
+                onChange={(e) =>
+                  setNewDebt({ ...newDebt, notes: e.target.value })
+                }
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Add Debt
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 }

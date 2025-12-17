@@ -1,19 +1,21 @@
-# 💰 Risq - Smart Finance Manager
+# 🌟 Ezary CMS - Premium Client Management System
 
-A beautiful, mobile-first personal finance management application designed for Kenya. Track your money in **KES (Kenya Shillings)** with an intuitive interface built with React, TypeScript, Tailwind CSS, and Supabase.
+> **Professional client management with dual-currency support, ultra UX/UI, and mobile-first design**
 
-## ✨ Features
+A beautiful, enterprise-grade Client Management System designed for modern businesses. Track clients and transactions in **dual currencies** (KES & USD) with an exceptional user interface built with React, TypeScript, Tailwind CSS, and Supabase.
 
-- 💵 **KES Currency Support** - All amounts in Kenya Shillings with proper formatting (10,000.00)
-- 📊 **Income Tracking** - Track all your income sources (daily, monthly, yearly)
-- 💸 **Expense Management** - 10 categories including Family Support, Education/Tuition, Debt Payment
-- 💳 **Debts & Loans Manager** - Track what you owe AND what others owe you with clear net position
-- 🏠 **Rent Management** - Track rent payments and history
-- 📈 **Financial Reports** - Comprehensive reports with PDF export, multiple periods, category breakdown
-- 🔐 **Secure Authentication** - Protected with Supabase Row Level Security
-- 📱 **Mobile-First Design** - Bottom navigation, beautiful cards, optimized for mobile
-- 🎨 **Modern UI** - Gradient backgrounds, glass-morphism, smooth animations
-- ⚡ **Real-time Sync** - Data syncs across all devices instantly
+## ✨ Premium Features
+
+- 👥 **Client Management** - Auto-generated client codes (CLT-0001), smart search, status tracking
+- 💰 **Dual Currency** - Full KES (Kenya Shillings) and USD support with separate transaction tables
+- 📊 **Advanced Analytics** - Top clients ranking, monthly trends, real-time statistics
+- 📄 **PDF Reports** - Professional branded reports per client or all clients summary
+- 🎨 **Ultra UX/UI** - Emerald gradient branding, smooth animations, modern card layouts
+- 📱 **Mobile-First** - Touch-optimized, responsive design, bottom navigation
+- 🔐 **Secure Authentication** - Supabase Auth with Row Level Security
+- ⚡ **Real-time Sync** - Live data updates across all devices
+- 🚗 **Asset Tracking** - Optional vehicle/equipment management (hidden by default)
+- 📈 **Multi-Period Reports** - Current month, 3/6 months, yearly, or custom date ranges
 
 ## 🚀 Quick Start
 
@@ -27,8 +29,8 @@ A beautiful, mobile-first personal finance management application designed for K
 1. **Clone the repository** (Already done!)
 
 ```bash
-git clone https://github.com/yussuf3468/myFinance.git
-cd myFinance
+git clone https://github.com/yussuf3468/Ezary_v1.git
+cd Ezary_v1
 ```
 
 2. **Install dependencies** (Already done!)

@@ -29,17 +29,18 @@ export default function Auth() {
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8">
-          <div className="flex items-center justify-center mb-8">
-            <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-3 rounded-xl">
-              <DollarSign className="w-8 h-8 text-white" />
+          {/* Ezary Logo */}
+          <div className="flex items-center justify-center mb-6">
+            <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold text-3xl">E</span>
             </div>
           </div>
 
-          <h1 className="text-3xl font-bold text-center text-gray-800 mb-2">
-            Risq
+          <h1 className="text-3xl font-bold text-center bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">
+            Ezary CMS
           </h1>
           <p className="text-center text-gray-600 mb-8">
-            Yussuf Muse's Finance Manager
+            Professional Client Management System
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">

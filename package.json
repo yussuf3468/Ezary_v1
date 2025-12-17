@@ -1,7 +1,8 @@
 {
-  "name": "risq",
+  "name": "client-management-system",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "description": "Professional Client Management System with dual-currency support",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,6 +13,8 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
+    "jspdf": "^3.0.4",
+    "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

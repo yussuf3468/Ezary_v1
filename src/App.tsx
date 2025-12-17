@@ -1,58 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Auth from "./components/Auth";
-import BiometricLock from "./components/BiometricLock";
 import Layout from "./components/Layout";
-import Dashboard from "./components/Dashboard";
-import Income from "./components/Income";
-import Expenses from "./components/Expenses";
-import Debts from "./components/Debts";
-import SavingsGoals from "./components/SavingsGoals";
-import ExpectedExpenses from "./components/ExpectedExpenses";
+import CMSDashboard from "./components/CMSDashboard";
+import ClientList from "./components/ClientList";
+import ClientDetail from "./components/ClientDetail";
+import Vehicles from "./components/Vehicles";
 import Reports from "./components/Reports";
+import Debts from "./components/Debts";
 
 function AppContent() {
   const { user, loading } = useAuth();
   const [currentPage, setCurrentPage] = useState("dashboard");
-  const [biometricUnlocked, setBiometricUnlocked] = useState(false);
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
-
-  useEffect(() => {
-    // Check if user should see biometric lock
-    const checkBiometric = async () => {
-      try {
-        // Check if WebAuthn is supported
-        if (!window.PublicKeyCredential) {
-          setBiometricUnlocked(true);
-          return;
-        }
-
-        // Check if platform authenticator is available
-        const available =
-          await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-
-        if (!available) {
-          setBiometricUnlocked(true);
-          return;
-        }
-
-        // Check if already unlocked in this session
-        const unlockedTimestamp = sessionStorage.getItem("biometric_unlocked");
-        if (unlockedTimestamp) {
-          setBiometricUnlocked(true);
-        } else {
-          setBiometricAvailable(true);
-        }
-      } catch (err) {
-        console.error("Error checking biometric:", err);
-        setBiometricUnlocked(true);
-      }
-    };
-
-    if (user) {
-      checkBiometric();
-    }
-  }, [user]);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
   if (loading) {
     return (
@@ -66,29 +26,44 @@ function AppContent() {
     return <Auth />;
   }
 
-  // Show biometric lock if user is logged in but hasn't unlocked with Face ID
-  if (user && biometricAvailable && !biometricUnlocked) {
-    return <BiometricLock onUnlock={() => setBiometricUnlocked(true)} />;
-  }
+  const handleNavigation = (page: string, clientId?: string) => {
+    setCurrentPage(page);
+    if (clientId) {
+      setSelectedClientId(clientId);
+    }
+  };
+
+  const handleSelectClient = (clientId: string) => {
+    setSelectedClientId(clientId);
+    setCurrentPage("client-detail");
+  };
+
+  const handleBackToClients = () => {
+    setSelectedClientId(null);
+    setCurrentPage("clients");
+  };
 
   const renderPage = () => {
     switch (currentPage) {
       case "dashboard":
-        return <Dashboard />;
-      case "income":
-        return <Income />;
-      case "expenses":
-        return <Expenses />;
+        return <CMSDashboard onNavigate={handleNavigation} />;
+      case "clients":
+        return <ClientList onSelectClient={handleSelectClient} />;
+      case "client-detail":
+        return selectedClientId ? (
+          <ClientDetail
+            clientId={selectedClientId}
+            onBack={handleBackToClients}
+          />
+        ) : (
+          <ClientList onSelectClient={handleSelectClient} />
+        );
       case "debts":
         return <Debts />;
-      case "savings":
-        return <SavingsGoals />;
-      case "expected-expenses":
-        return <ExpectedExpenses />;
       case "reports":
         return <Reports />;
       default:
-        return <Dashboard />;
+        return <CMSDashboard onNavigate={handleNavigation} />;
     }
   };
 

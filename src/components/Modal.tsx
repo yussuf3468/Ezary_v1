@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, memo } from "react";
 import { X } from "lucide-react";
 
 interface ModalProps {
@@ -9,7 +9,7 @@ interface ModalProps {
   size?: "sm" | "md" | "lg" | "xl";
 }
 
-export default function Modal({
+const Modal = memo(function Modal({
   isOpen,
   onClose,
   title,
@@ -73,4 +73,6 @@ export default function Modal({
       </div>
     </div>
   );
-}
+});
+
+export default Modal;
