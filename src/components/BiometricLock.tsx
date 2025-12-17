@@ -72,7 +72,7 @@ export default function BiometricLock({ onUnlock }: BiometricLockProps) {
 
     try {
       // Check if credential exists
-      const storedCredentialId = localStorage.getItem("risq_credential_id");
+      const storedCredentialId = localStorage.getItem("ezary_credential_id");
 
       if (!storedCredentialId) {
         // Register new credential
@@ -89,7 +89,7 @@ export default function BiometricLock({ onUnlock }: BiometricLockProps) {
             authErr.message.includes("not found")
           ) {
             console.log("Credential not found, re-registering...");
-            localStorage.removeItem("risq_credential_id");
+            localStorage.removeItem("ezary_credential_id");
             await registerBiometric();
           } else {
             throw authErr; // Re-throw other errors
@@ -124,7 +124,7 @@ export default function BiometricLock({ onUnlock }: BiometricLockProps) {
     const publicKeyOptions: PublicKeyCredentialCreationOptions = {
       challenge,
       rp: {
-        name: "Risq Finance",
+        name: "Ezary CMS",
         id: window.location.hostname,
       },
       user: {
@@ -150,7 +150,7 @@ export default function BiometricLock({ onUnlock }: BiometricLockProps) {
 
     if (credential) {
       const credentialId = arrayBufferToBase64(credential.rawId);
-      localStorage.setItem("risq_credential_id", credentialId);
+      localStorage.setItem("ezary_credential_id", credentialId);
     }
   };
 
@@ -199,7 +199,7 @@ export default function BiometricLock({ onUnlock }: BiometricLockProps) {
           </div>
 
           {/* App Name */}
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Risq</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Ezary</h1>
           <p className="text-gray-600 mb-8">Yussuf Muse's Finance</p>
 
           {/* Biometric Icon */}

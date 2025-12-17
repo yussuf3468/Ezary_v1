@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// Simple icon generator for Risq PWA
+// Simple icon generator for Ezary CMS PWA
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -8,7 +8,7 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-console.log("📱 Creating app icons for Risq...\n");
+console.log("📱 Creating app icons for Ezary...\n");
 
 // Create SVG icon
 const svgIcon = `
@@ -20,7 +20,7 @@ const svgIcon = `
     </linearGradient>
   </defs>
   <rect width="512" height="512" rx="115" fill="url(#grad)"/>
-  <text x="256" y="370" font-family="Arial, sans-serif" font-size="240" font-weight="bold" fill="white" text-anchor="middle">R</text>
+  <text x="256" y="370" font-family="Arial, sans-serif" font-size="240" font-weight="bold" fill="white" text-anchor="middle">E</text>
   <circle cx="380" cy="180" r="35" fill="white" opacity="0.9"/>
   <circle cx="320" cy="150" r="25" fill="white" opacity="0.7"/>
   <circle cx="420" cy="150" r="20" fill="white" opacity="0.6"/>
