@@ -274,104 +274,104 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-8">
+    <div className="max-w-7xl mx-auto p-3 sm:p-4 md:p-8">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-md">
-                <span className="text-white font-bold text-lg">E</span>
+      <div className="mb-6 sm:mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
+                <span className="text-white font-bold text-sm sm:text-lg">E</span>
               </div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                <Users className="w-8 h-8 text-emerald-600" />
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3">
+                <Users className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-emerald-600" />
                 Client Management
               </h1>
             </div>
-            <p className="text-gray-600 ml-13">
+            <p className="text-xs sm:text-sm text-gray-600 ml-10 sm:ml-13">
               Manage and track all your clients • Ezary CMS
             </p>
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-medium"
+            className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-medium text-sm sm:text-base w-full sm:w-auto justify-center"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
             Add Client
           </button>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm mb-1">Total Clients</p>
-                <p className="text-3xl font-bold text-gray-900">
+                <p className="text-gray-600 text-xs sm:text-sm mb-1">Total Clients</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900">
                   {stats.total}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <Users className="w-6 h-6 text-blue-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm mb-1">Active Clients</p>
-                <p className="text-3xl font-bold text-emerald-600">
+                <p className="text-gray-600 text-xs sm:text-sm mb-1">Active Clients</p>
+                <p className="text-2xl sm:text-3xl font-bold text-emerald-600">
                   {stats.active}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-emerald-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm mb-1">Inactive Clients</p>
-                <p className="text-3xl font-bold text-gray-500">
+                <p className="text-gray-600 text-xs sm:text-sm mb-1">Inactive Clients</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-500">
                   {stats.inactive}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
-                <Building2 className="w-6 h-6 text-gray-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
               </div>
             </div>
           </div>
         </div>
 
         {/* Search, Filters, and Sort */}
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
+        <div className="bg-white rounded-xl p-3 sm:p-4 shadow-sm border border-gray-100 space-y-3 sm:space-y-4">
+          <div className="flex flex-col sm:flex-col md:flex-row gap-3 sm:gap-4">
             {/* Search */}
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
               <input
                 type="text"
-                placeholder="Search clients by name, code, email, or phone..."
+                placeholder="Search clients..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                className="w-full pl-10 sm:pl-12 pr-10 sm:pr-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
               />
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm("")}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               )}
             </div>
 
             {/* Sort Dropdown */}
-            <div className="flex items-center gap-2">
-              <ArrowUpDown className="w-5 h-5 text-gray-400" />
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <ArrowUpDown className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" />
               <select
                 value={`${sortField}-${sortOrder}`}
                 onChange={(e) => {
@@ -379,7 +379,7 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
                   setSortField(field as SortField);
                   setSortOrder(order as SortOrder);
                 }}
-                className="px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                className="flex-1 md:flex-none px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
               >
                 <option value="date-desc">Newest First</option>
                 <option value="date-asc">Oldest First</option>
@@ -395,10 +395,10 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
 
           {/* Status Filter Chips */}
           <div className="flex items-center gap-2 flex-wrap">
-            <Filter className="w-4 h-4 text-gray-400" />
+            <Filter className="w-4 h-4 text-gray-400 flex-shrink-0" />
             <button
               onClick={() => setStatusFilter("all")}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
                 statusFilter === "all"
                   ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -408,7 +408,7 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
             </button>
             <button
               onClick={() => setStatusFilter("active")}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
                 statusFilter === "active"
                   ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md"
                   : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
@@ -418,7 +418,7 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
             </button>
             <button
               onClick={() => setStatusFilter("inactive")}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
                 statusFilter === "inactive"
                   ? "bg-gradient-to-r from-gray-600 to-gray-700 text-white shadow-md"
                   : "bg-gray-50 text-gray-700 hover:bg-gray-100"
