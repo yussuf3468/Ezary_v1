@@ -36,6 +36,10 @@ interface ClientBalance {
   client_id: string;
   balance: number;
   transaction_count: number;
+  kes_balance: number;
+  usd_balance: number;
+  kes_count: number;
+  usd_count: number;
 }
 
 interface ClientListProps {
@@ -117,7 +121,7 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
 
       if (usdError) throw usdError;
 
-      // Calculate balances by client (combining both currencies as KES equivalent)
+      // Calculate balances by client (track KES and USD separately)
       const balanceMap = new Map<string, ClientBalance>();
 
       // Process KES transactions
@@ -126,20 +130,34 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
           client_id: txn.client_id,
           balance: 0,
           transaction_count: 0,
+          kes_balance: 0,
+          usd_balance: 0,
+          kes_count: 0,
+          usd_count: 0,
         };
-        existing.balance += (txn.credit || 0) - (txn.debit || 0);
+        const amount = (txn.credit || 0) - (txn.debit || 0);
+        existing.kes_balance += amount;
+        existing.balance += amount; // Combined balance in KES
+        existing.kes_count += 1;
         existing.transaction_count += 1;
         balanceMap.set(txn.client_id, existing);
       });
 
-      // Process USD transactions (convert to KES at ~150 rate for display)
+      // Process USD transactions
       usdData?.forEach((txn) => {
         const existing = balanceMap.get(txn.client_id) || {
           client_id: txn.client_id,
           balance: 0,
           transaction_count: 0,
+          kes_balance: 0,
+          usd_balance: 0,
+          kes_count: 0,
+          usd_count: 0,
         };
-        existing.balance += ((txn.credit || 0) - (txn.debit || 0)) * 150;
+        const amount = (txn.credit || 0) - (txn.debit || 0);
+        existing.usd_balance += amount;
+        existing.balance += amount * 150; // Convert to KES for combined balance
+        existing.usd_count += 1;
         existing.transaction_count += 1;
         balanceMap.set(txn.client_id, existing);
       });
@@ -637,7 +655,11 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
                             : "text-gray-400"
                         }`}
                       >
-                        KES {balance.toLocaleString()}
+                        {clientBalance?.kes_count && clientBalance?.usd_count
+                          ? `KES ${balance.toLocaleString()}`
+                          : clientBalance?.usd_count
+                          ? `USD ${clientBalance.usd_balance.toLocaleString()}`
+                          : `KES ${balance.toLocaleString()}`}
                       </p>
                     </div>
 
