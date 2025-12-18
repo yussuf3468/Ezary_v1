@@ -371,7 +371,7 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 xl:gap-6 mb-4 sm:mb-6">
           <div className="bg-white/5 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-white/10 hover:border-blue-500/50 transition-all">
             <div className="flex items-center justify-between">
               <div>
@@ -565,7 +565,7 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
           {filteredClients.map((client) => {
             const clientBalance = balances.get(client.id);
             const balance = clientBalance?.balance || 0;

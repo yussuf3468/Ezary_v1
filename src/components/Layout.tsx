@@ -50,7 +50,7 @@ export default function Layout({
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-zinc-900 pb-20 md:pb-0">
       {/* Desktop & Tablet Top Navigation */}
       <nav className="hidden md:block bg-black/40 backdrop-blur-xl shadow-lg border-b border-white/10 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1600px] 2xl:max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="flex justify-between items-center h-16">
             {/* Ezary CMS Logo */}
             <div className="flex items-center gap-3">
@@ -123,7 +123,7 @@ export default function Layout({
       </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+      <main className="max-w-[1600px] 2xl:max-w-[1800px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 md:py-8">
         {children}
       </main>
 

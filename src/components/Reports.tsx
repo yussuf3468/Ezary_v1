@@ -702,7 +702,7 @@ export default function Reports() {
         </div>
 
         {/* Summary Stats - Ultra Modern 3D Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 xl:gap-6">
           <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-500 via-teal-500 to-emerald-600 rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-white shadow-2xl hover:shadow-3xl hover:shadow-emerald-300/50 transition-all duration-300 transform hover:scale-105 active:scale-100">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500"></div>
             <div className="relative">
