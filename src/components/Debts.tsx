@@ -56,10 +56,7 @@ export default function Debts() {
     amount: "",
     currency: "KES" as "KES" | "USD",
     description: "",
-    reference_number: "",
     due_date: "",
-    priority: "normal" as "low" | "normal" | "high" | "urgent",
-    notes: "",
     clientName: "",
     clientPhone: "",
   });
@@ -220,13 +217,6 @@ export default function Debts() {
         return;
       }
 
-      // Get staff record for current user
-      const { data: staffData } = await supabase
-        .from("staff")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-
       // Create debt
       const { error: debtError } = await supabase.from("client_debts").insert([
         {
@@ -234,12 +224,10 @@ export default function Debts() {
           amount: parseFloat(newDebt.amount),
           currency: newDebt.currency,
           description: newDebt.description,
-          reference_number: newDebt.reference_number,
           due_date: newDebt.due_date,
-          priority: newDebt.priority,
-          notes: newDebt.notes,
-          created_by: staffData?.id,
-          updated_by: staffData?.id,
+          priority: "normal",
+          status: "pending",
+          balance: parseFloat(newDebt.amount),
         },
       ]);
 
@@ -253,10 +241,7 @@ export default function Debts() {
         amount: "",
         currency: "KES",
         description: "",
-        reference_number: "",
         due_date: "",
-        priority: "normal",
-        notes: "",
         clientName: "",
         clientPhone: "",
       });
@@ -607,73 +592,17 @@ export default function Debts() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">
-                  Reference Number
-                </label>
-                <input
-                  type="text"
-                  value={newDebt.reference_number}
-                  onChange={(e) =>
-                    setNewDebt({ ...newDebt, reference_number: e.target.value })
-                  }
-                  className="w-full px-3 py-2 bg-white/10 text-white placeholder-gray-400 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">
-                  Due Date
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={newDebt.due_date}
-                  onChange={(e) =>
-                    setNewDebt({ ...newDebt, due_date: e.target.value })
-                  }
-                  className="w-full px-3 py-2 bg-white/10 text-white placeholder-gray-400 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">
-                Priority
+                Due Date
               </label>
-              <select
-                value={newDebt.priority}
+              <input
+                type="date"
+                required
+                value={newDebt.due_date}
                 onChange={(e) =>
-                  setNewDebt({ ...newDebt, priority: e.target.value as any })
+                  setNewDebt({ ...newDebt, due_date: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-white/10 text-white border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="low" className="bg-gray-900">
-                  Low
-                </option>
-                <option value="normal" className="bg-gray-900">
-                  Normal
-                </option>
-                <option value="high" className="bg-gray-900">
-                  High
-                </option>
-                <option value="urgent" className="bg-gray-900">
-                  Urgent
-                </option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">
-                Notes
-              </label>
-              <textarea
-                value={newDebt.notes}
-                onChange={(e) =>
-                  setNewDebt({ ...newDebt, notes: e.target.value })
-                }
-                rows={3}
                 className="w-full px-3 py-2 bg-white/10 text-white placeholder-gray-400 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
             </div>
