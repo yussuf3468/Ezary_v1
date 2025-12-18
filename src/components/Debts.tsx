@@ -49,6 +49,9 @@ export default function Debts() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedDebt, setSelectedDebt] = useState<DebtWithClient | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState("");
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -195,9 +198,23 @@ export default function Debts() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Generate client code
-      const { data: codeData } = await supabase.rpc("generate_client_code");
-      const clientCode = codeData || `CLT-${Date.now().toString().slice(-4)}`;
+      // Generate client code - get the next sequential number
+      const { data: existingClients } = await supabase
+        .from("clients")
+        .select("client_code")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      let clientCode = "CLT-0001";
+      if (existingClients && existingClients.length > 0) {
+        const lastCode = existingClients[0].client_code;
+        const match = lastCode.match(/CLT-(\d+)/);
+        if (match) {
+          const nextNum = parseInt(match[1]) + 1;
+          clientCode = `CLT-${nextNum.toString().padStart(4, "0")}`;
+        }
+      }
 
       // Create new client
       const { data: newClient, error: clientError } = await supabase
@@ -251,6 +268,46 @@ export default function Debts() {
     } catch (error: any) {
       console.error("Unexpected error:", error);
       toast.error("An unexpected error occurred: " + error.message);
+    }
+  }
+
+  function handleViewDebt(debt: DebtWithClient) {
+    setSelectedDebt(debt);
+    setPaymentAmount("");
+    setShowViewModal(true);
+  }
+
+  async function handleRecordPayment() {
+    if (!selectedDebt || !paymentAmount) return;
+
+    const amount = parseFloat(paymentAmount);
+    if (amount <= 0 || amount > selectedDebt.balance) {
+      toast.error("Invalid payment amount");
+      return;
+    }
+
+    try {
+      const newBalance = selectedDebt.balance - amount;
+      const newStatus = newBalance === 0 ? "paid" : selectedDebt.status;
+
+      const { error } = await supabase
+        .from("client_debts")
+        .update({
+          amount_paid: selectedDebt.amount - selectedDebt.balance + amount,
+          status: newStatus,
+          paid_date:
+            newBalance === 0 ? new Date().toISOString().split("T")[0] : null,
+        })
+        .eq("id", selectedDebt.id);
+
+      if (error) throw error;
+
+      toast.success("Payment recorded successfully!");
+      setShowViewModal(false);
+      setPaymentAmount("");
+      await loadDebts();
+    } catch (error: any) {
+      toast.error("Failed to record payment: " + error.message);
     }
   }
 
@@ -473,12 +530,22 @@ export default function Debts() {
                       {debt.description}
                     </td>
                     <td className="px-6 py-4">
-                      <button
-                        onClick={() => handleDeleteDebt(debt.id)}
-                        className="text-red-400 hover:text-red-300"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleViewDebt(debt)}
+                          className="text-blue-400 hover:text-blue-300"
+                          title="View & Record Payment"
+                        >
+                          <DollarSign className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteDebt(debt.id)}
+                          className="text-red-400 hover:text-red-300"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -623,6 +690,139 @@ export default function Debts() {
               </button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {/* View Debt & Record Payment Modal */}
+      {showViewModal && selectedDebt && (
+        <Modal
+          isOpen={showViewModal}
+          onClose={() => setShowViewModal(false)}
+          title="Debt Details & Payment"
+        >
+          <div className="space-y-4">
+            {/* Debt Information */}
+            <div className="bg-white/5 rounded-lg p-4 space-y-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm text-gray-400">Client</p>
+                  <p className="text-lg font-semibold text-white">
+                    {selectedDebt.client_name}
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    {selectedDebt.client_code}
+                  </p>
+                </div>
+                <span
+                  className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(
+                    selectedDebt.status
+                  )}`}
+                >
+                  {selectedDebt.status}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-3 border-t border-white/10">
+                <div>
+                  <p className="text-sm text-gray-400">Total Amount</p>
+                  <p className="text-lg font-semibold text-white">
+                    {formatCurrency(selectedDebt.amount, selectedDebt.currency)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Balance Due</p>
+                  <p className="text-lg font-semibold text-emerald-400">
+                    {formatCurrency(
+                      selectedDebt.balance,
+                      selectedDebt.currency
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-400">Due Date</p>
+                  <p className="text-white">
+                    {new Date(selectedDebt.due_date).toLocaleDateString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Days Until Due</p>
+                  <p
+                    className={`font-medium ${
+                      getDaysUntilDue(selectedDebt.due_date) < 0
+                        ? "text-red-400"
+                        : getDaysUntilDue(selectedDebt.due_date) <= 7
+                        ? "text-amber-400"
+                        : "text-green-400"
+                    }`}
+                  >
+                    {getDaysUntilDue(selectedDebt.due_date) < 0
+                      ? `${Math.abs(
+                          getDaysUntilDue(selectedDebt.due_date)
+                        )} days overdue`
+                      : getDaysUntilDue(selectedDebt.due_date) === 0
+                      ? "Due today"
+                      : `${getDaysUntilDue(selectedDebt.due_date)} days left`}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-400">Description</p>
+                <p className="text-white">{selectedDebt.description}</p>
+              </div>
+            </div>
+
+            {/* Record Payment Section */}
+            {selectedDebt.status !== "paid" && selectedDebt.balance > 0 && (
+              <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-lg p-4 border border-emerald-500/20">
+                <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-emerald-400" />
+                  Record Payment
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">
+                      Payment Amount ({selectedDebt.currency})
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      max={selectedDebt.balance}
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      placeholder={`Max: ${selectedDebt.balance}`}
+                      className="w-full px-3 py-2 bg-white/10 text-white placeholder-gray-400 border border-white/20 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <button
+                    onClick={handleRecordPayment}
+                    disabled={!paymentAmount || parseFloat(paymentAmount) <= 0}
+                    className="w-full px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg hover:from-emerald-700 hover:to-teal-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  >
+                    Record Payment
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {selectedDebt.status === "paid" && (
+              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                <p className="text-green-400 font-medium text-center">
+                  ✓ This debt has been fully paid
+                </p>
+              </div>
+            )}
+
+            <button
+              onClick={() => setShowViewModal(false)}
+              className="w-full px-4 py-2 bg-white/10 text-gray-300 rounded-lg hover:bg-white/20 border border-white/20"
+            >
+              Close
+            </button>
+          </div>
         </Modal>
       )}
     </div>
