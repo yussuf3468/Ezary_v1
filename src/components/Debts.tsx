@@ -67,7 +67,6 @@ export default function Debts() {
 
   useEffect(() => {
     loadDebts();
-    loadClients();
   }, []);
 
   useEffect(() => {
@@ -78,25 +77,16 @@ export default function Debts() {
     try {
       const { data, error } = await supabase
         .from("client_debts")
-        .select(
-          `
-          *,
-          clients (
-            client_name,
-            client_code,
-            phone
-          )
-        `
-        )
+        .select("*")
         .order("due_date", { ascending: true });
 
       if (error) throw error;
 
       const debtsWithClients = (data || []).map((debt: any) => ({
         ...debt,
-        client_name: debt.clients?.client_name || "Unknown",
-        client_code: debt.clients?.client_code || "",
-        phone: debt.clients?.phone || "",
+        client_name: debt.debtor_name || "Unknown",
+        client_code: "",
+        phone: debt.debtor_phone || "",
       }));
 
       setDebts(debtsWithClients);
@@ -199,47 +189,12 @@ export default function Debts() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Generate client code - get the next sequential number
-      const { data: existingClients } = await supabase
-        .from("clients")
-        .select("client_code")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1);
-
-      let clientCode = "CLT-0001";
-      if (existingClients && existingClients.length > 0) {
-        const lastCode = existingClients[0].client_code;
-        const match = lastCode.match(/CLT-(\d+)/);
-        if (match) {
-          const nextNum = parseInt(match[1]) + 1;
-          clientCode = `CLT-${nextNum.toString().padStart(4, "0")}`;
-        }
-      }
-
-      // Create new client
-      const { data: newClient, error: clientError } = await supabase
-        .from("clients")
-        .insert({
-          user_id: user.id,
-          client_name: newDebt.clientName,
-          phone: newDebt.clientPhone,
-          client_code: clientCode,
-          status: "active",
-        })
-        .select()
-        .single();
-
-      if (clientError) {
-        toast.error("Failed to create client: " + clientError.message);
-        return;
-      }
-
-      // Create debt
+      // Create debt directly without creating a client
       const { error: debtError } = await supabase.from("client_debts").insert([
         {
-          client_id: newClient.id,
           user_id: user.id,
+          debtor_name: newDebt.clientName,
+          debtor_phone: newDebt.clientPhone,
           amount: parseFloat(newDebt.amount),
           currency: newDebt.currency,
           description: newDebt.description,
@@ -264,7 +219,6 @@ export default function Debts() {
         clientPhone: "",
       });
       await loadDebts();
-      await loadClients();
       toast.success("Debt created successfully!");
     } catch (error: any) {
       console.error("Unexpected error:", error);
@@ -401,7 +355,7 @@ export default function Debts() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Search by client name, code, or description..."
+              placeholder="Search by debtor name or description..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-white/10 text-white placeholder-gray-400 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -573,7 +527,7 @@ export default function Debts() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1">
-                  Client Name
+                  Debtor Name
                 </label>
                 <input
                   type="text"
