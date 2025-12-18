@@ -227,7 +227,6 @@ export default function Debts() {
           due_date: newDebt.due_date,
           priority: "normal",
           status: "pending",
-          balance: parseFloat(newDebt.amount),
         },
       ]);
 
