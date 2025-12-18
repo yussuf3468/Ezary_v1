@@ -38,13 +38,6 @@ interface ClientBalance {
   transaction_count: number;
 }
 
-interface ClientDebtInfo {
-  client_id: string;
-  debt_count: number;
-  nearest_due_days: number;
-  total_balance: number;
-}
-
 interface ClientListProps {
   onSelectClient: (clientId: string) => void;
 }
@@ -56,9 +49,6 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
   const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [balances, setBalances] = useState<Map<string, ClientBalance>>(
-    new Map()
-  );
-  const [debtWarnings, setDebtWarnings] = useState<Map<string, ClientDebtInfo>>(
     new Map()
   );
   const [loading, setLoading] = useState(true);
@@ -77,7 +67,6 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
     if (user) {
       loadClients();
       loadBalances();
-      loadDebtWarnings();
     }
   }, [user]);
 
@@ -158,57 +147,6 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
       setBalances(balanceMap);
     } catch (error) {
       console.error("Error loading balances:", error);
-    }
-  };
-
-  const loadDebtWarnings = async () => {
-    if (!user) return;
-
-    try {
-      // Get current date and date 5 days from now
-      const today = new Date();
-      const fiveDaysFromNow = new Date();
-      fiveDaysFromNow.setDate(today.getDate() + 5);
-
-      // Query debts that are pending/overdue and due within 5 days
-      const { data: debtsData, error: debtsError } = await supabase
-        .from("client_debts")
-        .select("client_id, due_date, balance, status")
-        .eq("user_id", user.id)
-        .in("status", ["pending", "overdue"])
-        .lte("due_date", fiveDaysFromNow.toISOString().split("T")[0])
-        .gt("balance", 0);
-
-      if (debtsError) throw debtsError;
-
-      // Group by client and calculate nearest due date
-      const debtMap = new Map<string, ClientDebtInfo>();
-      debtsData?.forEach((debt) => {
-        const dueDate = new Date(debt.due_date);
-        const daysUntilDue = Math.ceil(
-          (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-        );
-
-        const existing = debtMap.get(debt.client_id);
-        if (!existing) {
-          debtMap.set(debt.client_id, {
-            client_id: debt.client_id,
-            debt_count: 1,
-            nearest_due_days: daysUntilDue,
-            total_balance: debt.balance,
-          });
-        } else {
-          existing.debt_count += 1;
-          existing.total_balance += debt.balance;
-          if (daysUntilDue < existing.nearest_due_days) {
-            existing.nearest_due_days = daysUntilDue;
-          }
-        }
-      });
-
-      setDebtWarnings(debtMap);
-    } catch (error) {
-      console.error("Error loading debt warnings:", error);
     }
   };
 
@@ -305,7 +243,6 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
       e.currentTarget.reset();
       setShowAddModal(false);
       await loadClients();
-      await loadDebtWarnings();
       toast.success("Client added successfully!");
     } catch (error) {
       console.error("Unexpected error:", error);
@@ -647,66 +584,6 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
                       </div>
                     )}
                   </div>
-
-                  {/* Debt Warning Badge */}
-                  {debtWarnings.has(client.id) && (
-                    <div className="mb-3">
-                      <div
-                        className={`rounded-lg p-2.5 border-2 ${
-                          debtWarnings.get(client.id)!.nearest_due_days < 0
-                            ? "bg-red-500/20 border-red-500/50"
-                            : debtWarnings.get(client.id)!.nearest_due_days ===
-                              0
-                            ? "bg-orange-500/20 border-orange-500/50"
-                            : "bg-amber-500/20 border-amber-500/50"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <Clock
-                            className={`w-4 h-4 ${
-                              debtWarnings.get(client.id)!.nearest_due_days < 0
-                                ? "text-red-400"
-                                : debtWarnings.get(client.id)!
-                                    .nearest_due_days === 0
-                                ? "text-orange-400"
-                                : "text-amber-400"
-                            }`}
-                          />
-                          <span
-                            className={`text-xs font-bold ${
-                              debtWarnings.get(client.id)!.nearest_due_days < 0
-                                ? "text-red-300"
-                                : debtWarnings.get(client.id)!
-                                    .nearest_due_days === 0
-                                ? "text-orange-300"
-                                : "text-amber-300"
-                            }`}
-                          >
-                            {debtWarnings.get(client.id)!.nearest_due_days < 0
-                              ? `${Math.abs(
-                                  debtWarnings.get(client.id)!.nearest_due_days
-                                )} days OVERDUE`
-                              : debtWarnings.get(client.id)!
-                                  .nearest_due_days === 0
-                              ? "Due TODAY"
-                              : `${
-                                  debtWarnings.get(client.id)!.nearest_due_days
-                                } days until due`}
-                          </span>
-                        </div>
-                        <div className="text-xs text-gray-300">
-                          {debtWarnings.get(client.id)!.debt_count} debt
-                          {debtWarnings.get(client.id)!.debt_count > 1
-                            ? "s"
-                            : ""}{" "}
-                          • KES{" "}
-                          {debtWarnings
-                            .get(client.id)!
-                            .total_balance.toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
-                  )}
 
                   {/* Balance & Transactions */}
                   <div className="grid grid-cols-2 gap-2 mb-3">
