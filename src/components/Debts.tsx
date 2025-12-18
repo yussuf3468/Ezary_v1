@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
+import { toast } from "react-toastify";
 import {
   Plus,
   Search,
@@ -52,7 +53,6 @@ export default function Debts() {
   const [loading, setLoading] = useState(true);
 
   const [newDebt, setNewDebt] = useState({
-    client_id: "",
     amount: "",
     currency: "KES" as "KES" | "USD",
     description: "",
@@ -60,6 +60,8 @@ export default function Debts() {
     due_date: "",
     priority: "normal" as "low" | "normal" | "high" | "urgent",
     notes: "",
+    clientName: "",
+    clientPhone: "",
   });
 
   useEffect(() => {
@@ -196,6 +198,28 @@ export default function Debts() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Generate client code
+      const { data: codeData } = await supabase.rpc("generate_client_code");
+      const clientCode = codeData || `CLT-${Date.now().toString().slice(-4)}`;
+
+      // Create new client
+      const { data: newClient, error: clientError } = await supabase
+        .from("clients")
+        .insert({
+          user_id: user.id,
+          client_name: newDebt.clientName,
+          phone: newDebt.clientPhone,
+          client_code: clientCode,
+          status: "active",
+        })
+        .select()
+        .single();
+
+      if (clientError) {
+        toast.error("Failed to create client: " + clientError.message);
+        return;
+      }
+
       // Get staff record for current user
       const { data: staffData } = await supabase
         .from("staff")
@@ -203,20 +227,29 @@ export default function Debts() {
         .eq("user_id", user.id)
         .single();
 
-      const { error } = await supabase.from("client_debts").insert([
+      // Create debt
+      const { error: debtError } = await supabase.from("client_debts").insert([
         {
-          ...newDebt,
+          client_id: newClient.id,
           amount: parseFloat(newDebt.amount),
+          currency: newDebt.currency,
+          description: newDebt.description,
+          reference_number: newDebt.reference_number,
+          due_date: newDebt.due_date,
+          priority: newDebt.priority,
+          notes: newDebt.notes,
           created_by: staffData?.id,
           updated_by: staffData?.id,
         },
       ]);
 
-      if (error) throw error;
+      if (debtError) {
+        toast.error("Failed to create debt: " + debtError.message);
+        return;
+      }
 
       setShowAddModal(false);
       setNewDebt({
-        client_id: "",
         amount: "",
         currency: "KES",
         description: "",
@@ -224,10 +257,15 @@ export default function Debts() {
         due_date: "",
         priority: "normal",
         notes: "",
+        clientName: "",
+        clientPhone: "",
       });
-      loadDebts();
+      await loadDebts();
+      await loadClients();
+      toast.success("Debt created successfully!");
     } catch (error: any) {
-      alert("Error adding debt: " + error.message);
+      console.error("Unexpected error:", error);
+      toast.error("An unexpected error occurred: " + error.message);
     }
   }
 
@@ -242,8 +280,9 @@ export default function Debts() {
 
       if (error) throw error;
       loadDebts();
+      toast.success("Debt deleted successfully!");
     } catch (error: any) {
-      alert("Error deleting debt: " + error.message);
+      toast.error("Error deleting debt: " + error.message);
     }
   }
 
@@ -478,25 +517,38 @@ export default function Debts() {
           title="Add New Debt"
         >
           <form onSubmit={handleAddDebt} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">
-                Client
-              </label>
-              <select
-                required
-                value={newDebt.client_id}
-                onChange={(e) =>
-                  setNewDebt({ ...newDebt, client_id: e.target.value })
-                }
-                className="w-full px-3 py-2 bg-white/10 text-white border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select client</option>
-                {clients.map((client) => (
-                  <option key={client.id} value={client.id}>
-                    {client.client_name} ({client.client_code})
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">
+                  Client Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Full Name"
+                  value={newDebt.clientName}
+                  onChange={(e) =>
+                    setNewDebt({ ...newDebt, clientName: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-white/10 text-white placeholder-gray-400 border border-white/20 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="Phone"
+                  value={newDebt.clientPhone}
+                  onChange={(e) =>
+                    setNewDebt({ ...newDebt, clientPhone: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-white/10 text-white placeholder-gray-400 border border-white/20 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -530,8 +582,12 @@ export default function Debts() {
                   }
                   className="w-full px-3 py-2 bg-white/10 text-white border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="KES">KES</option>
-                  <option value="USD">USD</option>
+                  <option value="KES" className="bg-gray-900">
+                    KES
+                  </option>
+                  <option value="USD" className="bg-gray-900">
+                    USD
+                  </option>
                 </select>
               </div>
             </div>
@@ -593,10 +649,18 @@ export default function Debts() {
                 }
                 className="w-full px-3 py-2 bg-white/10 text-white border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
-                <option value="low">Low</option>
-                <option value="normal">Normal</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
+                <option value="low" className="bg-gray-900">
+                  Low
+                </option>
+                <option value="normal" className="bg-gray-900">
+                  Normal
+                </option>
+                <option value="high" className="bg-gray-900">
+                  High
+                </option>
+                <option value="urgent" className="bg-gray-900">
+                  Urgent
+                </option>
               </select>
             </div>
 

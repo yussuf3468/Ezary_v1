@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
+import { toast } from "react-toastify";
 import {
   Search,
   Plus,
@@ -216,10 +217,12 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
 
     try {
       // Generate client code
-      const { data: codeData } = await supabase.rpc("generate_client_code");
+      const { data: codeData, error: codeError } = await supabase.rpc(
+        "generate_client_code"
+      );
       const clientCode = codeData || `CLT-${Date.now().toString().slice(-4)}`;
 
-      const { error } = await supabase.from("clients").insert({
+      const { error: insertError } = await supabase.from("clients").insert({
         user_id: user?.id,
         client_name: formData.get("client_name"),
         email: formData.get("email") || null,
@@ -230,14 +233,20 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
         status: "active",
       });
 
-      if (error) throw error;
+      if (insertError) {
+        console.error("Error adding client:", insertError);
+        toast.error("Failed to add client. Please try again.");
+        return;
+      }
 
+      // Success - close modal and reload
       e.currentTarget.reset();
       setShowAddModal(false);
-      loadClients();
+      await loadClients();
+      toast.success("Client added successfully!");
     } catch (error) {
-      console.error("Error adding client:", error);
-      alert("Failed to add client. Please try again.");
+      console.error("Unexpected error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
     }
   };
 

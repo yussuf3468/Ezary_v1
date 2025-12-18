@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
+import { toast } from "react-toastify";
 import { Truck, Plus, Search, Filter, Trash2, X } from "lucide-react";
 import { formatCurrency } from "../lib/currency";
 
@@ -147,9 +148,10 @@ export default function Vehicles({ onBack }: VehiclesProps) {
       setShowAddModal(false);
       loadVehicles();
       e.currentTarget.reset();
+      toast.success("Vehicle added successfully!");
     } catch (error) {
       console.error("Error adding vehicle:", error);
-      alert("Failed to add vehicle. Please try again.");
+      toast.error("Failed to add vehicle. Please try again.");
     }
   };
 
@@ -160,9 +162,10 @@ export default function Vehicles({ onBack }: VehiclesProps) {
       const { error } = await supabase.from("vehicles").delete().eq("id", id);
       if (error) throw error;
       loadVehicles();
+      toast.success("Vehicle deleted successfully!");
     } catch (error) {
       console.error("Error deleting vehicle:", error);
-      alert("Failed to delete vehicle.");
+      toast.error("Failed to delete vehicle.");
     }
   };
 

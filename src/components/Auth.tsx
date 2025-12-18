@@ -1,23 +1,20 @@
 import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { DollarSign } from "lucide-react";
+import { DollarSign, Shield } from "lucide-react";
 
 export default function Auth() {
-  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    const { error } = isSignUp
-      ? await signUp(email, password)
-      : await signIn(email, password);
+    const { error } = await signIn(email, password);
 
     if (error) {
       setError(error.message);
@@ -92,22 +89,20 @@ export default function Auth() {
               disabled={loading}
               className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-3 rounded-lg font-semibold hover:from-emerald-600 hover:to-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
             >
-              {loading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
+              {loading ? "Loading..." : "Sign In"}
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setError("");
-              }}
-              className="text-emerald-400 hover:text-emerald-300 text-sm font-medium"
-            >
-              {isSignUp
-                ? "Already have an account? Sign in"
-                : "Don't have an account? Sign up"}
-            </button>
+          <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <Shield className="w-5 h-5 text-blue-400" />
+              <p className="text-sm font-bold text-blue-300">
+                Staff Access Only
+              </p>
+            </div>
+            <p className="text-xs text-gray-400">
+              Contact administrator if you need access
+            </p>
           </div>
         </div>
       </div>

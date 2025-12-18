@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
+import { toast } from "react-toastify";
 import {
   ArrowLeft,
   Building2,
@@ -190,13 +191,17 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         currency === "kes"
           ? "client_transactions_kes"
           : "client_transactions_usd";
-      const { data, error } = await supabase
+      const { data, error: insertError } = await supabase
         .from(table)
         .insert(transactionData)
         .select()
         .single();
 
-      if (error) throw error;
+      if (insertError) {
+        console.error("Error adding transaction:", insertError);
+        toast.error("Failed to add transaction. Please try again.");
+        return;
+      }
 
       // Add new transaction to state without full reload
       if (data) {
@@ -212,9 +217,10 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
       }
 
       setShowAddTransaction(false);
+      toast.success("Transaction added successfully!");
     } catch (error) {
-      console.error("Error adding transaction:", error);
-      alert("Failed to add transaction. Please try again.");
+      console.error("Unexpected error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
     }
   };
 
@@ -229,12 +235,16 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         currency === "kes"
           ? "client_transactions_kes"
           : "client_transactions_usd";
-      const { error } = await supabase
+      const { error: deleteError } = await supabase
         .from(table)
         .delete()
         .eq("id", transactionId);
 
-      if (error) throw error;
+      if (deleteError) {
+        console.error("Error deleting transaction:", deleteError);
+        toast.error("Failed to delete transaction.");
+        return;
+      }
 
       // Remove transaction from state without full reload
       if (currency === "kes") {
@@ -250,9 +260,10 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         setTransactionsUSD(updatedTransactions);
         calculateSummary(updatedTransactions, setSummaryUSD);
       }
+      toast.success("Transaction deleted successfully!");
     } catch (error) {
-      console.error("Error deleting transaction:", error);
-      alert("Failed to delete transaction.");
+      console.error("Unexpected error:", error);
+      toast.error("An unexpected error occurred.");
     }
   };
 
@@ -287,13 +298,18 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         activeTab === "kes"
           ? "client_transactions_kes"
           : "client_transactions_usd";
-      const { data, error } = await supabase
+      const { data, error: insertError } = await supabase
         .from(table)
         .insert(transactionData)
         .select()
         .single();
 
-      if (error) throw error;
+      if (insertError) {
+        console.error("Error adding transaction:", insertError);
+        toast.error("Failed to add transaction. Please try again.");
+        setIsSavingInline(false);
+        return;
+      }
 
       // Add new transaction to state
       if (data) {
@@ -315,10 +331,11 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         credit: "",
         debit: "",
       });
+      setIsSavingInline(false);
+      toast.success("Transaction added successfully!");
     } catch (error) {
-      console.error("Error adding transaction:", error);
-      alert("Failed to add transaction. Please try again.");
-    } finally {
+      console.error("Unexpected error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
       setIsSavingInline(false);
     }
   };
@@ -357,7 +374,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
       });
     } catch (error) {
       console.error("Error generating PDF:", error);
-      alert(
+      toast.error(
         `Failed to generate PDF report: ${
           error instanceof Error ? error.message : "Unknown error"
         }. Please try again.`

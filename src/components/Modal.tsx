@@ -52,10 +52,10 @@ const Modal = memo(function Modal({
 
         {/* Modal */}
         <div
-          className={`relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all w-full ${sizeClasses[size]} animate-slideUp`}
+          className={`relative transform overflow-hidden rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 text-left shadow-2xl transition-all w-full ${sizeClasses[size]} animate-slideUp`}
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-4">
+          <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-4">
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-bold text-white">{title}</h3>
               <button
@@ -68,7 +68,7 @@ const Modal = memo(function Modal({
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6">{children}</div>
+          <div className="px-6 py-6 text-white">{children}</div>
         </div>
       </div>
     </div>
