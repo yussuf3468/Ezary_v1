@@ -8,7 +8,7 @@ import {
   AlertCircle,
   Calendar,
   DollarSign,
-  View,
+  Eye,
 } from "lucide-react";
 import { formatCurrency } from "../lib/currency";
 import Modal from "./Modal";
@@ -537,7 +537,7 @@ export default function Debts() {
                           className="text-blue-400 hover:text-blue-300"
                           title="View & Record Payment"
                         >
-                          <View className="w-5 h-5" />
+                          <Eye className="w-5 h-5" />
                         </button>
                         <button
                           onClick={() => handleDeleteDebt(debt.id)}
