@@ -505,10 +505,10 @@ export default function Reports() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-emerald-50/30 pb-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-8">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Ezary CMS Branded Header */}
-        <div className="bg-gradient-to-br from-white via-white to-emerald-50/20 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-white/50 backdrop-blur-sm transform hover:shadow-3xl transition-all duration-300">
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-white/10 transform hover:shadow-3xl transition-all duration-300">
           <div className="bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600 p-6 sm:p-8 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 animate-pulse"></div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative">
@@ -533,10 +533,10 @@ export default function Reports() {
         </div>
 
         {/* Period Filter */}
-        <div className="bg-white rounded-xl shadow-md p-4 sm:p-6">
+        <div className="bg-white/5 backdrop-blur-xl rounded-xl shadow-md p-4 sm:p-6 border border-white/10">
           <div className="flex items-center gap-2 mb-4">
-            <Filter className="h-5 w-5 text-emerald-600" />
-            <h3 className="font-semibold text-gray-900">Report Period</h3>
+            <Filter className="h-5 w-5 text-emerald-400" />
+            <h3 className="font-semibold text-white">Report Period</h3>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">
             <button
@@ -544,7 +544,7 @@ export default function Reports() {
               className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold transition-all duration-300 active:scale-95 ${
                 selectedPeriod === "current"
                   ? "bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-white shadow-2xl shadow-emerald-300/50 scale-105"
-                  : "bg-white text-gray-700 hover:bg-gray-50 hover:shadow-lg border-2 border-gray-200 hover:border-emerald-300"
+                  : "bg-white/10 text-gray-300 hover:bg-white/20 hover:shadow-lg border-2 border-white/20 hover:border-emerald-400"
               }`}
             >
               This Month
@@ -554,7 +554,7 @@ export default function Reports() {
               className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold transition-all duration-300 active:scale-95 ${
                 selectedPeriod === "last3"
                   ? "bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-white shadow-2xl shadow-emerald-300/50 scale-105"
-                  : "bg-white text-gray-700 hover:bg-gray-50 hover:shadow-lg border-2 border-gray-200 hover:border-emerald-300"
+                  : "bg-white/10 text-gray-300 hover:bg-white/20 hover:shadow-lg border-2 border-white/20 hover:border-emerald-400"
               }`}
             >
               <span className="hidden sm:inline">Last 3 Months</span>
@@ -565,7 +565,7 @@ export default function Reports() {
               className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold transition-all duration-300 active:scale-95 ${
                 selectedPeriod === "last6"
                   ? "bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-white shadow-2xl shadow-emerald-300/50 scale-105"
-                  : "bg-white text-gray-700 hover:bg-gray-50 hover:shadow-lg border-2 border-gray-200 hover:border-emerald-300"
+                  : "bg-white/10 text-gray-300 hover:bg-white/20 hover:shadow-lg border-2 border-white/20 hover:border-emerald-400"
               }`}
             >
               <span className="hidden sm:inline">Last 6 Months</span>
@@ -576,7 +576,7 @@ export default function Reports() {
               className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold transition-all duration-300 active:scale-95 ${
                 selectedPeriod === "year"
                   ? "bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-white shadow-2xl shadow-emerald-300/50 scale-105"
-                  : "bg-white text-gray-700 hover:bg-gray-50 hover:shadow-lg border-2 border-gray-200 hover:border-emerald-300"
+                  : "bg-white/10 text-gray-300 hover:bg-white/20 hover:shadow-lg border-2 border-white/20 hover:border-emerald-400"
               }`}
             >
               This Year
@@ -586,7 +586,7 @@ export default function Reports() {
               className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold transition-all duration-300 active:scale-95 ${
                 selectedPeriod === "custom"
                   ? "bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-white shadow-2xl shadow-emerald-300/50 scale-105"
-                  : "bg-white text-gray-700 hover:bg-gray-50 hover:shadow-lg border-2 border-gray-200 hover:border-emerald-300"
+                  : "bg-white/10 text-gray-300 hover:bg-white/20 hover:shadow-lg border-2 border-white/20 hover:border-emerald-400"
               }`}
             >
               Custom
@@ -594,9 +594,9 @@ export default function Reports() {
           </div>
 
           {selectedPeriod === "custom" && (
-            <div className="grid grid-cols-2 gap-3 mt-4 p-4 bg-gradient-to-r from-gray-50 to-emerald-50 rounded-xl border border-emerald-200">
+            <div className="grid grid-cols-2 gap-3 mt-4 p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/20">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-400 mb-2">
                   <Calendar className="inline-block w-4 h-4 mr-1" />
                   Start Date
                 </label>
@@ -604,11 +604,11 @@ export default function Reports() {
                   type="date"
                   value={customStartDate}
                   onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 bg-white/10 text-white placeholder-gray-400 border-2 border-white/20 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-400 mb-2">
                   <Calendar className="inline-block w-4 h-4 mr-1" />
                   End Date
                 </label>
@@ -616,7 +616,7 @@ export default function Reports() {
                   type="date"
                   value={customEndDate}
                   onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 bg-white/10 text-white placeholder-gray-400 border-2 border-white/20 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                 />
               </div>
             </div>
@@ -624,12 +624,12 @@ export default function Reports() {
         </div>
 
         {/* Export Actions - NEW */}
-        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-lg border border-purple-200 p-4 sm:p-6">
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 p-4 sm:p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg">
               <Download className="h-5 w-5 text-white" />
             </div>
-            <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+            <h3 className="text-lg sm:text-xl font-bold text-white">
               Export Options
             </h3>
           </div>
@@ -659,12 +659,12 @@ export default function Reports() {
         </div>
 
         {/* Currency Filter - Ultra Modern */}
-        <div className="bg-gradient-to-br from-white to-blue-50 rounded-2xl sm:rounded-3xl shadow-xl border border-gray-100 p-4 sm:p-6 hover:shadow-2xl transition-all duration-300">
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl border border-white/10 p-4 sm:p-6 hover:shadow-2xl transition-all duration-300">
           <div className="flex items-center gap-3 mb-5">
             <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl shadow-lg">
               <DollarSign className="h-5 w-5 text-white" />
             </div>
-            <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+            <h3 className="text-lg sm:text-xl font-bold text-white">
               Currency View
             </h3>
           </div>
@@ -674,7 +674,7 @@ export default function Reports() {
               className={`px-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl text-sm sm:text-base font-bold transition-all duration-300 active:scale-95 ${
                 selectedCurrency === "BOTH"
                   ? "bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 text-white shadow-2xl shadow-blue-300/50 scale-105"
-                  : "bg-white text-gray-700 hover:bg-gray-50 hover:shadow-lg border-2 border-gray-200 hover:border-blue-300"
+                  : "bg-white/10 text-gray-300 hover:bg-white/20 hover:shadow-lg border-2 border-white/20 hover:border-blue-400"
               }`}
             >
               🌍 Both Currencies
@@ -684,7 +684,7 @@ export default function Reports() {
               className={`px-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl text-sm sm:text-base font-bold transition-all duration-300 active:scale-95 ${
                 selectedCurrency === "KES"
                   ? "bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-white shadow-2xl shadow-emerald-300/50 scale-105"
-                  : "bg-white text-gray-700 hover:bg-gray-50 hover:shadow-lg border-2 border-gray-200 hover:border-emerald-300"
+                  : "bg-white/10 text-gray-300 hover:bg-white/20 hover:shadow-lg border-2 border-white/20 hover:border-emerald-400"
               }`}
             >
               🇰🇪 KES Only
@@ -694,7 +694,7 @@ export default function Reports() {
               className={`px-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl text-sm sm:text-base font-bold transition-all duration-300 active:scale-95 ${
                 selectedCurrency === "USD"
                   ? "bg-gradient-to-r from-purple-500 via-indigo-500 to-purple-600 text-white shadow-2xl shadow-purple-300/50 scale-105"
-                  : "bg-white text-gray-700 hover:bg-gray-50 hover:shadow-lg border-2 border-gray-200 hover:border-purple-300"
+                  : "bg-white/10 text-gray-300 hover:bg-white/20 hover:shadow-lg border-2 border-white/20 hover:border-purple-400"
               }`}
             >
               🇺🇸 USD Only
@@ -769,13 +769,13 @@ export default function Reports() {
 
         {/* Top Clients */}
         {topClients.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-lg p-5 sm:p-6">
+          <div className="bg-white/5 backdrop-blur-xl rounded-2xl shadow-lg p-5 sm:p-6 border border-white/10">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
                   <TrendingUp className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900">
+                <h3 className="text-xl font-bold text-white">
                   Top Clients by Balance
                 </h3>
               </div>
@@ -785,11 +785,11 @@ export default function Reports() {
               {topClients.map((client, index) => (
                 <div
                   key={client.client_id}
-                  className="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50 to-emerald-50/30 rounded-xl hover:shadow-md transition-all border border-gray-100"
+                  className="flex items-center gap-4 p-4 bg-white/5 backdrop-blur-sm rounded-xl hover:shadow-md transition-all border border-white/10"
                 >
                   <div className="flex-shrink-0">
                     <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white ${
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-lg ${
                         index === 0
                           ? "bg-gradient-to-br from-yellow-400 to-yellow-500"
                           : index === 1
@@ -803,10 +803,10 @@ export default function Reports() {
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-semibold text-white">
                       {client.client_name}
                     </p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-400">
                       {client.client_code}
                     </p>
                   </div>
@@ -840,12 +840,12 @@ export default function Reports() {
 
         {/* Monthly Trends */}
         {monthlyTrends.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-lg p-5 sm:p-6">
+          <div className="bg-white/5 backdrop-blur-xl rounded-2xl shadow-lg p-5 sm:p-6 border border-white/10">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
                 <BarChart3 className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900">
+              <h3 className="text-xl font-bold text-white">
                 Monthly Transaction Trends
               </h3>
             </div>
@@ -853,17 +853,17 @@ export default function Reports() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b-2 border-gray-200">
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                  <tr className="border-b-2 border-white/20">
+                    <th className="text-left py-3 px-4 font-semibold text-gray-400">
                       Month
                     </th>
                     {(selectedCurrency === "BOTH" ||
                       selectedCurrency === "KES") && (
                       <>
-                        <th className="text-right py-3 px-4 font-semibold text-emerald-600">
+                        <th className="text-right py-3 px-4 font-semibold text-emerald-400">
                           KES Trans.
                         </th>
-                        <th className="text-right py-3 px-4 font-semibold text-emerald-600">
+                        <th className="text-right py-3 px-4 font-semibold text-emerald-400">
                           KES Balance
                         </th>
                       </>
@@ -871,10 +871,10 @@ export default function Reports() {
                     {(selectedCurrency === "BOTH" ||
                       selectedCurrency === "USD") && (
                       <>
-                        <th className="text-right py-3 px-4 font-semibold text-purple-600">
+                        <th className="text-right py-3 px-4 font-semibold text-purple-400">
                           USD Trans.
                         </th>
-                        <th className="text-right py-3 px-4 font-semibold text-purple-600">
+                        <th className="text-right py-3 px-4 font-semibold text-purple-400">
                           USD Balance
                         </th>
                       </>
@@ -885,9 +885,9 @@ export default function Reports() {
                   {monthlyTrends.map((trend) => (
                     <tr
                       key={trend.month}
-                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                      className="border-b border-white/10 hover:bg-white/5 transition-colors"
                     >
-                      <td className="py-3 px-4 font-medium text-gray-900">
+                      <td className="py-3 px-4 font-medium text-white">
                         {new Date(trend.month + "-01").toLocaleDateString(
                           "en-US",
                           {
@@ -899,10 +899,10 @@ export default function Reports() {
                       {(selectedCurrency === "BOTH" ||
                         selectedCurrency === "KES") && (
                         <>
-                          <td className="text-right py-3 px-4 text-gray-600">
+                          <td className="text-right py-3 px-4 text-gray-400">
                             {trend.transactions_kes}
                           </td>
-                          <td className="text-right py-3 px-4 font-semibold text-emerald-600">
+                          <td className="text-right py-3 px-4 font-semibold text-emerald-400">
                             KSh {trend.balance_kes.toLocaleString()}
                           </td>
                         </>
@@ -910,10 +910,10 @@ export default function Reports() {
                       {(selectedCurrency === "BOTH" ||
                         selectedCurrency === "USD") && (
                         <>
-                          <td className="text-right py-3 px-4 text-gray-600">
+                          <td className="text-right py-3 px-4 text-gray-400">
                             {trend.transactions_usd}
                           </td>
-                          <td className="text-right py-3 px-4 font-semibold text-purple-600">
+                          <td className="text-right py-3 px-4 font-semibold text-purple-400">
                             ${trend.balance_usd.toLocaleString()}
                           </td>
                         </>
@@ -928,12 +928,12 @@ export default function Reports() {
 
         {/* Empty State */}
         {clientStats.totalClients === 0 && (
-          <div className="bg-gradient-to-br from-gray-50 to-emerald-50 rounded-2xl p-12 text-center border-2 border-dashed border-gray-300">
-            <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-12 text-center border-2 border-dashed border-white/20">
+            <FileText className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-white mb-2">
               No Data Available
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-400 mb-6">
               Start adding clients and transactions to see analytics and reports
             </p>
           </div>

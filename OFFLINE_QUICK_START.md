@@ -1,6 +1,7 @@
 # 🚀 Quick Start: Offline PWA
 
 ## What's New?
+
 Your Ezary CMS now works **completely offline**! Add transactions, view clients, and everything syncs automatically when you're back online.
 
 ---
@@ -8,12 +9,14 @@ Your Ezary CMS now works **completely offline**! Add transactions, view clients,
 ## ⚡ Quick Test (30 seconds)
 
 ### 1. **Install the App**
+
 - Open the app in Chrome/Edge
 - Look for install prompt (bottom-right)
 - Click "Install App"
 - ✅ App appears on home screen!
 
 ### 2. **Test Offline Mode**
+
 ```
 1. Turn OFF WiFi/Data
 2. Open app (it still works!)
@@ -24,6 +27,7 @@ Your Ezary CMS now works **completely offline**! Add transactions, view clients,
 ```
 
 ### 3. **Check Sync Status**
+
 - **Red badge** = No internet
 - **Amber badge** = Changes waiting to sync
 - **Click amber badge** = Manual sync
@@ -34,18 +38,21 @@ Your Ezary CMS now works **completely offline**! Add transactions, view clients,
 ## 📱 Features You Get
 
 ### **Work Anywhere**
+
 - ✅ No internet? No problem
 - ✅ Add/edit transactions offline
 - ✅ View cached clients
 - ✅ Everything syncs later
 
 ### **Native App Feel**
+
 - ✅ Install to home screen
 - ✅ Splash screen on launch
 - ✅ Fast loading (cached)
 - ✅ Push notifications ready
 
 ### **Smart Sync**
+
 - ✅ Auto-sync when online
 - ✅ Manual sync button
 - ✅ Retry failed operations
@@ -56,6 +63,7 @@ Your Ezary CMS now works **completely offline**! Add transactions, view clients,
 ## 🎯 Common Use Cases
 
 ### **Scenario 1: Field Work**
+
 ```
 📍 You're at client site, no WiFi
 → Add transaction in app
@@ -66,6 +74,7 @@ Your Ezary CMS now works **completely offline**! Add transactions, view clients,
 ```
 
 ### **Scenario 2: Poor Connection**
+
 ```
 📡 Weak/intermittent signal
 → App queues changes locally
@@ -75,6 +84,7 @@ Your Ezary CMS now works **completely offline**! Add transactions, view clients,
 ```
 
 ### **Scenario 3: Daily Commute**
+
 ```
 🚌 Review finances on subway
 → App loads instantly (cached)
@@ -88,16 +98,19 @@ Your Ezary CMS now works **completely offline**! Add transactions, view clients,
 ## 🔥 Pro Tips
 
 ### **Faster Loading**
+
 - Install app = loads in <1 second
 - Cached assets = no waiting
 - Works on slow connections
 
 ### **Battery Saving**
+
 - Offline mode = less network usage
 - Syncs only when needed
 - Background sync efficient
 
 ### **Data Safety**
+
 - Changes saved locally first
 - Syncs when connection good
 - Never lose data!
@@ -141,19 +154,20 @@ A: Yes! Browser handles encryption. Cleared with cache.
 
 ## 📊 Before vs After
 
-| Feature | Before | After |
-|---------|--------|-------|
-| **Load Time** | 2-3s | <1s (cached) |
-| **Offline?** | ❌ No | ✅ Full support |
-| **Data Loss Risk** | ⚠️ Medium | ✅ Zero |
-| **App Install** | ❌ No | ✅ Yes |
-| **Auto-sync** | ❌ No | ✅ Yes |
+| Feature            | Before    | After           |
+| ------------------ | --------- | --------------- |
+| **Load Time**      | 2-3s      | <1s (cached)    |
+| **Offline?**       | ❌ No     | ✅ Full support |
+| **Data Loss Risk** | ⚠️ Medium | ✅ Zero         |
+| **App Install**    | ❌ No     | ✅ Yes          |
+| **Auto-sync**      | ❌ No     | ✅ Yes          |
 
 ---
 
 ## 🎉 You're Ready!
 
 That's it! Your app now works offline. Test it out:
+
 1. Install the app
 2. Try offline mode
 3. Watch it sync automatically

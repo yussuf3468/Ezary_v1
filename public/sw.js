@@ -1,14 +1,10 @@
-const CACHE_NAME = 'ezary-cms-v1';
-const RUNTIME_CACHE = 'ezary-runtime-v1';
+const CACHE_NAME = "ezary-cms-v1";
+const RUNTIME_CACHE = "ezary-runtime-v1";
 
-const PRECACHE_URLS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-];
+const PRECACHE_URLS = ["/", "/index.html", "/manifest.json"];
 
 // Install event - cache essential resources
-self.addEventListener('install', (event) => {
+self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(PRECACHE_URLS);
@@ -18,7 +14,7 @@ self.addEventListener('install', (event) => {
 });
 
 // Activate event - clean up old caches
-self.addEventListener('activate', (event) => {
+self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -34,14 +30,14 @@ self.addEventListener('activate', (event) => {
 });
 
 // Fetch event - network first, fallback to cache
-self.addEventListener('fetch', (event) => {
+self.addEventListener("fetch", (event) => {
   // Skip non-GET requests
-  if (event.request.method !== 'GET') {
+  if (event.request.method !== "GET") {
     return;
   }
 
   // Skip Supabase auth requests (always need fresh)
-  if (event.request.url.includes('supabase.co/auth')) {
+  if (event.request.url.includes("supabase.co/auth")) {
     return;
   }
 
@@ -62,10 +58,10 @@ self.addEventListener('fetch', (event) => {
               return cachedResponse;
             }
             // Return offline page for navigation requests
-            if (event.request.mode === 'navigate') {
-              return cache.match('/index.html');
+            if (event.request.mode === "navigate") {
+              return cache.match("/index.html");
             }
-            return new Response('Offline', { status: 503 });
+            return new Response("Offline", { status: 503 });
           });
         });
     })
@@ -73,8 +69,8 @@ self.addEventListener('fetch', (event) => {
 });
 
 // Background sync for pending transactions
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-transactions') {
+self.addEventListener("sync", (event) => {
+  if (event.tag === "sync-transactions") {
     event.waitUntil(syncPendingTransactions());
   }
 });
@@ -83,28 +79,26 @@ async function syncPendingTransactions() {
   // This will be triggered by the sync manager in the app
   const clients = await self.clients.matchAll();
   clients.forEach((client) => {
-    client.postMessage({ type: 'SYNC_REQUESTED' });
+    client.postMessage({ type: "SYNC_REQUESTED" });
   });
 }
 
 // Push notification support
-self.addEventListener('push', (event) => {
+self.addEventListener("push", (event) => {
   const data = event.data ? event.data.json() : {};
-  const title = data.title || 'Ezary CMS';
+  const title = data.title || "Ezary CMS";
   const options = {
-    body: data.body || 'New notification',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    body: data.body || "New notification",
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
     vibrate: [200, 100, 200],
-    data: data.url || '/',
+    data: data.url || "/",
   };
 
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
-self.addEventListener('notificationclick', (event) => {
+self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  event.waitUntil(
-    clients.openWindow(event.notification.data || '/')
-  );
+  event.waitUntil(clients.openWindow(event.notification.data || "/"));
 });

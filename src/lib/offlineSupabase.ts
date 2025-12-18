@@ -1,6 +1,6 @@
-import { supabase } from './supabase';
-import { offlineDB } from './offlineDB';
-import { syncManager } from './syncManager';
+import { supabase } from "./supabase";
+import { offlineDB } from "./offlineDB";
+import { syncManager } from "./syncManager";
 
 export interface OfflineSupabaseOptions {
   enableOffline?: boolean;
@@ -16,13 +16,13 @@ export class OfflineSupabase {
 
   constructor() {
     // Listen for online/offline events
-    window.addEventListener('online', () => {
+    window.addEventListener("online", () => {
       this.isOnline = true;
       // Auto-sync when coming back online
       syncManager.syncPendingTransactions();
     });
 
-    window.addEventListener('offline', () => {
+    window.addEventListener("offline", () => {
       this.isOnline = false;
     });
   }
@@ -31,28 +31,35 @@ export class OfflineSupabase {
    * Insert data with offline support
    * If offline, queues the operation for later sync
    */
-  async insert(table: string, data: any, options: OfflineSupabaseOptions = { enableOffline: true }) {
+  async insert(
+    table: string,
+    data: any,
+    options: OfflineSupabaseOptions = { enableOffline: true }
+  ) {
     try {
       if (this.isOnline) {
         // Try online insert first
-        const { data: result, error } = await supabase.from(table).insert(data).select();
+        const { data: result, error } = await supabase
+          .from(table)
+          .insert(data)
+          .select();
         if (error) throw error;
         return { data: result, error: null };
       } else if (options.enableOffline) {
         // Queue for offline sync
-        const id = await offlineDB.addPendingTransaction('insert', table, data);
+        const id = await offlineDB.addPendingTransaction("insert", table, data);
         return {
           data: [{ ...data, id: `pending_${id}` }],
           error: null,
           offline: true,
         };
       } else {
-        throw new Error('Operation requires internet connection');
+        throw new Error("Operation requires internet connection");
       }
     } catch (error) {
       // If online insert fails, try offline queue
       if (options.enableOffline) {
-        const id = await offlineDB.addPendingTransaction('insert', table, data);
+        const id = await offlineDB.addPendingTransaction("insert", table, data);
         return {
           data: [{ ...data, id: `pending_${id}` }],
           error: null,
@@ -85,17 +92,17 @@ export class OfflineSupabase {
         if (error) throw error;
         return { data: result, error: null };
       } else if (options.enableOffline) {
-        await offlineDB.addPendingTransaction('update', table, {
+        await offlineDB.addPendingTransaction("update", table, {
           ...data,
           ...match,
         });
         return { data: [data], error: null, offline: true };
       } else {
-        throw new Error('Operation requires internet connection');
+        throw new Error("Operation requires internet connection");
       }
     } catch (error) {
       if (options.enableOffline) {
-        await offlineDB.addPendingTransaction('update', table, {
+        await offlineDB.addPendingTransaction("update", table, {
           ...data,
           ...match,
         });
@@ -125,14 +132,14 @@ export class OfflineSupabase {
         if (error) throw error;
         return { error: null };
       } else if (options.enableOffline) {
-        await offlineDB.addPendingTransaction('delete', table, match);
+        await offlineDB.addPendingTransaction("delete", table, match);
         return { error: null, offline: true };
       } else {
-        throw new Error('Operation requires internet connection');
+        throw new Error("Operation requires internet connection");
       }
     } catch (error) {
       if (options.enableOffline) {
-        await offlineDB.addPendingTransaction('delete', table, match);
+        await offlineDB.addPendingTransaction("delete", table, match);
         return { error: null, offline: true };
       }
       return { error };
@@ -149,20 +156,20 @@ export class OfflineSupabase {
         if (error) throw error;
 
         // Cache data for offline use
-        if (table === 'clients' && data) {
+        if (table === "clients" && data) {
           await offlineDB.cacheClients(data);
         }
 
         return { data, error: null };
       } else if (options.useCache) {
         // Return cached data when offline
-        if (table === 'clients') {
+        if (table === "clients") {
           const cachedData = await offlineDB.getCachedClients();
           return { data: cachedData, error: null, cached: true };
         }
-        throw new Error('No cached data available');
+        throw new Error("No cached data available");
       } else {
-        throw new Error('Operation requires internet connection');
+        throw new Error("Operation requires internet connection");
       }
     } catch (error) {
       return { data: null, error };

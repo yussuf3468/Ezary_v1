@@ -23,12 +23,6 @@ export default function Layout({
 
   const navItems = [
     {
-      id: "dashboard",
-      label: "Dashboard",
-      icon: LayoutDashboard,
-      color: "from-blue-500 to-cyan-600",
-    },
-    {
       id: "clients",
       label: "Clients",
       icon: Users,
@@ -53,9 +47,9 @@ export default function Layout({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 pb-20 md:pb-0">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-zinc-900 pb-20 md:pb-0">
       {/* Desktop & Tablet Top Navigation */}
-      <nav className="hidden md:block bg-white/80 backdrop-blur-xl shadow-lg border-b border-gray-200/50 sticky top-0 z-50">
+      <nav className="hidden md:block bg-black/40 backdrop-blur-xl shadow-lg border-b border-white/10 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Ezary CMS Logo */}
@@ -64,10 +58,10 @@ export default function Layout({
                 <span className="text-white font-bold text-xl">E</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
                   Ezary CMS
                 </h1>
-                <p className="text-xs text-gray-500 -mt-0.5">
+                <p className="text-xs text-gray-400 -mt-0.5">
                   Client Management System
                 </p>
               </div>
@@ -85,7 +79,7 @@ export default function Layout({
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all transform ${
                       isActive
                         ? `bg-gradient-to-r ${item.color} text-white shadow-lg scale-105`
-                        : "text-gray-700 hover:bg-gray-100 hover:scale-105"
+                        : "text-gray-300 hover:bg-white/10 hover:scale-105"
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -95,7 +89,7 @@ export default function Layout({
               })}
               <button
                 onClick={handleSignOut}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-red-600 hover:bg-red-50 transition-all ml-2 hover:scale-105"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-red-400 hover:bg-red-500/10 transition-all ml-2 hover:scale-105"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="font-medium text-sm">Sign Out</span>
@@ -106,22 +100,22 @@ export default function Layout({
       </nav>
 
       {/* Mobile Top Bar - Minimal */}
-      <div className="md:hidden bg-white/90 backdrop-blur-xl shadow-md border-b border-gray-200/50 sticky top-0 z-50">
+      <div className="md:hidden bg-black/40 backdrop-blur-xl shadow-md border-b border-white/10 sticky top-0 z-50">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-2">
             <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-2 rounded-lg shadow-md">
               <LayoutDashboard className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-base font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+              <h1 className="text-base font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
                 Ezary CMS
               </h1>
-              <p className="text-xs text-gray-500 -mt-0.5">Client Management</p>
+              <p className="text-xs text-gray-400 -mt-0.5">Client Management</p>
             </div>
           </div>
           <button
             onClick={handleSignOut}
-            className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-all active:scale-95"
+            className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-all active:scale-95"
           >
             <LogOut className="w-5 h-5" />
           </button>
@@ -134,7 +128,7 @@ export default function Layout({
       </main>
 
       {/* Mobile Bottom Navigation - App Style */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-gray-200/50 shadow-2xl z-50">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-black/40 backdrop-blur-xl border-t border-white/10 shadow-2xl z-50">
         <div className="safe-area-inset-bottom">
           <div className="flex items-center justify-around px-2 py-2">
             {navItems.map((item) => {
@@ -152,12 +146,12 @@ export default function Layout({
                     className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all ${
                       isActive
                         ? `bg-gradient-to-br ${item.color} shadow-lg`
-                        : "bg-gray-100"
+                        : "bg-white/10"
                     }`}
                   >
                     <Icon
                       className={`w-5 h-5 transition-colors ${
-                        isActive ? "text-white" : "text-gray-600"
+                        isActive ? "text-white" : "text-gray-400"
                       }`}
                     />
                   </div>
@@ -167,7 +161,7 @@ export default function Layout({
                         ? "bg-gradient-to-r " +
                           item.color +
                           " bg-clip-text text-transparent"
-                        : "text-gray-600"
+                        : "text-gray-400"
                     }`}
                   >
                     {item.label}

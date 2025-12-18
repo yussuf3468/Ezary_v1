@@ -26,9 +26,9 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-zinc-900 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl p-8">
           {/* Ezary Logo */}
           <div className="flex items-center justify-center mb-6">
             <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg">
@@ -39,7 +39,7 @@ export default function Auth() {
           <h1 className="text-3xl font-bold text-center bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">
             Ezary CMS
           </h1>
-          <p className="text-center text-gray-600 mb-8">
+          <p className="text-center text-gray-400 mb-8">
             Professional Client Management System
           </p>
 
@@ -47,7 +47,7 @@ export default function Auth() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-gray-400 mb-1"
               >
                 Email
               </label>
@@ -57,7 +57,7 @@ export default function Auth() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition"
+                className="w-full px-4 py-2 bg-white/10 text-white placeholder-gray-400 border border-white/20 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition"
                 placeholder="you@example.com"
               />
             </div>
@@ -65,7 +65,7 @@ export default function Auth() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-gray-400 mb-1"
               >
                 Password
               </label>
@@ -76,13 +76,13 @@ export default function Auth() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition"
+                className="w-full px-4 py-2 bg-white/10 text-white placeholder-gray-400 border border-white/20 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition"
                 placeholder="••••••••"
               />
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              <div className="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg text-sm">
                 {error}
               </div>
             )}
@@ -102,7 +102,7 @@ export default function Auth() {
                 setIsSignUp(!isSignUp);
                 setError("");
               }}
-              className="text-emerald-600 hover:text-emerald-700 text-sm font-medium"
+              className="text-emerald-400 hover:text-emerald-300 text-sm font-medium"
             >
               {isSignUp
                 ? "Already have an account? Sign in"

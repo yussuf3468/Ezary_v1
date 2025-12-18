@@ -86,7 +86,8 @@ export default function OfflineIndicator() {
           <AlertCircle className="w-5 h-5 text-amber-600" />
           <div className="text-left">
             <p className="text-sm font-semibold text-amber-800">
-              {syncStatus.pending} Pending Change{syncStatus.pending !== 1 ? "s" : ""}
+              {syncStatus.pending} Pending Change
+              {syncStatus.pending !== 1 ? "s" : ""}
             </p>
             <p className="text-xs text-amber-600">
               {isOnline ? "Click to sync now" : "Waiting for connection"}

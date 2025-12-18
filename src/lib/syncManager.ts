@@ -1,5 +1,5 @@
-import { supabase } from './supabase';
-import { offlineDB, PendingTransaction } from './offlineDB';
+import { supabase } from "./supabase";
+import { offlineDB, PendingTransaction } from "./offlineDB";
 
 class SyncManager {
   private isSyncing = false;
@@ -7,18 +7,18 @@ class SyncManager {
 
   async syncPendingTransactions(): Promise<SyncResult> {
     if (this.isSyncing) {
-      return { success: false, message: 'Sync already in progress' };
+      return { success: false, message: "Sync already in progress" };
     }
 
     this.isSyncing = true;
-    this.notifyCallbacks({ type: 'syncing', pending: 0 });
+    this.notifyCallbacks({ type: "syncing", pending: 0 });
 
     try {
       const pending = await offlineDB.getPendingTransactions();
 
       if (pending.length === 0) {
         this.isSyncing = false;
-        this.notifyCallbacks({ type: 'idle', pending: 0 });
+        this.notifyCallbacks({ type: "idle", pending: 0 });
         return { success: true, synced: 0, failed: 0 };
       }
 
@@ -31,64 +31,66 @@ class SyncManager {
           await offlineDB.deletePendingTransaction(transaction.id);
           synced++;
         } catch (error) {
-          console.error('Sync failed:', error);
+          console.error("Sync failed:", error);
           await offlineDB.updateTransactionStatus(
             transaction.id,
-            'failed',
-            error instanceof Error ? error.message : 'Unknown error'
+            "failed",
+            error instanceof Error ? error.message : "Unknown error"
           );
           failed++;
         }
 
         this.notifyCallbacks({
-          type: 'syncing',
+          type: "syncing",
           pending: pending.length - synced - failed,
         });
       }
 
       this.isSyncing = false;
-      this.notifyCallbacks({ type: 'idle', pending: 0 });
+      this.notifyCallbacks({ type: "idle", pending: 0 });
 
       return {
         success: true,
         synced,
         failed,
         message: `Synced ${synced} transactions${
-          failed > 0 ? `, ${failed} failed` : ''
+          failed > 0 ? `, ${failed} failed` : ""
         }`,
       };
     } catch (error) {
       this.isSyncing = false;
-      this.notifyCallbacks({ type: 'error', pending: 0 });
+      this.notifyCallbacks({ type: "error", pending: 0 });
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Sync failed',
+        message: error instanceof Error ? error.message : "Sync failed",
       };
     }
   }
 
-  private async syncTransaction(transaction: PendingTransaction): Promise<void> {
+  private async syncTransaction(
+    transaction: PendingTransaction
+  ): Promise<void> {
     switch (transaction.type) {
-      case 'insert':
+      case "insert":
         const { error: insertError } = await supabase
           .from(transaction.table)
           .insert(transaction.data);
         if (insertError) throw insertError;
         break;
 
-      case 'update':
+      case "update":
         const { error: updateError } = await supabase
           .from(transaction.table)
           .update(transaction.data)
-          .eq('id', transaction.data.id);
+          .eq("id", transaction.data.id);
         if (updateError) throw updateError;
         break;
 
-      case 'delete':
+      case "delete":
         const { error: deleteError } = await supabase
           .from(transaction.table)
           .delete()
-          .eq('id', transaction.data.id);
+          .eq("id", transaction.data.id);
         if (deleteError) throw deleteError;
         break;
     }
@@ -111,7 +113,7 @@ class SyncManager {
 }
 
 export interface SyncStatus {
-  type: 'idle' | 'syncing' | 'error';
+  type: "idle" | "syncing" | "error";
   pending: number;
 }
 

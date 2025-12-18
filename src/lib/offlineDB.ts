@@ -1,20 +1,20 @@
 // IndexedDB wrapper for offline storage
-const DB_NAME = 'EzaryCMS';
+const DB_NAME = "EzaryCMS";
 const DB_VERSION = 1;
 const STORES = {
-  PENDING_TRANSACTIONS: 'pendingTransactions',
-  CACHED_CLIENTS: 'cachedClients',
-  CACHED_TRANSACTIONS: 'cachedTransactions',
-  SYNC_QUEUE: 'syncQueue',
+  PENDING_TRANSACTIONS: "pendingTransactions",
+  CACHED_CLIENTS: "cachedClients",
+  CACHED_TRANSACTIONS: "cachedTransactions",
+  SYNC_QUEUE: "syncQueue",
 };
 
 export interface PendingTransaction {
   id: string;
   timestamp: number;
-  type: 'insert' | 'update' | 'delete';
+  type: "insert" | "update" | "delete";
   table: string;
   data: any;
-  status: 'pending' | 'syncing' | 'failed';
+  status: "pending" | "syncing" | "failed";
   retryCount: number;
   error?: string;
 }
@@ -38,29 +38,29 @@ class OfflineDB {
         // Pending transactions store
         if (!db.objectStoreNames.contains(STORES.PENDING_TRANSACTIONS)) {
           const store = db.createObjectStore(STORES.PENDING_TRANSACTIONS, {
-            keyPath: 'id',
+            keyPath: "id",
           });
-          store.createIndex('status', 'status', { unique: false });
-          store.createIndex('timestamp', 'timestamp', { unique: false });
+          store.createIndex("status", "status", { unique: false });
+          store.createIndex("timestamp", "timestamp", { unique: false });
         }
 
         // Cached clients store
         if (!db.objectStoreNames.contains(STORES.CACHED_CLIENTS)) {
-          db.createObjectStore(STORES.CACHED_CLIENTS, { keyPath: 'id' });
+          db.createObjectStore(STORES.CACHED_CLIENTS, { keyPath: "id" });
         }
 
         // Cached transactions store
         if (!db.objectStoreNames.contains(STORES.CACHED_TRANSACTIONS)) {
           const store = db.createObjectStore(STORES.CACHED_TRANSACTIONS, {
-            keyPath: 'id',
+            keyPath: "id",
           });
-          store.createIndex('client_id', 'client_id', { unique: false });
+          store.createIndex("client_id", "client_id", { unique: false });
         }
 
         // Sync queue store
         if (!db.objectStoreNames.contains(STORES.SYNC_QUEUE)) {
           db.createObjectStore(STORES.SYNC_QUEUE, {
-            keyPath: 'id',
+            keyPath: "id",
             autoIncrement: true,
           });
         }
@@ -70,7 +70,7 @@ class OfflineDB {
 
   // Add pending transaction
   async addPendingTransaction(
-    type: PendingTransaction['type'],
+    type: PendingTransaction["type"],
     table: string,
     data: any
   ): Promise<string> {
@@ -82,14 +82,14 @@ class OfflineDB {
       type,
       table,
       data,
-      status: 'pending',
+      status: "pending",
       retryCount: 0,
     };
 
     return new Promise((resolve, reject) => {
       const tx = this.db!.transaction(
         [STORES.PENDING_TRANSACTIONS],
-        'readwrite'
+        "readwrite"
       );
       const store = tx.objectStore(STORES.PENDING_TRANSACTIONS);
       const request = store.add(transaction);
@@ -104,10 +104,13 @@ class OfflineDB {
     if (!this.db) await this.init();
 
     return new Promise((resolve, reject) => {
-      const tx = this.db!.transaction([STORES.PENDING_TRANSACTIONS], 'readonly');
+      const tx = this.db!.transaction(
+        [STORES.PENDING_TRANSACTIONS],
+        "readonly"
+      );
       const store = tx.objectStore(STORES.PENDING_TRANSACTIONS);
-      const index = store.index('status');
-      const request = index.getAll('pending');
+      const index = store.index("status");
+      const request = index.getAll("pending");
 
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
@@ -117,7 +120,7 @@ class OfflineDB {
   // Update transaction status
   async updateTransactionStatus(
     id: string,
-    status: PendingTransaction['status'],
+    status: PendingTransaction["status"],
     error?: string
   ): Promise<void> {
     if (!this.db) await this.init();
@@ -125,7 +128,7 @@ class OfflineDB {
     return new Promise((resolve, reject) => {
       const tx = this.db!.transaction(
         [STORES.PENDING_TRANSACTIONS],
-        'readwrite'
+        "readwrite"
       );
       const store = tx.objectStore(STORES.PENDING_TRANSACTIONS);
       const getRequest = store.get(id);
@@ -135,7 +138,7 @@ class OfflineDB {
         if (transaction) {
           transaction.status = status;
           if (error) transaction.error = error;
-          if (status === 'failed') transaction.retryCount++;
+          if (status === "failed") transaction.retryCount++;
 
           const updateRequest = store.put(transaction);
           updateRequest.onsuccess = () => resolve();
@@ -155,7 +158,7 @@ class OfflineDB {
     return new Promise((resolve, reject) => {
       const tx = this.db!.transaction(
         [STORES.PENDING_TRANSACTIONS],
-        'readwrite'
+        "readwrite"
       );
       const store = tx.objectStore(STORES.PENDING_TRANSACTIONS);
       const request = store.delete(id);
@@ -170,7 +173,7 @@ class OfflineDB {
     if (!this.db) await this.init();
 
     return new Promise((resolve, reject) => {
-      const tx = this.db!.transaction([STORES.CACHED_CLIENTS], 'readwrite');
+      const tx = this.db!.transaction([STORES.CACHED_CLIENTS], "readwrite");
       const store = tx.objectStore(STORES.CACHED_CLIENTS);
 
       // Clear existing cache
@@ -191,7 +194,7 @@ class OfflineDB {
     if (!this.db) await this.init();
 
     return new Promise((resolve, reject) => {
-      const tx = this.db!.transaction([STORES.CACHED_CLIENTS], 'readonly');
+      const tx = this.db!.transaction([STORES.CACHED_CLIENTS], "readonly");
       const store = tx.objectStore(STORES.CACHED_CLIENTS);
       const request = store.getAll();
 
@@ -205,10 +208,13 @@ class OfflineDB {
     if (!this.db) await this.init();
 
     return new Promise((resolve, reject) => {
-      const tx = this.db!.transaction([STORES.PENDING_TRANSACTIONS], 'readonly');
+      const tx = this.db!.transaction(
+        [STORES.PENDING_TRANSACTIONS],
+        "readonly"
+      );
       const store = tx.objectStore(STORES.PENDING_TRANSACTIONS);
-      const index = store.index('status');
-      const request = index.count('pending');
+      const index = store.index("status");
+      const request = index.count("pending");
 
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);

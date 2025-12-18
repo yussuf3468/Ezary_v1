@@ -396,7 +396,9 @@ export default function CMSDashboard({ onNavigate }: DashboardProps) {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-sm rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-2xl sm:text-3xl">E</span>
+              <span className="text-white font-bold text-2xl sm:text-3xl">
+                E
+              </span>
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
@@ -424,7 +426,9 @@ export default function CMSDashboard({ onNavigate }: DashboardProps) {
           <div className="flex items-center justify-between mb-1 sm:mb-2">
             <Users className="w-4 h-4 sm:w-6 sm:h-6 opacity-80" />
           </div>
-          <p className="text-blue-100 text-[10px] sm:text-xs mb-1">Total Clients</p>
+          <p className="text-blue-100 text-[10px] sm:text-xs mb-1">
+            Total Clients
+          </p>
           <p className="text-xl sm:text-2xl font-bold">{stats.totalClients}</p>
         </div>
 
@@ -601,7 +605,9 @@ export default function CMSDashboard({ onNavigate }: DashboardProps) {
         <div className="flex items-center justify-between mb-3 sm:mb-4">
           <div className="flex items-center gap-2 sm:gap-3">
             <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />
-            <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900">Active Clients</h2>
+            <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900">
+              Active Clients
+            </h2>
           </div>
           <button
             onClick={() => onNavigate("clients")}
@@ -672,7 +678,9 @@ export default function CMSDashboard({ onNavigate }: DashboardProps) {
                           : "bg-gray-50 border border-gray-200"
                       }`}
                     >
-                      <p className="text-[10px] sm:text-xs text-gray-600 mb-0.5 sm:mb-1">KES</p>
+                      <p className="text-[10px] sm:text-xs text-gray-600 mb-0.5 sm:mb-1">
+                        KES
+                      </p>
                       <p
                         className={`text-xs sm:text-sm font-bold ${
                           balanceKES > 0
@@ -694,7 +702,9 @@ export default function CMSDashboard({ onNavigate }: DashboardProps) {
                           : "bg-gray-50 border border-gray-200"
                       }`}
                     >
-                      <p className="text-[10px] sm:text-xs text-gray-600 mb-0.5 sm:mb-1">USD</p>
+                      <p className="text-[10px] sm:text-xs text-gray-600 mb-0.5 sm:mb-1">
+                        USD
+                      </p>
                       <p
                         className={`text-xs sm:text-sm font-bold ${
                           balanceUSD > 0

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Auth from "./components/Auth";
 import Layout from "./components/Layout";
-import CMSDashboard from "./components/CMSDashboard";
+import UltraPremiumDashboard from "./components/UltraPremiumDashboard";
 import ClientList from "./components/ClientList";
 import ClientDetail from "./components/ClientDetail";
 import Vehicles from "./components/Vehicles";
@@ -14,7 +14,7 @@ import { offlineDB } from "./lib/offlineDB";
 
 function AppContent() {
   const { user, loading } = useAuth();
-  const [currentPage, setCurrentPage] = useState("dashboard");
+  const [currentPage, setCurrentPage] = useState("clients");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
   // Initialize offline database
@@ -65,8 +65,6 @@ function AppContent() {
 
   const renderPage = () => {
     switch (currentPage) {
-      case "dashboard":
-        return <CMSDashboard onNavigate={handleNavigation} />;
       case "clients":
         return <ClientList onSelectClient={handleSelectClient} />;
       case "client-detail":
@@ -83,7 +81,7 @@ function AppContent() {
       case "reports":
         return <Reports />;
       default:
-        return <CMSDashboard onNavigate={handleNavigation} />;
+        return <ClientList onSelectClient={handleSelectClient} />;
     }
   };
 
