@@ -531,17 +531,17 @@ export default function Debts() {
                       {debt.description}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex gap-2">
+                      <div className="flex gap-3">
                         <button
                           onClick={() => handleViewDebt(debt)}
-                          className="text-blue-400 hover:text-blue-300"
+                          className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-all"
                           title="View & Record Payment"
                         >
                           <Eye className="w-5 h-5" />
                         </button>
                         <button
                           onClick={() => handleDeleteDebt(debt.id)}
-                          className="text-red-400 hover:text-red-300"
+                          className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all"
                           title="Delete"
                         >
                           <Trash2 className="w-5 h-5" />
