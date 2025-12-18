@@ -216,11 +216,29 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
     const formData = new FormData(e.currentTarget);
 
     try {
-      // Generate client code
-      const { data: codeData, error: codeError } = await supabase.rpc(
-        "generate_client_code"
-      );
-      const clientCode = codeData || `CLT-${Date.now().toString().slice(-4)}`;
+      // Generate client code by querying the last client code
+      const { data: existingClients, error: queryError } = await supabase
+        .from("clients")
+        .select("client_code")
+        .eq("user_id", user?.id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (queryError) {
+        console.error("Error querying clients:", queryError);
+        toast.error("Failed to generate client code. Please try again.");
+        return;
+      }
+
+      let clientCode = "CLT-0001";
+      if (existingClients && existingClients.length > 0) {
+        const lastCode = existingClients[0].client_code;
+        const match = lastCode.match(/CLT-(\d+)/);
+        if (match) {
+          const nextNum = parseInt(match[1]) + 1;
+          clientCode = `CLT-${nextNum.toString().padStart(4, "0")}`;
+        }
+      }
 
       const { error: insertError } = await supabase.from("clients").insert({
         user_id: user?.id,

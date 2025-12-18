@@ -551,22 +551,22 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
 
         {/* Transactions Section */}
         <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-          <div className="p-6 bg-gradient-to-r from-white/5 to-transparent border-b border-white/10">
-            <div className="flex items-center justify-between">
+          <div className="p-3 sm:p-6 bg-gradient-to-r from-white/5 to-transparent border-b border-white/10">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <h2 className="text-2xl font-bold text-white mb-1">
+                <h2 className="text-lg sm:text-2xl font-bold text-white mb-1">
                   Transaction History
                 </h2>
-                <p className="text-sm text-gray-400">
+                <p className="text-xs sm:text-sm text-gray-400">
                   {currentTransactions.length} transaction
                   {currentTransactions.length !== 1 ? "s" : ""}
                 </p>
               </div>
               <button
                 onClick={() => setShowAddTransaction(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:shadow-2xl hover:shadow-emerald-500/50 transition-all font-bold text-sm active:scale-95"
+                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:shadow-2xl hover:shadow-emerald-500/50 transition-all font-bold text-xs sm:text-sm active:scale-95 w-full sm:w-auto"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span>Add Transaction</span>
               </button>
             </div>
