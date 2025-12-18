@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
-import { useToast } from "../contexts/ToastContext";
+import { toast } from "react-toastify";
 import {
   FileText,
   TrendingUp,
@@ -48,7 +48,6 @@ type Currency = "KES" | "USD" | "BOTH";
 
 export default function Reports() {
   const { user } = useAuth();
-  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [clientStats, setClientStats] = useState<ClientStats>({
     totalClients: 0,
