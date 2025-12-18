@@ -23,24 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      (async () => {
-        setUser(session?.user ?? null);
-
-        if (session?.user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('id', session.user.id)
-            .maybeSingle();
-
-          if (!profile) {
-            await supabase.from('profiles').insert({
-              id: session.user.id,
-              email: session.user.email!,
-            });
-          }
-        }
-      })();
+      setUser(session?.user ?? null);
     });
 
     return () => subscription.unsubscribe();

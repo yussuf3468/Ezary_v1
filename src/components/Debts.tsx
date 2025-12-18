@@ -221,6 +221,7 @@ export default function Debts() {
       const { error: debtError } = await supabase.from("client_debts").insert([
         {
           client_id: newClient.id,
+          user_id: user.id,
           amount: parseFloat(newDebt.amount),
           currency: newDebt.currency,
           description: newDebt.description,
