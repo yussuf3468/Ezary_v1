@@ -399,6 +399,9 @@ export default function Debts() {
                   Balance
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                  Debt Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
                   Due Date
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
@@ -438,6 +441,11 @@ export default function Debts() {
                     </td>
                     <td className="px-6 py-4 font-medium text-white">
                       {formatCurrency(debt.balance, debt.currency)}
+                    </td>
+                    <td className="px-6 py-4 text-gray-300">
+                      {debt.debt_date
+                        ? new Date(debt.debt_date).toLocaleDateString()
+                        : "N/A"}
                     </td>
                     <td className="px-6 py-4">
                       <div>
