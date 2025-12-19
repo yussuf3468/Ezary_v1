@@ -119,42 +119,39 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
     try {
       setLoading(true);
 
-      // Load client info
-      const { data: clientData, error: clientError } = await supabase
-        .from("clients")
-        .select("*")
-        .eq("id", clientId)
-        .eq("user_id", user.id)
-        .single();
+      // Load all data in parallel
+      const [clientResult, kesResult, usdResult] = await Promise.all([
+        supabase
+          .from("clients")
+          .select("id, client_name, client_code, email, phone, business_name, status")
+          .eq("id", clientId)
+          .eq("user_id", user.id)
+          .single(),
+        supabase
+          .from("client_transactions_kes")
+          .select("id, transaction_date, description, credit, debit, category, reference_number")
+          .eq("client_id", clientId)
+          .eq("user_id", user.id)
+          .order("transaction_date", { ascending: false }),
+        supabase
+          .from("client_transactions_usd")
+          .select("id, transaction_date, description, credit, debit, category, reference_number")
+          .eq("client_id", clientId)
+          .eq("user_id", user.id)
+          .order("transaction_date", { ascending: false })
+      ]);
 
-      if (clientError) throw clientError;
-      setClient(clientData);
+      if (clientResult.error) throw clientResult.error;
+      if (kesResult.error) throw kesResult.error;
+      if (usdResult.error) throw usdResult.error;
 
-      // Load KES transactions
-      const { data: kesData, error: kesError } = await supabase
-        .from("client_transactions_kes")
-        .select("*")
-        .eq("client_id", clientId)
-        .eq("user_id", user.id)
-        .order("transaction_date", { ascending: false });
-
-      if (kesError) throw kesError;
-      setTransactionsKES(kesData || []);
-
-      // Load USD transactions
-      const { data: usdData, error: usdError } = await supabase
-        .from("client_transactions_usd")
-        .select("*")
-        .eq("client_id", clientId)
-        .eq("user_id", user.id)
-        .order("transaction_date", { ascending: false });
-
-      if (usdError) throw usdError;
-      setTransactionsUSD(usdData || []);
+      setClient(clientResult.data);
+      setTransactionsKES(kesResult.data || []);
+      setTransactionsUSD(usdResult.data || []);
 
       // Calculate summaries
-      calculateSummary(kesData || [], setSummaryKES);
-      calculateSummary(usdData || [], setSummaryUSD);
+      calculateSummary(kesResult.data || [], setSummaryKES);
+      calculateSummary(usdResult.data || [], setSummaryUSD);
     } catch (error) {
       console.error("Error loading client data:", error);
     } finally {

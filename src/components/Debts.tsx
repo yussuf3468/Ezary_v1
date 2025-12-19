@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { toast } from "react-toastify";
 import {
@@ -24,6 +24,7 @@ interface DebtWithClient {
   balance: number;
   description: string;
   reference_number: string;
+  debt_date: string;
   due_date: string;
   status: "pending" | "overdue" | "paid" | "cancelled";
   priority: "low" | "normal" | "high" | "urgent";
@@ -77,7 +78,7 @@ export default function Debts() {
     try {
       const { data, error } = await supabase
         .from("client_debts")
-        .select("*")
+        .select("id, debtor_name, debtor_phone, amount, currency, balance, description, debt_date, due_date, status, priority, created_at")
         .order("due_date", { ascending: true });
 
       if (error) throw error;
@@ -124,7 +125,7 @@ export default function Debts() {
     setStats({ overdue, pending, paid, totalBalance });
   }
 
-  function filterDebts() {
+  const filterDebts = useCallback(() => {
     let filtered = debts;
 
     if (statusFilter !== "all") {
@@ -142,7 +143,7 @@ export default function Debts() {
     }
 
     setFilteredDebts(filtered);
-  }
+  }, [debts, searchTerm, statusFilter]);
 
   function getDaysUntilDue(dueDate: string): number {
     const today = new Date();
@@ -390,6 +391,9 @@ export default function Debts() {
             <thead className="bg-white/5">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                  Debt Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
                   Client
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
@@ -397,9 +401,6 @@ export default function Debts() {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
                   Balance
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
-                  Debt Date
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
                   Due Date
@@ -426,6 +427,11 @@ export default function Debts() {
                     key={debt.id}
                     className="hover:bg-white/10 transition-colors"
                   >
+                    <td className="px-6 py-4 text-gray-300">
+                      {debt.debt_date
+                        ? new Date(debt.debt_date).toLocaleDateString()
+                        : "N/A"}
+                    </td>
                     <td className="px-6 py-4">
                       <div>
                         <p className="font-medium text-white">
@@ -441,11 +447,6 @@ export default function Debts() {
                     </td>
                     <td className="px-6 py-4 font-medium text-white">
                       {formatCurrency(debt.balance, debt.currency)}
-                    </td>
-                    <td className="px-6 py-4 text-gray-300">
-                      {debt.debt_date
-                        ? new Date(debt.debt_date).toLocaleDateString()
-                        : "N/A"}
                     </td>
                     <td className="px-6 py-4">
                       <div>

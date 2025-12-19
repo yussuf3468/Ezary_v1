@@ -81,7 +81,7 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
       setLoading(true);
       const { data, error } = await supabase
         .from("clients")
-        .select("*")
+        .select("id, client_name, client_code, email, phone, business_name, status, last_transaction_date, created_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
