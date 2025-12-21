@@ -61,6 +61,7 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
   const [sortField, setSortField] = useState<SortField>("date");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
@@ -233,7 +234,8 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
 
   const handleAddClient = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const formData = new FormData(form);
 
     try {
       // Generate client code by querying the last client code
@@ -282,12 +284,13 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
       }
 
       // Create opening balance transaction if initial balance is provided
-      const initialBalance = parseFloat(
-        formData.get("initial_balance") as string
-      );
+      const initialBalanceStr = formData.get("initial_balance") as string;
+      const initialBalance = initialBalanceStr
+        ? parseFloat(initialBalanceStr)
+        : 0;
       const initialCurrency = formData.get("initial_currency") as string;
 
-      if (initialBalance && initialBalance > 0 && newClient) {
+      if (!isNaN(initialBalance) && initialBalance > 0 && newClient) {
         const transactionTable =
           initialCurrency === "USD"
             ? "client_transactions_usd"
@@ -302,7 +305,6 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
             description: "Opening Balance",
             credit: initialBalance,
             debit: 0,
-            category: "opening_balance",
           });
 
         if (transactionError) {
@@ -314,14 +316,61 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
       }
 
       // Success - close modal and reload
-      e.currentTarget.reset();
+      form.reset();
       setShowAddModal(false);
-      await loadClients();
-      await loadBalances(); // Reload balances if opening balance was added
-      toast.success("Client added successfully!");
+
+      // Reload both clients and balances with proper error handling
+      try {
+        await Promise.all([loadClients(), loadBalances()]);
+        toast.success(`✓ Client ${clientCode} added successfully!`);
+      } catch (reloadError) {
+        console.error("Error reloading after client creation:", reloadError);
+        toast.success(
+          `✓ Client ${clientCode} added. Please refresh to see updates.`
+        );
+      }
     } catch (error) {
       console.error("Unexpected error:", error);
       toast.error("An unexpected error occurred. Please try again.");
+    }
+  };
+
+  const handleDeleteClient = async () => {
+    if (!clientToDelete) return;
+
+    try {
+      // Delete client transactions first
+      const { error: kesError } = await supabase
+        .from("client_transactions_kes")
+        .delete()
+        .eq("client_id", clientToDelete.id)
+        .eq("user_id", user?.id);
+
+      if (kesError) throw kesError;
+
+      const { error: usdError } = await supabase
+        .from("client_transactions_usd")
+        .delete()
+        .eq("client_id", clientToDelete.id)
+        .eq("user_id", user?.id);
+
+      if (usdError) throw usdError;
+
+      // Delete client
+      const { error: clientError } = await supabase
+        .from("clients")
+        .delete()
+        .eq("id", clientToDelete.id)
+        .eq("user_id", user?.id);
+
+      if (clientError) throw clientError;
+
+      toast.success(`✓ Client ${clientToDelete.client_code} deleted successfully!`);
+      setClientToDelete(null);
+      await Promise.all([loadClients(), loadBalances()]);
+    } catch (error: any) {
+      console.error("Error deleting client:", error);
+      toast.error(`✗ Failed to delete client: ${error.message}`);
     }
   };
 
@@ -732,13 +781,20 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
                   </div>
 
                   {/* Quick Actions */}
-                  <div className="pt-3 border-t border-white/10">
+                  <div className="pt-3 border-t border-white/10 flex gap-2">
                     <button
                       onClick={() => onSelectClient(client.id)}
-                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg text-xs font-medium hover:shadow-lg transition-all duration-200 active:scale-95"
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg text-xs font-medium hover:shadow-lg transition-all duration-200 active:scale-95"
                     >
                       <Eye className="w-3.5 h-3.5" />
                       View
+                    </button>
+                    <button
+                      onClick={() => setClientToDelete(client)}
+                      className="px-3 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg text-xs font-medium hover:bg-red-500/30 transition-all duration-200 active:scale-95"
+                      title="Delete Client"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -838,6 +894,57 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {clientToDelete && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white/5 backdrop-blur-xl rounded-2xl shadow-2xl max-w-md w-full border border-red-500/20 animate-scaleIn">
+            <div className="bg-gradient-to-r from-red-600 to-red-700 border-b border-red-500/30 px-6 py-5 flex items-center justify-between">
+              <h2 className="text-2xl font-black text-white">Delete Client</h2>
+              <button
+                onClick={() => setClientToDelete(null)}
+                className="p-2 hover:bg-white/20 rounded-xl transition-all active:scale-90"
+              >
+                <X className="w-6 h-6 text-white" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+                <Trash2 className="w-6 h-6 text-red-400 flex-shrink-0" />
+                <div>
+                  <p className="text-white font-bold">
+                    {clientToDelete.client_name}
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    {clientToDelete.client_code}
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-gray-300 mb-4">
+                Are you sure you want to delete this client? This will also delete all associated transactions. This action cannot be undone.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setClientToDelete(null)}
+                  className="flex-1 px-6 py-3 border-2 border-white/20 rounded-xl text-gray-300 font-bold hover:bg-white/10 hover:border-white/30 transition-all active:scale-95"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteClient}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-black hover:shadow-2xl hover:shadow-red-500/50 transition-all duration-200 active:scale-95"
+                >
+                  ✓ Delete
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

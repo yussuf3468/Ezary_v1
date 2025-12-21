@@ -132,7 +132,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         supabase
           .from("client_transactions_kes")
           .select(
-            "id, transaction_date, description, credit, debit, category, reference_number"
+            "id, transaction_date, description, credit, debit, reference_number"
           )
           .eq("client_id", clientId)
           .eq("user_id", user.id)
@@ -140,7 +140,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         supabase
           .from("client_transactions_usd")
           .select(
-            "id, transaction_date, description, credit, debit, category, reference_number"
+            "id, transaction_date, description, credit, debit, reference_number"
           )
           .eq("client_id", clientId)
           .eq("user_id", user.id)
@@ -151,6 +151,12 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
       if (kesResult.error) throw kesResult.error;
       if (usdResult.error) throw usdResult.error;
 
+      if (!clientResult.data) {
+        toast.error("Client not found");
+        onBack();
+        return;
+      }
+
       setClient(clientResult.data);
       setTransactionsKES(kesResult.data || []);
       setTransactionsUSD(usdResult.data || []);
@@ -158,8 +164,10 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
       // Calculate summaries
       calculateSummary(kesResult.data || [], setSummaryKES);
       calculateSummary(usdResult.data || [], setSummaryUSD);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading client data:", error);
+      toast.error(`Failed to load client: ${error.message}`);
+      onBack();
     } finally {
       setLoading(false);
     }
