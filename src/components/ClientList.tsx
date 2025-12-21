@@ -496,7 +496,7 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 xl:gap-6 mb-4 sm:mb-6">
+        <div className="grid grid-cols-1 gap-3 sm:gap-4 xl:gap-6 mb-4 sm:mb-6">
           <div className="bg-white/5 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-white/10 hover:border-blue-500/50 transition-all">
             <div className="flex items-center justify-between">
               <div>
@@ -509,38 +509,6 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
               </div>
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
                 <Users className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white/5 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-white/10 hover:border-emerald-500/50 transition-all">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-xs sm:text-sm mb-1">
-                  Active Clients
-                </p>
-                <p className="text-2xl sm:text-3xl font-bold text-emerald-400">
-                  {stats.active}
-                </p>
-              </div>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
-                <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white/5 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-white/10 hover:border-gray-500/50 transition-all">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-xs sm:text-sm mb-1">
-                  Inactive Clients
-                </p>
-                <p className="text-2xl sm:text-3xl font-bold text-gray-400">
-                  {stats.inactive}
-                </p>
-              </div>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-gray-500 to-slate-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
-                <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
             </div>
           </div>
