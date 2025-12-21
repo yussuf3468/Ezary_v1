@@ -123,22 +123,28 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
       const [clientResult, kesResult, usdResult] = await Promise.all([
         supabase
           .from("clients")
-          .select("id, client_name, client_code, email, phone, business_name, status")
+          .select(
+            "id, client_name, client_code, email, phone, business_name, status"
+          )
           .eq("id", clientId)
           .eq("user_id", user.id)
           .single(),
         supabase
           .from("client_transactions_kes")
-          .select("id, transaction_date, description, credit, debit, category, reference_number")
+          .select(
+            "id, transaction_date, description, credit, debit, category, reference_number"
+          )
           .eq("client_id", clientId)
           .eq("user_id", user.id)
           .order("transaction_date", { ascending: false }),
         supabase
           .from("client_transactions_usd")
-          .select("id, transaction_date, description, credit, debit, category, reference_number")
+          .select(
+            "id, transaction_date, description, credit, debit, category, reference_number"
+          )
           .eq("client_id", clientId)
           .eq("user_id", user.id)
-          .order("transaction_date", { ascending: false })
+          .order("transaction_date", { ascending: false }),
       ]);
 
       if (clientResult.error) throw clientResult.error;

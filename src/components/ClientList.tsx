@@ -81,7 +81,9 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
       setLoading(true);
       const { data, error } = await supabase
         .from("clients")
-        .select("id, client_name, client_code, email, phone, business_name, status, last_transaction_date, created_at")
+        .select(
+          "id, client_name, client_code, email, phone, business_name, status, last_transaction_date, created_at"
+        )
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
@@ -258,16 +260,20 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
         }
       }
 
-      const { error: insertError } = await supabase.from("clients").insert({
-        user_id: user?.id,
-        client_name: formData.get("client_name"),
-        email: formData.get("email") || null,
-        phone: formData.get("phone") || null,
-        business_name: formData.get("business_name") || null,
-        address: formData.get("address") || null,
-        client_code: clientCode,
-        status: "active",
-      });
+      const { data: newClient, error: insertError } = await supabase
+        .from("clients")
+        .insert({
+          user_id: user?.id,
+          client_name: formData.get("client_name"),
+          email: formData.get("email") || null,
+          phone: formData.get("phone") || null,
+          business_name: formData.get("business_name") || null,
+          address: formData.get("address") || null,
+          client_code: clientCode,
+          status: "active",
+        })
+        .select()
+        .single();
 
       if (insertError) {
         console.error("Error adding client:", insertError);
@@ -275,10 +281,43 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
         return;
       }
 
+      // Create opening balance transaction if initial balance is provided
+      const initialBalance = parseFloat(
+        formData.get("initial_balance") as string
+      );
+      const initialCurrency = formData.get("initial_currency") as string;
+
+      if (initialBalance && initialBalance > 0 && newClient) {
+        const transactionTable =
+          initialCurrency === "USD"
+            ? "client_transactions_usd"
+            : "client_transactions_kes";
+
+        const { error: transactionError } = await supabase
+          .from(transactionTable)
+          .insert({
+            client_id: newClient.id,
+            user_id: user?.id,
+            transaction_date: new Date().toISOString().split("T")[0],
+            description: "Opening Balance",
+            credit: initialBalance,
+            debit: 0,
+            category: "opening_balance",
+          });
+
+        if (transactionError) {
+          console.error("Error creating opening balance:", transactionError);
+          toast.warning(
+            "Client added but opening balance failed. Please add it manually."
+          );
+        }
+      }
+
       // Success - close modal and reload
       e.currentTarget.reset();
       setShowAddModal(false);
       await loadClients();
+      await loadBalances(); // Reload balances if opening balance was added
       toast.success("Client added successfully!");
     } catch (error) {
       console.error("Unexpected error:", error);
@@ -747,6 +786,40 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
                   className="w-full px-4 py-3 border-2 border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/10 text-white placeholder-gray-400 hover:border-white/30 transition-all font-medium"
                   placeholder="+254 700 000000"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-bold text-gray-400 mb-2">
+                    Initial Balance (Optional)
+                  </label>
+                  <input
+                    type="number"
+                    name="initial_balance"
+                    step="0.01"
+                    min="0"
+                    className="w-full px-4 py-3 border-2 border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/10 text-white placeholder-gray-400 hover:border-white/30 transition-all font-medium"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-400 mb-2">
+                    Currency
+                  </label>
+                  <select
+                    name="initial_currency"
+                    defaultValue="KES"
+                    className="w-full px-4 py-3 border-2 border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/10 text-white hover:border-white/30 transition-all font-medium"
+                  >
+                    <option value="KES" className="bg-gray-900">
+                      KES
+                    </option>
+                    <option value="USD" className="bg-gray-900">
+                      USD
+                    </option>
+                  </select>
+                </div>
               </div>
 
               <div className="flex gap-3 pt-4">

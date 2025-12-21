@@ -78,7 +78,9 @@ export default function Debts() {
     try {
       const { data, error } = await supabase
         .from("client_debts")
-        .select("id, debtor_name, debtor_phone, amount, currency, balance, description, debt_date, due_date, status, priority, created_at")
+        .select(
+          "id, debtor_name, debtor_phone, amount, currency, balance, description, debt_date, due_date, status, priority, created_at"
+        )
         .order("due_date", { ascending: true });
 
       if (error) throw error;
