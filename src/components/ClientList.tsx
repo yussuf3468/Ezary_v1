@@ -18,6 +18,8 @@ import {
   Trash2,
   DollarSign,
   Clock,
+  Ban,
+  CheckCircle,
 } from "lucide-react";
 
 interface Client {
@@ -66,6 +68,10 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
     total: 0,
     active: 0,
     inactive: 0,
+  });
+  const [totalBalances, setTotalBalances] = useState({
+    totalKES: 0,
+    totalUSD: 0,
   });
 
   useEffect(() => {
@@ -166,6 +172,15 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
       });
 
       setBalances(balanceMap);
+
+      // Calculate total balances
+      let totalKES = 0;
+      let totalUSD = 0;
+      balanceMap.forEach((balance) => {
+        totalKES += balance.kes_balance;
+        totalUSD += balance.usd_balance;
+      });
+      setTotalBalances({ totalKES, totalUSD });
     } catch (error) {
       console.error("Error loading balances:", error);
     }
@@ -365,12 +380,34 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
 
       if (clientError) throw clientError;
 
-      toast.success(`✓ Client ${clientToDelete.client_code} deleted successfully!`);
+      toast.success(
+        `✓ Client ${clientToDelete.client_code} deleted successfully!`
+      );
       setClientToDelete(null);
       await Promise.all([loadClients(), loadBalances()]);
     } catch (error: any) {
       console.error("Error deleting client:", error);
       toast.error(`✗ Failed to delete client: ${error.message}`);
+    }
+  };
+
+  const handleToggleStatus = async (client: Client) => {
+    const newStatus = client.status === "active" ? "inactive" : "active";
+
+    try {
+      const { error } = await supabase
+        .from("clients")
+        .update({ status: newStatus })
+        .eq("id", client.id)
+        .eq("user_id", user?.id);
+
+      if (error) throw error;
+
+      toast.success(`✓ Client ${client.client_code} marked as ${newStatus}!`);
+      await loadClients();
+    } catch (error: any) {
+      console.error("Error updating client status:", error);
+      toast.error(`✗ Failed to update status: ${error.message}`);
     }
   };
 
@@ -504,6 +541,53 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
               </div>
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-gray-500 to-slate-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
                 <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Total Balances */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 xl:gap-6 mb-4 sm:mb-6">
+          <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-emerald-500/20 hover:border-emerald-500/50 transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-xs sm:text-sm mb-1">
+                  Total Balance (KES)
+                </p>
+                <p
+                  className={`text-2xl sm:text-3xl font-bold ${
+                    totalBalances.totalKES >= 0
+                      ? "text-emerald-400"
+                      : "text-red-400"
+                  }`}
+                >
+                  KES {totalBalances.totalKES.toLocaleString()}
+                </p>
+              </div>
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-blue-500/20 hover:border-blue-500/50 transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-xs sm:text-sm mb-1">
+                  Total Balance (USD)
+                </p>
+                <p
+                  className={`text-2xl sm:text-3xl font-bold ${
+                    totalBalances.totalUSD >= 0
+                      ? "text-blue-400"
+                      : "text-red-400"
+                  }`}
+                >
+                  USD {totalBalances.totalUSD.toLocaleString()}
+                </p>
+              </div>
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
             </div>
           </div>
@@ -790,6 +874,25 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
                       View
                     </button>
                     <button
+                      onClick={() => handleToggleStatus(client)}
+                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 active:scale-95 ${
+                        client.status === "active"
+                          ? "bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/30"
+                          : "bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30"
+                      }`}
+                      title={
+                        client.status === "active"
+                          ? "Mark Inactive"
+                          : "Mark Active"
+                      }
+                    >
+                      {client.status === "active" ? (
+                        <Ban className="w-3.5 h-3.5" />
+                      ) : (
+                        <CheckCircle className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                    <button
                       onClick={() => setClientToDelete(client)}
                       className="px-3 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg text-xs font-medium hover:bg-red-500/30 transition-all duration-200 active:scale-95"
                       title="Delete Client"
@@ -926,7 +1029,9 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
               </div>
 
               <p className="text-gray-300 mb-4">
-                Are you sure you want to delete this client? This will also delete all associated transactions. This action cannot be undone.
+                Are you sure you want to delete this client? This will also
+                delete all associated transactions. This action cannot be
+                undone.
               </p>
 
               <div className="flex gap-3">
