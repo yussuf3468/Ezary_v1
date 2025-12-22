@@ -8,6 +8,7 @@ import ClientDetail from "./components/ClientDetail";
 import Vehicles from "./components/Vehicles";
 import Reports from "./components/Reports";
 import Debts from "./components/Debts";
+import AdminDashboard from "./components/AdminDashboard";
 import OfflineIndicator from "./components/OfflineIndicator";
 import InstallPrompt from "./components/InstallPrompt";
 import { offlineDB } from "./lib/offlineDB";
@@ -80,6 +81,8 @@ function AppContent() {
         return <Debts />;
       case "reports":
         return <Reports />;
+      case "admin":
+        return <AdminDashboard />;
       default:
         return <ClientList onSelectClient={handleSelectClient} />;
     }

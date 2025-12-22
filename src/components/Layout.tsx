@@ -6,6 +6,7 @@ import {
   AlertCircle,
   PieChart,
   LogOut,
+  Shield,
 } from "lucide-react";
 
 interface LayoutProps {
@@ -19,7 +20,7 @@ export default function Layout({
   currentPage,
   onNavigate,
 }: LayoutProps) {
-  const { signOut } = useAuth();
+  const { signOut, userRole } = useAuth();
 
   const navItems = [
     {
@@ -42,6 +43,20 @@ export default function Layout({
     },
   ];
 
+  // Add admin item if user is admin or superadmin
+  const allNavItems =
+    userRole === "admin" || userRole === "superadmin"
+      ? [
+          ...navItems,
+          {
+            id: "admin",
+            label: "Admin",
+            icon: Shield,
+            color: "from-purple-500 to-pink-600",
+          },
+        ]
+      : navItems;
+
   const handleSignOut = async () => {
     await signOut();
   };
@@ -55,7 +70,7 @@ export default function Layout({
             {/* Ezary CMS Logo */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-xl">E</span>
+               allN<span className="text-white font-bold text-xl">E</span>
               </div>
               <div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
@@ -131,7 +146,7 @@ export default function Layout({
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-black/40 backdrop-blur-xl border-t border-white/10 shadow-2xl z-50">
         <div className="safe-area-inset-bottom">
           <div className="flex items-center justify-around px-2 py-2">
-            {navItems.map((item) => {
+            {allNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentPage === item.id;
               return (
