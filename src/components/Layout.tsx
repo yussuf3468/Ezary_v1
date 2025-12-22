@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react";
+import { ReactNode } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import {
   LayoutDashboard,
@@ -14,7 +14,7 @@ interface LayoutProps {
   onNavigate: (page: string) => void;
 }
 
-const Layout = React.memo(function Layout({
+export default function Layout({
   children,
   currentPage,
   onNavigate,
@@ -174,6 +174,4 @@ const Layout = React.memo(function Layout({
       </nav>
     </div>
   );
-});
-
-export default Layout;
+}

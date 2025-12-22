@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Auth from "./components/Auth";
 import Layout from "./components/Layout";
@@ -53,15 +53,15 @@ function AppContent() {
     }
   };
 
-  const handleSelectClient = useCallback((clientId: string) => {
+  const handleSelectClient = (clientId: string) => {
     setSelectedClientId(clientId);
     setCurrentPage("client-detail");
-  }, []);
+  };
 
-  const handleBackToClients = useCallback(() => {
+  const handleBackToClients = () => {
     setSelectedClientId(null);
     setCurrentPage("clients");
-  }, []);
+  };
 
   const renderPage = () => {
     switch (currentPage) {

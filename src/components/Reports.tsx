@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "react-toastify";
@@ -46,7 +46,7 @@ interface MonthlyTrend {
 type ReportPeriod = "current" | "last3" | "last6" | "year" | "custom";
 type Currency = "KES" | "USD" | "BOTH";
 
-function Reports() {
+export default function Reports() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [clientStats, setClientStats] = useState<ClientStats>({
@@ -941,5 +941,3 @@ function Reports() {
     </div>
   );
 }
-
-export default Reports;

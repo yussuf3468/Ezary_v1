@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "react-toastify";
@@ -6,9 +6,12 @@ import {
   Search,
   Plus,
   Users,
+  TrendingUp,
+  Building2,
   Filter,
   X,
   ArrowUpDown,
+  Mail,
   Phone,
   Calendar,
   Eye,
@@ -48,44 +51,7 @@ interface ClientListProps {
 type SortField = "name" | "date" | "balance" | "transactions";
 type SortOrder = "asc" | "desc";
 
-const LoadingSkeleton = () => (
-  <div className="p-4 md:p-8">
-    <div className="mb-8">
-      <div className="h-10 w-64 bg-white/10 rounded-lg mb-4 animate-pulse"></div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="bg-white/5 backdrop-blur-xl rounded-xl p-6 shadow-sm border border-white/10"
-          >
-            <div className="h-4 w-24 bg-white/10 rounded mb-2 animate-pulse"></div>
-            <div className="h-8 w-16 bg-white/10 rounded animate-pulse"></div>
-          </div>
-        ))}
-      </div>
-      <div className="bg-white/5 backdrop-blur-xl rounded-xl p-4 shadow-sm border border-white/10 mb-6">
-        <div className="h-12 bg-white/10 rounded-lg animate-pulse"></div>
-      </div>
-    </div>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-      {[1, 2, 3, 4, 5, 6].map((i) => (
-        <div
-          key={i}
-          className="bg-white/5 backdrop-blur-xl rounded-xl p-6 shadow-sm border border-white/10"
-        >
-          <div className="h-6 w-32 bg-white/10 rounded mb-3 animate-pulse"></div>
-          <div className="h-4 w-24 bg-white/10 rounded mb-4 animate-pulse"></div>
-          <div className="space-y-2">
-            <div className="h-4 w-full bg-white/10 rounded animate-pulse"></div>
-            <div className="h-4 w-3/4 bg-white/10 rounded animate-pulse"></div>
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-function ClientList({ onSelectClient }: ClientListProps) {
+export default function ClientList({ onSelectClient }: ClientListProps) {
   const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [balances, setBalances] = useState<Map<string, ClientBalance>>(
@@ -108,53 +74,67 @@ function ClientList({ onSelectClient }: ClientListProps) {
     totalUSD: 0,
   });
 
-  const loadData = useCallback(async () => {
+  useEffect(() => {
+    if (user) {
+      loadClients();
+      loadBalances();
+    }
+  }, [user]);
+
+  const loadClients = async () => {
     if (!user) return;
 
     try {
       setLoading(true);
+      const { data, error } = await supabase
+        .from("clients")
+        .select(
+          "id, client_name, client_code, email, phone, business_name, status, last_transaction_date, created_at"
+        )
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
 
-      // Load clients and transactions in parallel
-      const [clientsResult, kesResult, usdResult] = await Promise.all([
-        supabase
-          .from("clients")
-          .select(
-            "id, client_name, client_code, email, phone, business_name, status, last_transaction_date, created_at"
-          )
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("client_transactions_kes")
-          .select("client_id, credit, debit")
-          .eq("user_id", user.id),
-        supabase
-          .from("client_transactions_usd")
-          .select("client_id, credit, debit")
-          .eq("user_id", user.id),
-      ]);
+      if (error) throw error;
 
-      if (clientsResult.error) throw clientsResult.error;
-      if (kesResult.error) throw kesResult.error;
-      if (usdResult.error) throw usdResult.error;
+      setClients(data || []);
 
-      // Set clients and calculate stats
-      const clientsData = clientsResult.data || [];
-      setClients(clientsData);
-
-      const total = clientsData.length;
-      const active = clientsData.filter((c) => c.status === "active").length;
-      const inactive = clientsData.filter(
-        (c) => c.status === "inactive"
-      ).length;
+      // Calculate stats
+      const total = data?.length || 0;
+      const active = data?.filter((c) => c.status === "active").length || 0;
+      const inactive = data?.filter((c) => c.status === "inactive").length || 0;
       setStats({ total, active, inactive });
+    } catch (error) {
+      console.error("Error loading clients:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      // Calculate balances
+  const loadBalances = async () => {
+    if (!user) return;
+
+    try {
+      // Load KES transactions
+      const { data: kesData, error: kesError } = await supabase
+        .from("client_transactions_kes")
+        .select("client_id, credit, debit")
+        .eq("user_id", user.id);
+
+      if (kesError) throw kesError;
+
+      // Load USD transactions
+      const { data: usdData, error: usdError } = await supabase
+        .from("client_transactions_usd")
+        .select("client_id, credit, debit")
+        .eq("user_id", user.id);
+
+      if (usdError) throw usdError;
+
+      // Calculate balances by client (track KES and USD separately)
       const balanceMap = new Map<string, ClientBalance>();
-      let totalKES = 0;
-      let totalUSD = 0;
 
       // Process KES transactions
-      kesResult.data?.forEach((txn) => {
+      kesData?.forEach((txn) => {
         const existing = balanceMap.get(txn.client_id) || {
           client_id: txn.client_id,
           balance: 0,
@@ -166,14 +146,14 @@ function ClientList({ onSelectClient }: ClientListProps) {
         };
         const amount = (txn.credit || 0) - (txn.debit || 0);
         existing.kes_balance += amount;
-        existing.balance += amount;
+        existing.balance += amount; // Combined balance in KES
         existing.kes_count += 1;
         existing.transaction_count += 1;
         balanceMap.set(txn.client_id, existing);
       });
 
       // Process USD transactions
-      usdResult.data?.forEach((txn) => {
+      usdData?.forEach((txn) => {
         const existing = balanceMap.get(txn.client_id) || {
           client_id: txn.client_id,
           balance: 0,
@@ -185,32 +165,26 @@ function ClientList({ onSelectClient }: ClientListProps) {
         };
         const amount = (txn.credit || 0) - (txn.debit || 0);
         existing.usd_balance += amount;
-        existing.balance += amount * 150;
+        existing.balance += amount * 150; // Convert to KES for combined balance
         existing.usd_count += 1;
         existing.transaction_count += 1;
         balanceMap.set(txn.client_id, existing);
       });
 
-      // Calculate totals
+      setBalances(balanceMap);
+
+      // Calculate total balances
+      let totalKES = 0;
+      let totalUSD = 0;
       balanceMap.forEach((balance) => {
         totalKES += balance.kes_balance;
         totalUSD += balance.usd_balance;
       });
-
-      setBalances(balanceMap);
       setTotalBalances({ totalKES, totalUSD });
     } catch (error) {
-      console.error("Error loading data:", error);
-    } finally {
-      setLoading(false);
+      console.error("Error loading balances:", error);
     }
-  }, [user]);
-
-  useEffect(() => {
-    if (user) {
-      loadData();
-    }
-  }, [user, loadData]);
+  };
 
   // Memoized filtered and sorted clients
   const filteredClients = useMemo(() => {
@@ -264,113 +238,119 @@ function ClientList({ onSelectClient }: ClientListProps) {
     return filtered;
   }, [clients, searchTerm, statusFilter, sortField, sortOrder, balances]);
 
-  const handleAddClient = useCallback(
-    async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      const form = e.currentTarget;
-      const formData = new FormData(form);
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("desc");
+    }
+  };
 
-      try {
-        // Generate client code by querying the last client code
-        const { data: existingClients, error: queryError } = await supabase
-          .from("clients")
-          .select("client_code")
-          .eq("user_id", user?.id)
-          .order("created_at", { ascending: false })
-          .limit(1);
+  const handleAddClient = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
 
-        if (queryError) {
-          console.error("Error querying clients:", queryError);
-          toast.error("Failed to generate client code. Please try again.");
-          return;
+    try {
+      // Generate client code by querying the last client code
+      const { data: existingClients, error: queryError } = await supabase
+        .from("clients")
+        .select("client_code")
+        .eq("user_id", user?.id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (queryError) {
+        console.error("Error querying clients:", queryError);
+        toast.error("Failed to generate client code. Please try again.");
+        return;
+      }
+
+      let clientCode = "CLT-0001";
+      if (existingClients && existingClients.length > 0) {
+        const lastCode = existingClients[0].client_code;
+        const match = lastCode.match(/CLT-(\d+)/);
+        if (match) {
+          const nextNum = parseInt(match[1]) + 1;
+          clientCode = `CLT-${nextNum.toString().padStart(4, "0")}`;
         }
+      }
 
-        let clientCode = "CLT-0001";
-        if (existingClients && existingClients.length > 0) {
-          const lastCode = existingClients[0].client_code;
-          const match = lastCode.match(/CLT-(\d+)/);
-          if (match) {
-            const nextNum = parseInt(match[1]) + 1;
-            clientCode = `CLT-${nextNum.toString().padStart(4, "0")}`;
-          }
-        }
+      const { data: newClient, error: insertError } = await supabase
+        .from("clients")
+        .insert({
+          user_id: user?.id,
+          client_name: formData.get("client_name"),
+          email: formData.get("email") || null,
+          phone: formData.get("phone") || null,
+          business_name: formData.get("business_name") || null,
+          address: formData.get("address") || null,
+          client_code: clientCode,
+          status: "active",
+        })
+        .select()
+        .single();
 
-        const { data: newClient, error: insertError } = await supabase
-          .from("clients")
+      if (insertError) {
+        console.error("Error adding client:", insertError);
+        toast.error("Failed to add client. Please try again.");
+        return;
+      }
+
+      // Create opening balance transaction if initial balance is provided
+      const initialBalanceStr = formData.get("initial_balance") as string;
+      const initialBalance = initialBalanceStr
+        ? parseFloat(initialBalanceStr)
+        : 0;
+      const initialCurrency = formData.get("initial_currency") as string;
+
+      if (!isNaN(initialBalance) && initialBalance > 0 && newClient) {
+        const transactionTable =
+          initialCurrency === "USD"
+            ? "client_transactions_usd"
+            : "client_transactions_kes";
+
+        const { error: transactionError } = await supabase
+          .from(transactionTable)
           .insert({
+            client_id: newClient.id,
             user_id: user?.id,
-            client_name: formData.get("client_name"),
-            email: formData.get("email") || null,
-            phone: formData.get("phone") || null,
-            business_name: formData.get("business_name") || null,
-            address: formData.get("address") || null,
-            client_code: clientCode,
-            status: "active",
-          })
-          .select()
-          .single();
+            transaction_date: new Date().toISOString().split("T")[0],
+            description: "Opening Balance",
+            credit: initialBalance,
+            debit: 0,
+          });
 
-        if (insertError) {
-          console.error("Error adding client:", insertError);
-          toast.error("Failed to add client. Please try again.");
-          return;
-        }
-
-        // Create opening balance transaction if initial balance is provided
-        const initialBalanceStr = formData.get("initial_balance") as string;
-        const initialBalance = initialBalanceStr
-          ? parseFloat(initialBalanceStr)
-          : 0;
-        const initialCurrency = formData.get("initial_currency") as string;
-
-        if (!isNaN(initialBalance) && initialBalance > 0 && newClient) {
-          const transactionTable =
-            initialCurrency === "USD"
-              ? "client_transactions_usd"
-              : "client_transactions_kes";
-
-          const { error: transactionError } = await supabase
-            .from(transactionTable)
-            .insert({
-              client_id: newClient.id,
-              user_id: user?.id,
-              transaction_date: new Date().toISOString().split("T")[0],
-              description: "Opening Balance",
-              credit: initialBalance,
-              debit: 0,
-            });
-
-          if (transactionError) {
-            console.error("Error creating opening balance:", transactionError);
-            toast.warning(
-              "Client added but opening balance failed. Please add it manually."
-            );
-          }
-        }
-
-        // Success - close modal and reload
-        form.reset();
-        setShowAddModal(false);
-
-        // Reload both clients and balances with proper error handling
-        try {
-          await loadData();
-          toast.success(`✓ Client ${clientCode} added successfully!`);
-        } catch (reloadError) {
-          console.error("Error reloading after client creation:", reloadError);
-          toast.success(
-            `✓ Client ${clientCode} added. Please refresh to see updates.`
+        if (transactionError) {
+          console.error("Error creating opening balance:", transactionError);
+          toast.warning(
+            "Client added but opening balance failed. Please add it manually."
           );
         }
-      } catch (error) {
-        console.error("Unexpected error:", error);
-        toast.error("An unexpected error occurred. Please try again.");
       }
-    },
-    [user, loadData]
-  );
 
-  const handleDeleteClient = useCallback(async () => {
+      // Success - close modal and reload
+      form.reset();
+      setShowAddModal(false);
+
+      // Reload both clients and balances with proper error handling
+      try {
+        await Promise.all([loadClients(), loadBalances()]);
+        toast.success(`✓ Client ${clientCode} added successfully!`);
+      } catch (reloadError) {
+        console.error("Error reloading after client creation:", reloadError);
+        toast.success(
+          `✓ Client ${clientCode} added. Please refresh to see updates.`
+        );
+      }
+    } catch (error) {
+      console.error("Unexpected error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
+    }
+  };
+
+  const handleDeleteClient = async () => {
     if (!clientToDelete) return;
 
     try {
@@ -404,48 +384,81 @@ function ClientList({ onSelectClient }: ClientListProps) {
         `✓ Client ${clientToDelete.client_code} deleted successfully!`
       );
       setClientToDelete(null);
-      await loadData();
+      await Promise.all([loadClients(), loadBalances()]);
     } catch (error: any) {
       console.error("Error deleting client:", error);
       toast.error(`✗ Failed to delete client: ${error.message}`);
     }
-  }, [clientToDelete, user, loadData]);
+  };
 
-  const handleToggleStatus = useCallback(
-    async (client: Client) => {
-      const newStatus = client.status === "active" ? "inactive" : "active";
+  const handleToggleStatus = async (client: Client) => {
+    const newStatus = client.status === "active" ? "inactive" : "active";
 
-      try {
-        const { error } = await supabase
-          .from("clients")
-          .update({ status: newStatus })
-          .eq("id", client.id)
-          .eq("user_id", user?.id);
+    try {
+      const { error } = await supabase
+        .from("clients")
+        .update({ status: newStatus })
+        .eq("id", client.id)
+        .eq("user_id", user?.id);
 
-        if (error) throw error;
+      if (error) throw error;
 
-        toast.success(`✓ Client ${client.client_code} marked as ${newStatus}!`);
+      toast.success(`✓ Client ${client.client_code} marked as ${newStatus}!`);
+      await loadClients();
+    } catch (error: any) {
+      console.error("Error updating client status:", error);
+      toast.error(`✗ Failed to update status: ${error.message}`);
+    }
+  };
 
-        // Update locally for instant feedback
-        setClients((prev) =>
-          prev.map((c) =>
-            c.id === client.id ? { ...c, status: newStatus } : c
-          )
-        );
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active":
+        return "bg-emerald-100 text-emerald-700 border-emerald-200";
+      case "inactive":
+        return "bg-gray-100 text-gray-700 border-gray-200";
+      case "pending":
+        return "bg-amber-100 text-amber-700 border-amber-200";
+      default:
+        return "bg-blue-100 text-blue-700 border-blue-200";
+    }
+  };
 
-        // Update stats
-        setStats((prev) => ({
-          ...prev,
-          active: newStatus === "active" ? prev.active + 1 : prev.active - 1,
-          inactive:
-            newStatus === "inactive" ? prev.inactive + 1 : prev.inactive - 1,
-        }));
-      } catch (error: any) {
-        console.error("Error updating client status:", error);
-        toast.error(`✗ Failed to update status: ${error.message}`);
-      }
-    },
-    [user]
+  const LoadingSkeleton = () => (
+    <div className="p-4 md:p-8">
+      <div className="mb-8">
+        <div className="h-10 w-64 bg-white/10 rounded-lg mb-4 animate-pulse"></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="bg-white/5 backdrop-blur-xl rounded-xl p-6 shadow-sm border border-white/10"
+            >
+              <div className="h-4 w-24 bg-white/10 rounded mb-2 animate-pulse"></div>
+              <div className="h-8 w-16 bg-white/10 rounded animate-pulse"></div>
+            </div>
+          ))}
+        </div>
+        <div className="bg-white/5 backdrop-blur-xl rounded-xl p-4 shadow-sm border border-white/10 mb-6">
+          <div className="h-12 bg-white/10 rounded-lg animate-pulse"></div>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div
+            key={i}
+            className="bg-white/5 backdrop-blur-xl rounded-xl p-6 shadow-sm border border-white/10"
+          >
+            <div className="h-6 w-32 bg-white/10 rounded mb-3 animate-pulse"></div>
+            <div className="h-4 w-24 bg-white/10 rounded mb-4 animate-pulse"></div>
+            <div className="space-y-2">
+              <div className="h-4 w-full bg-white/10 rounded animate-pulse"></div>
+              <div className="h-4 w-3/4 bg-white/10 rounded animate-pulse"></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 
   if (loading) {
@@ -1011,5 +1024,3 @@ function ClientList({ onSelectClient }: ClientListProps) {
     </div>
   );
 }
-
-export default ClientList;
