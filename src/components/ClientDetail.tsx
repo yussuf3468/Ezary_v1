@@ -457,7 +457,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
               className="group flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all font-semibold text-sm active:scale-95"
             >
               <Download className="w-5 h-5" />
-              <span>Download Report</span>
+              <span>Download Statement</span>
             </button>
           </div>
         </div>
