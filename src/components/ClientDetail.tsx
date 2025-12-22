@@ -4,10 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { toast } from "react-toastify";
 import {
   ArrowLeft,
-  Building2,
-  Mail,
   Phone,
-  MapPin,
   TrendingUp,
   TrendingDown,
   DollarSign,
@@ -124,7 +121,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         supabase
           .from("clients")
           .select(
-            "id, client_name, client_code, email, phone, business_name, status"
+            "id, client_name, client_code, email, phone, business_name, address, status, notes, created_at, last_transaction_date"
           )
           .eq("id", clientId)
           .eq("user_id", user.id)
@@ -132,19 +129,19 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         supabase
           .from("client_transactions_kes")
           .select(
-            "id, transaction_date, description, credit, debit, reference_number"
+            "id, transaction_date, description, credit, debit, reference_number, payment_method, notes"
           )
           .eq("client_id", clientId)
           .eq("user_id", user.id)
-          .order("transaction_date", { ascending: false }),
+          .order("transaction_date", { ascending: true }),
         supabase
           .from("client_transactions_usd")
           .select(
-            "id, transaction_date, description, credit, debit, reference_number"
+            "id, transaction_date, description, credit, debit, reference_number, payment_method, notes"
           )
           .eq("client_id", clientId)
           .eq("user_id", user.id)
-          .order("transaction_date", { ascending: false }),
+          .order("transaction_date", { ascending: true }),
       ]);
 
       if (clientResult.error) throw clientResult.error;

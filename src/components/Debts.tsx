@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { toast } from "react-toastify";
 import {
@@ -54,7 +54,6 @@ export default function Debts() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedDebt, setSelectedDebt] = useState<DebtWithClient | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
-  const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [newDebt, setNewDebt] = useState({
@@ -98,21 +97,6 @@ export default function Debts() {
       console.error("Error loading debts:", error.message);
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function loadClients() {
-    try {
-      const { data, error } = await supabase
-        .from("clients")
-        .select("id, client_name, client_code")
-        .eq("status", "active")
-        .order("client_name");
-
-      if (error) throw error;
-      setClients(data || []);
-    } catch (error: any) {
-      console.error("Error loading clients:", error.message);
     }
   }
 

@@ -6,12 +6,9 @@ import {
   Search,
   Plus,
   Users,
-  TrendingUp,
-  Building2,
   Filter,
   X,
   ArrowUpDown,
-  Mail,
   Phone,
   Calendar,
   Eye,
@@ -238,15 +235,6 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
     return filtered;
   }, [clients, searchTerm, statusFilter, sortField, sortOrder, balances]);
 
-  const toggleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortOrder("desc");
-    }
-  };
-
   const handleAddClient = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
@@ -408,19 +396,6 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
     } catch (error: any) {
       console.error("Error updating client status:", error);
       toast.error(`✗ Failed to update status: ${error.message}`);
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-emerald-100 text-emerald-700 border-emerald-200";
-      case "inactive":
-        return "bg-gray-100 text-gray-700 border-gray-200";
-      case "pending":
-        return "bg-amber-100 text-amber-700 border-amber-200";
-      default:
-        return "bg-blue-100 text-blue-700 border-blue-200";
     }
   };
 

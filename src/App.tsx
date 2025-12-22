@@ -2,10 +2,8 @@ import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Auth from "./components/Auth";
 import Layout from "./components/Layout";
-import UltraPremiumDashboard from "./components/UltraPremiumDashboard";
 import ClientList from "./components/ClientList";
 import ClientDetail from "./components/ClientDetail";
-import Vehicles from "./components/Vehicles";
 import Reports from "./components/Reports";
 import Debts from "./components/Debts";
 import OfflineIndicator from "./components/OfflineIndicator";
@@ -45,13 +43,6 @@ function AppContent() {
   if (!user) {
     return <Auth />;
   }
-
-  const handleNavigation = (page: string, clientId?: string) => {
-    setCurrentPage(page);
-    if (clientId) {
-      setSelectedClientId(clientId);
-    }
-  };
 
   const handleSelectClient = (clientId: string) => {
     setSelectedClientId(clientId);

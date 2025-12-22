@@ -268,7 +268,7 @@ export const generateClientPDFReport = (options: ReportOptions) => {
         30 + boxWidth * 2,
         yPosition + 21
       );
-      
+
       // USD Balance - simplified format
       doc.setFontSize(10);
       if (summaryUSD.balance >= 0) {
@@ -278,7 +278,10 @@ export const generateClientPDFReport = (options: ReportOptions) => {
       }
       const usdSign = summaryUSD.balance >= 0 ? "" : "-";
       doc.text(
-        `${usdSign}$${formatCurrency(Math.abs(summaryUSD.balance), "USD").replace(/[^0-9.,]/g, '')}`,
+        `${usdSign}$${formatCurrency(
+          Math.abs(summaryUSD.balance),
+          "USD"
+        ).replace(/[^0-9.,]/g, "")}`,
         30 + boxWidth * 2,
         yPosition + 26
       );
