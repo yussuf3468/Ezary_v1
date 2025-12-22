@@ -6,12 +6,9 @@ import {
   Search,
   Plus,
   Users,
-  TrendingUp,
-  Building2,
   Filter,
   X,
   ArrowUpDown,
-  Mail,
   Phone,
   Calendar,
   Eye,
@@ -51,7 +48,9 @@ interface ClientListProps {
 type SortField = "name" | "date" | "balance" | "transactions";
 type SortOrder = "asc" | "desc";
 
-const ClientList = React.memo(function ClientList({ onSelectClient }: ClientListProps) {
+const ClientList = React.memo(function ClientList({
+  onSelectClient,
+}: ClientListProps) {
   const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [balances, setBalances] = useState<Map<string, ClientBalance>>(
@@ -74,23 +73,19 @@ const ClientList = React.memo(function ClientList({ onSelectClient }: ClientList
     totalUSD: 0,
   });
 
-  useEffect(() => {
-    if (user) {
-      loadData();
-    }
-  }, [user]);
-
   const loadData = useCallback(async () => {
     if (!user) return;
-    
+
     try {
       setLoading(true);
-      
+
       // Load clients and transactions in parallel
       const [clientsResult, kesResult, usdResult] = await Promise.all([
         supabase
           .from("clients")
-          .select("id, client_name, client_code, email, phone, business_name, status, last_transaction_date, created_at")
+          .select(
+            "id, client_name, client_code, email, phone, business_name, status, last_transaction_date, created_at"
+          )
           .eq("user_id", user.id)
           .order("created_at", { ascending: false }),
         supabase
@@ -100,7 +95,7 @@ const ClientList = React.memo(function ClientList({ onSelectClient }: ClientList
         supabase
           .from("client_transactions_usd")
           .select("client_id, credit, debit")
-          .eq("user_id", user.id)
+          .eq("user_id", user.id),
       ]);
 
       if (clientsResult.error) throw clientsResult.error;
@@ -110,10 +105,12 @@ const ClientList = React.memo(function ClientList({ onSelectClient }: ClientList
       // Set clients and calculate stats
       const clientsData = clientsResult.data || [];
       setClients(clientsData);
-      
+
       const total = clientsData.length;
       const active = clientsData.filter((c) => c.status === "active").length;
-      const inactive = clientsData.filter((c) => c.status === "inactive").length;
+      const inactive = clientsData.filter(
+        (c) => c.status === "inactive"
+      ).length;
       setStats({ total, active, inactive });
 
       // Calculate balances
@@ -174,110 +171,11 @@ const ClientList = React.memo(function ClientList({ onSelectClient }: ClientList
     }
   }, [user]);
 
-  const loadClients = async () => {
-    if (!user) return;
-
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("clients")
-        .select(
-          "id, client_name, client_code, email, phone, business_name, status, last_transaction_date, created_at"
-        )
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      setClients(data || []);
-
-      // Calculate stats
-      const total = data?.length || 0;
-      const active = data?.filter((c) => c.status === "active").length || 0;
-      const inactive = data?.filter((c) => c.status === "inactive").length || 0;
-      setStats({ total, active, inactive });
-    } catch (error) {
-      console.error("Error loading clients:", error);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (user) {
+      loadData();
     }
-  };
-
-  const loadBalances = async () => {
-    if (!user) return;
-
-    try {
-      // Load KES transactions
-      const { data: kesData, error: kesError } = await supabase
-        .from("client_transactions_kes")
-        .select("client_id, credit, debit")
-        .eq("user_id", user.id);
-
-      if (kesError) throw kesError;
-
-      // Load USD transactions
-      const { data: usdData, error: usdError } = await supabase
-        .from("client_transactions_usd")
-        .select("client_id, credit, debit")
-        .eq("user_id", user.id);
-
-      if (usdError) throw usdError;
-
-      // Calculate balances by client (track KES and USD separately)
-      const balanceMap = new Map<string, ClientBalance>();
-
-      // Process KES transactions
-      kesData?.forEach((txn) => {
-        const existing = balanceMap.get(txn.client_id) || {
-          client_id: txn.client_id,
-          balance: 0,
-          transaction_count: 0,
-          kes_balance: 0,
-          usd_balance: 0,
-          kes_count: 0,
-          usd_count: 0,
-        };
-        const amount = (txn.credit || 0) - (txn.debit || 0);
-        existing.kes_balance += amount;
-        existing.balance += amount; // Combined balance in KES
-        existing.kes_count += 1;
-        existing.transaction_count += 1;
-        balanceMap.set(txn.client_id, existing);
-      });
-
-      // Process USD transactions
-      usdData?.forEach((txn) => {
-        const existing = balanceMap.get(txn.client_id) || {
-          client_id: txn.client_id,
-          balance: 0,
-          transaction_count: 0,
-          kes_balance: 0,
-          usd_balance: 0,
-          kes_count: 0,
-          usd_count: 0,
-        };
-        const amount = (txn.credit || 0) - (txn.debit || 0);
-        existing.usd_balance += amount;
-        existing.balance += amount * 150; // Convert to KES for combined balance
-        existing.usd_count += 1;
-        existing.transaction_count += 1;
-        balanceMap.set(txn.client_id, existing);
-      });
-
-      setBalances(balanceMap);
-
-      // Calculate total balances
-      let totalKES = 0;
-      let totalUSD = 0;
-      balanceMap.forEach((balance) => {
-        totalKES += balance.kes_balance;
-        totalUSD += balance.usd_balance;
-      });
-      setTotalBalances({ totalKES, totalUSD });
-    } catch (error) {
-      console.error("Error loading balances:", error);
-    }
-  };
+  }, [user, loadData]);
 
   // Memoized filtered and sorted clients
   const filteredClients = useMemo(() => {
@@ -331,120 +229,111 @@ const ClientList = React.memo(function ClientList({ onSelectClient }: ClientList
     return filtered;
   }, [clients, searchTerm, statusFilter, sortField, sortOrder, balances]);
 
-  const toggleSort = useCallback((field: SortField) => {
-    setSortField((prevField) => {
-      if (prevField === field) {
-        setSortOrder((prev) => prev === "asc" ? "desc" : "asc");
-        return field;
-      } else {
-        setSortOrder("desc");
-        return field;
-      }
-    });
-  }, []);
+  const handleAddClient = useCallback(
+    async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const form = e.currentTarget;
+      const formData = new FormData(form);
 
-  const handleAddClient = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const formData = new FormData(form);
+      try {
+        // Generate client code by querying the last client code
+        const { data: existingClients, error: queryError } = await supabase
+          .from("clients")
+          .select("client_code")
+          .eq("user_id", user?.id)
+          .order("created_at", { ascending: false })
+          .limit(1);
 
-    try {
-      // Generate client code by querying the last client code
-      const { data: existingClients, error: queryError } = await supabase
-        .from("clients")
-        .select("client_code")
-        .eq("user_id", user?.id)
-        .order("created_at", { ascending: false })
-        .limit(1);
-
-      if (queryError) {
-        console.error("Error querying clients:", queryError);
-        toast.error("Failed to generate client code. Please try again.");
-        return;
-      }
-
-      let clientCode = "CLT-0001";
-      if (existingClients && existingClients.length > 0) {
-        const lastCode = existingClients[0].client_code;
-        const match = lastCode.match(/CLT-(\d+)/);
-        if (match) {
-          const nextNum = parseInt(match[1]) + 1;
-          clientCode = `CLT-${nextNum.toString().padStart(4, "0")}`;
+        if (queryError) {
+          console.error("Error querying clients:", queryError);
+          toast.error("Failed to generate client code. Please try again.");
+          return;
         }
-      }
 
-      const { data: newClient, error: insertError } = await supabase
-        .from("clients")
-        .insert({
-          user_id: user?.id,
-          client_name: formData.get("client_name"),
-          email: formData.get("email") || null,
-          phone: formData.get("phone") || null,
-          business_name: formData.get("business_name") || null,
-          address: formData.get("address") || null,
-          client_code: clientCode,
-          status: "active",
-        })
-        .select()
-        .single();
+        let clientCode = "CLT-0001";
+        if (existingClients && existingClients.length > 0) {
+          const lastCode = existingClients[0].client_code;
+          const match = lastCode.match(/CLT-(\d+)/);
+          if (match) {
+            const nextNum = parseInt(match[1]) + 1;
+            clientCode = `CLT-${nextNum.toString().padStart(4, "0")}`;
+          }
+        }
 
-      if (insertError) {
-        console.error("Error adding client:", insertError);
-        toast.error("Failed to add client. Please try again.");
-        return;
-      }
-
-      // Create opening balance transaction if initial balance is provided
-      const initialBalanceStr = formData.get("initial_balance") as string;
-      const initialBalance = initialBalanceStr
-        ? parseFloat(initialBalanceStr)
-        : 0;
-      const initialCurrency = formData.get("initial_currency") as string;
-
-      if (!isNaN(initialBalance) && initialBalance > 0 && newClient) {
-        const transactionTable =
-          initialCurrency === "USD"
-            ? "client_transactions_usd"
-            : "client_transactions_kes";
-
-        const { error: transactionError } = await supabase
-          .from(transactionTable)
+        const { data: newClient, error: insertError } = await supabase
+          .from("clients")
           .insert({
-            client_id: newClient.id,
             user_id: user?.id,
-            transaction_date: new Date().toISOString().split("T")[0],
-            description: "Opening Balance",
-            credit: initialBalance,
-            debit: 0,
-          });
+            client_name: formData.get("client_name"),
+            email: formData.get("email") || null,
+            phone: formData.get("phone") || null,
+            business_name: formData.get("business_name") || null,
+            address: formData.get("address") || null,
+            client_code: clientCode,
+            status: "active",
+          })
+          .select()
+          .single();
 
-        if (transactionError) {
-          console.error("Error creating opening balance:", transactionError);
-          toast.warning(
-            "Client added but opening balance failed. Please add it manually."
+        if (insertError) {
+          console.error("Error adding client:", insertError);
+          toast.error("Failed to add client. Please try again.");
+          return;
+        }
+
+        // Create opening balance transaction if initial balance is provided
+        const initialBalanceStr = formData.get("initial_balance") as string;
+        const initialBalance = initialBalanceStr
+          ? parseFloat(initialBalanceStr)
+          : 0;
+        const initialCurrency = formData.get("initial_currency") as string;
+
+        if (!isNaN(initialBalance) && initialBalance > 0 && newClient) {
+          const transactionTable =
+            initialCurrency === "USD"
+              ? "client_transactions_usd"
+              : "client_transactions_kes";
+
+          const { error: transactionError } = await supabase
+            .from(transactionTable)
+            .insert({
+              client_id: newClient.id,
+              user_id: user?.id,
+              transaction_date: new Date().toISOString().split("T")[0],
+              description: "Opening Balance",
+              credit: initialBalance,
+              debit: 0,
+            });
+
+          if (transactionError) {
+            console.error("Error creating opening balance:", transactionError);
+            toast.warning(
+              "Client added but opening balance failed. Please add it manually."
+            );
+          }
+        }
+
+        // Success - close modal and reload
+        form.reset();
+        setShowAddModal(false);
+
+        // Reload both clients and balances with proper error handling
+        try {
+          await loadData();
+          toast.success(`✓ Client ${clientCode} added successfully!`);
+        } catch (reloadError) {
+          console.error("Error reloading after client creation:", reloadError);
+          toast.success(
+            `✓ Client ${clientCode} added. Please refresh to see updates.`
           );
         }
+      } catch (error) {
+        console.error("Unexpected error:", error);
+        toast.error("An unexpected error occurred. Please try again.");
       }
-
-      // Success - close modal and reload
-      form.reset();
-      setShowAddModal(false);
-
-      // Reload both clients and balances with proper error handling
-      try {
-        await loadData();
-        toast.success(`✓ Client ${clientCode} added successfully!`);
-      } catch (reloadError) {
-        console.error("Error reloading after client creation:", reloadError);
-        toast.success(
-          `✓ Client ${clientCode} added. Please refresh to see updates.`
-        );
-      }
-    } catch (error) {
-      console.error("Unexpected error:", error);
-      toast.error("An unexpected error occurred. Please try again.");
-    }
-  }, [user, loadData]);
+    },
+    [user, loadData]
+  );
 
   const handleDeleteClient = useCallback(async () => {
     if (!clientToDelete) return;
@@ -480,56 +369,49 @@ const ClientList = React.memo(function ClientList({ onSelectClient }: ClientList
         `✓ Client ${clientToDelete.client_code} deleted successfully!`
       );
       setClientToDelete(null);
-      await Promise.all([loadClients(), loadBalances()]);
+      await loadData();
     } catch (error: any) {
       console.error("Error deleting client:", error);
       toast.error(`✗ Failed to delete client: ${error.message}`);
     }
-  }, [clientToDelete, user]);
+  }, [clientToDelete, user, loadData]);
 
-  const handleToggleStatus = useCallback(async (client: Client) => {
-    const newStatus = client.status === "active" ? "inactive" : "active";
+  const handleToggleStatus = useCallback(
+    async (client: Client) => {
+      const newStatus = client.status === "active" ? "inactive" : "active";
 
-    try {
-      const { error } = await supabase
-        .from("clients")
-        .update({ status: newStatus })
-        .eq("id", client.id)
-        .eq("user_id", user?.id);
+      try {
+        const { error } = await supabase
+          .from("clients")
+          .update({ status: newStatus })
+          .eq("id", client.id)
+          .eq("user_id", user?.id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast.success(`✓ Client ${client.client_code} marked as ${newStatus}!`);
-      
-      // Update locally for instant feedback
-      setClients((prev) => 
-        prev.map((c) => c.id === client.id ? { ...c, status: newStatus } : c)
-      );
-      
-      // Update stats
-      setStats((prev) => ({
-        ...prev,
-        active: newStatus === "active" ? prev.active + 1 : prev.active - 1,
-        inactive: newStatus === "inactive" ? prev.inactive + 1 : prev.inactive - 1,
-      }));
-    } catch (error: any) {
-      console.error("Error updating client status:", error);
-      toast.error(`✗ Failed to update status: ${error.message}`);
-    }
-  }, [user]);
+        toast.success(`✓ Client ${client.client_code} marked as ${newStatus}!`);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-emerald-100 text-emerald-700 border-emerald-200";
-      case "inactive":
-        return "bg-gray-100 text-gray-700 border-gray-200";
-      case "pending":
-        return "bg-amber-100 text-amber-700 border-amber-200";
-      default:
-        return "bg-blue-100 text-blue-700 border-blue-200";
-    }
-  };
+        // Update locally for instant feedback
+        setClients((prev) =>
+          prev.map((c) =>
+            c.id === client.id ? { ...c, status: newStatus } : c
+          )
+        );
+
+        // Update stats
+        setStats((prev) => ({
+          ...prev,
+          active: newStatus === "active" ? prev.active + 1 : prev.active - 1,
+          inactive:
+            newStatus === "inactive" ? prev.inactive + 1 : prev.inactive - 1,
+        }));
+      } catch (error: any) {
+        console.error("Error updating client status:", error);
+        toast.error(`✗ Failed to update status: ${error.message}`);
+      }
+    },
+    [user]
+  );
 
   const LoadingSkeleton = () => (
     <div className="p-4 md:p-8">
