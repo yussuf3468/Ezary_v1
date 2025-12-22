@@ -133,7 +133,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
           )
           .eq("client_id", clientId)
           .eq("user_id", user.id)
-          .order("transaction_date", { ascending: true }),
+          .order("transaction_date", { ascending: false }),
         supabase
           .from("client_transactions_usd")
           .select(
@@ -141,7 +141,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
           )
           .eq("client_id", clientId)
           .eq("user_id", user.id)
-          .order("transaction_date", { ascending: true }),
+          .order("transaction_date", { ascending: false }),
       ]);
 
       if (clientResult.error) throw clientResult.error;
