@@ -50,7 +50,7 @@ interface ClientDetailProps {
   onBack: () => void;
 }
 
-const ClientDetail = React.memo(function ClientDetail({
+function ClientDetail({
   clientId,
   onBack,
 }: ClientDetailProps) {
@@ -1141,6 +1141,6 @@ const ClientDetail = React.memo(function ClientDetail({
       </div>
     </div>
   );
-});
+}
 
 export default ClientDetail;

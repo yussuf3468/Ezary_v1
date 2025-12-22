@@ -46,7 +46,7 @@ interface MonthlyTrend {
 type ReportPeriod = "current" | "last3" | "last6" | "year" | "custom";
 type Currency = "KES" | "USD" | "BOTH";
 
-const Reports = React.memo(function Reports() {
+function Reports() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [clientStats, setClientStats] = useState<ClientStats>({
@@ -940,6 +940,6 @@ const Reports = React.memo(function Reports() {
       </div>
     </div>
   );
-});
+}
 
 export default Reports;

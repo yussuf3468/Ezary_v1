@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { toast } from "react-toastify";
 import {
@@ -39,7 +39,7 @@ interface Stats {
   totalBalance: number;
 }
 
-const Debts = React.memo(function Debts() {
+function Debts() {
   const [debts, setDebts] = useState<DebtWithClient[]>([]);
   const [filteredDebts, setFilteredDebts] = useState<DebtWithClient[]>([]);
   const [stats, setStats] = useState<Stats>({
@@ -793,6 +793,6 @@ const Debts = React.memo(function Debts() {
       )}
     </div>
   );
-});
+}
 
 export default Debts;
