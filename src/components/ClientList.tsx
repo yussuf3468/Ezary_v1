@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "react-toastify";
@@ -51,7 +51,7 @@ interface ClientListProps {
 type SortField = "name" | "date" | "balance" | "transactions";
 type SortOrder = "asc" | "desc";
 
-export default function ClientList({ onSelectClient }: ClientListProps) {
+const ClientList = React.memo(function ClientList({ onSelectClient }: ClientListProps) {
   const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [balances, setBalances] = useState<Map<string, ClientBalance>>(
@@ -76,8 +76,101 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
 
   useEffect(() => {
     if (user) {
-      loadClients();
-      loadBalances();
+      loadData();
+    }
+  }, [user]);
+
+  const loadData = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      
+      // Load clients and transactions in parallel
+      const [clientsResult, kesResult, usdResult] = await Promise.all([
+        supabase
+          .from("clients")
+          .select("id, client_name, client_code, email, phone, business_name, status, last_transaction_date, created_at")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("client_transactions_kes")
+          .select("client_id, credit, debit")
+          .eq("user_id", user.id),
+        supabase
+          .from("client_transactions_usd")
+          .select("client_id, credit, debit")
+          .eq("user_id", user.id)
+      ]);
+
+      if (clientsResult.error) throw clientsResult.error;
+      if (kesResult.error) throw kesResult.error;
+      if (usdResult.error) throw usdResult.error;
+
+      // Set clients and calculate stats
+      const clientsData = clientsResult.data || [];
+      setClients(clientsData);
+      
+      const total = clientsData.length;
+      const active = clientsData.filter((c) => c.status === "active").length;
+      const inactive = clientsData.filter((c) => c.status === "inactive").length;
+      setStats({ total, active, inactive });
+
+      // Calculate balances
+      const balanceMap = new Map<string, ClientBalance>();
+      let totalKES = 0;
+      let totalUSD = 0;
+
+      // Process KES transactions
+      kesResult.data?.forEach((txn) => {
+        const existing = balanceMap.get(txn.client_id) || {
+          client_id: txn.client_id,
+          balance: 0,
+          transaction_count: 0,
+          kes_balance: 0,
+          usd_balance: 0,
+          kes_count: 0,
+          usd_count: 0,
+        };
+        const amount = (txn.credit || 0) - (txn.debit || 0);
+        existing.kes_balance += amount;
+        existing.balance += amount;
+        existing.kes_count += 1;
+        existing.transaction_count += 1;
+        balanceMap.set(txn.client_id, existing);
+      });
+
+      // Process USD transactions
+      usdResult.data?.forEach((txn) => {
+        const existing = balanceMap.get(txn.client_id) || {
+          client_id: txn.client_id,
+          balance: 0,
+          transaction_count: 0,
+          kes_balance: 0,
+          usd_balance: 0,
+          kes_count: 0,
+          usd_count: 0,
+        };
+        const amount = (txn.credit || 0) - (txn.debit || 0);
+        existing.usd_balance += amount;
+        existing.balance += amount * 150;
+        existing.usd_count += 1;
+        existing.transaction_count += 1;
+        balanceMap.set(txn.client_id, existing);
+      });
+
+      // Calculate totals
+      balanceMap.forEach((balance) => {
+        totalKES += balance.kes_balance;
+        totalUSD += balance.usd_balance;
+      });
+
+      setBalances(balanceMap);
+      setTotalBalances({ totalKES, totalUSD });
+    } catch (error) {
+      console.error("Error loading data:", error);
+    } finally {
+      setLoading(false);
     }
   }, [user]);
 
@@ -238,16 +331,19 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
     return filtered;
   }, [clients, searchTerm, statusFilter, sortField, sortOrder, balances]);
 
-  const toggleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortOrder("desc");
-    }
-  };
+  const toggleSort = useCallback((field: SortField) => {
+    setSortField((prevField) => {
+      if (prevField === field) {
+        setSortOrder((prev) => prev === "asc" ? "desc" : "asc");
+        return field;
+      } else {
+        setSortOrder("desc");
+        return field;
+      }
+    });
+  }, []);
 
-  const handleAddClient = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAddClient = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     const formData = new FormData(form);
@@ -336,7 +432,7 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
 
       // Reload both clients and balances with proper error handling
       try {
-        await Promise.all([loadClients(), loadBalances()]);
+        await loadData();
         toast.success(`✓ Client ${clientCode} added successfully!`);
       } catch (reloadError) {
         console.error("Error reloading after client creation:", reloadError);
@@ -348,9 +444,9 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
       console.error("Unexpected error:", error);
       toast.error("An unexpected error occurred. Please try again.");
     }
-  };
+  }, [user, loadData]);
 
-  const handleDeleteClient = async () => {
+  const handleDeleteClient = useCallback(async () => {
     if (!clientToDelete) return;
 
     try {
@@ -389,9 +485,9 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
       console.error("Error deleting client:", error);
       toast.error(`✗ Failed to delete client: ${error.message}`);
     }
-  };
+  }, [clientToDelete, user]);
 
-  const handleToggleStatus = async (client: Client) => {
+  const handleToggleStatus = useCallback(async (client: Client) => {
     const newStatus = client.status === "active" ? "inactive" : "active";
 
     try {
@@ -404,12 +500,23 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
       if (error) throw error;
 
       toast.success(`✓ Client ${client.client_code} marked as ${newStatus}!`);
-      await loadClients();
+      
+      // Update locally for instant feedback
+      setClients((prev) => 
+        prev.map((c) => c.id === client.id ? { ...c, status: newStatus } : c)
+      );
+      
+      // Update stats
+      setStats((prev) => ({
+        ...prev,
+        active: newStatus === "active" ? prev.active + 1 : prev.active - 1,
+        inactive: newStatus === "inactive" ? prev.inactive + 1 : prev.inactive - 1,
+      }));
     } catch (error: any) {
       console.error("Error updating client status:", error);
       toast.error(`✗ Failed to update status: ${error.message}`);
     }
-  };
+  }, [user]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -1023,4 +1130,6 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
       )}
     </div>
   );
-}
+});
+
+export default ClientList;

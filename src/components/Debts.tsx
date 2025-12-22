@@ -39,7 +39,7 @@ interface Stats {
   totalBalance: number;
 }
 
-export default function Debts() {
+const Debts = React.memo(function Debts() {
   const [debts, setDebts] = useState<DebtWithClient[]>([]);
   const [filteredDebts, setFilteredDebts] = useState<DebtWithClient[]>([]);
   const [stats, setStats] = useState<Stats>({
@@ -793,4 +793,6 @@ export default function Debts() {
       )}
     </div>
   );
-}
+});
+
+export default Debts;

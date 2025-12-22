@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "react-toastify";
@@ -50,7 +50,10 @@ interface ClientDetailProps {
   onBack: () => void;
 }
 
-export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
+const ClientDetail = React.memo(function ClientDetail({
+  clientId,
+  onBack,
+}: ClientDetailProps) {
   const { user } = useAuth();
   const [client, setClient] = useState<Client | null>(null);
   const [transactionsKES, setTransactionsKES] = useState<Transaction[]>([]);
@@ -1138,4 +1141,6 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
       </div>
     </div>
   );
-}
+});
+
+export default ClientDetail;
