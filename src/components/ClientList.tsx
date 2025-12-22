@@ -85,9 +85,7 @@ const LoadingSkeleton = () => (
   </div>
 );
 
-const ClientList = React.memo(function ClientList({
-  onSelectClient,
-}: ClientListProps) {
+function ClientList({ onSelectClient }: ClientListProps) {
   const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [balances, setBalances] = useState<Map<string, ClientBalance>>(
@@ -1012,6 +1010,6 @@ const ClientList = React.memo(function ClientList({
       )}
     </div>
   );
-});
+}
 
 export default ClientList;
