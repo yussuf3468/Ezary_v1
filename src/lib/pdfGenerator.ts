@@ -140,7 +140,7 @@ export const generateClientPDFReport = (options: ReportOptions) => {
       yPosition += 12;
 
       const boxWidth = (pageWidth - 40) / 3;
-      const boxHeight = 26;
+      const boxHeight = 30;
 
       // Total IN box - Modern Emerald Design
       // Shadow effect
@@ -253,8 +253,9 @@ export const generateClientPDFReport = (options: ReportOptions) => {
       doc.setFontSize(7);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(120, 130, 145);
-      const balanceStatus = summaryKES.balance >= 0 ? "(Credit)" : "(Debit)";
-      doc.text(balanceStatus, 30 + boxWidth * 2, yPosition + 13);
+      const balanceStatusKES =
+        summaryKES.balance >= 0 ? "(Credit)" : "(Outstanding)";
+      doc.text(balanceStatusKES, 30 + boxWidth * 2, yPosition + 13);
       doc.setFontSize(13);
       doc.setFont("helvetica", "bold");
       if (summaryKES.balance >= 0) {
@@ -267,6 +268,20 @@ export const generateClientPDFReport = (options: ReportOptions) => {
         30 + boxWidth * 2,
         yPosition + 21
       );
+      
+      // USD Balance - simplified format
+      doc.setFontSize(10);
+      if (summaryUSD.balance >= 0) {
+        doc.setTextColor(6, 182, 212); // Cyan-600
+      } else {
+        doc.setTextColor(220, 38, 38); // Red-700
+      }
+      const usdSign = summaryUSD.balance >= 0 ? "" : "-";
+      doc.text(
+        `${usdSign}$${formatCurrency(Math.abs(summaryUSD.balance), "USD").replace(/[^0-9.,]/g, '')}`,
+        30 + boxWidth * 2,
+        yPosition + 26
+      );
 
       yPosition += boxHeight + 8;
 
@@ -274,14 +289,14 @@ export const generateClientPDFReport = (options: ReportOptions) => {
       doc.setFontSize(8);
       doc.setFont("helvetica", "italic");
       doc.setTextColor(100, 116, 139);
-      if (summaryKES.balance >= 0) {
+      if (summaryKES.balance >= 0 && summaryUSD.balance >= 0) {
         doc.text(
-          "✓ You have a positive balance (money available)",
+          "✓ You have positive balances (money available)",
           15,
           yPosition
         );
-      } else {
-        doc.text("⚠ You have a negative balance (money owed)", 15, yPosition);
+      } else if (summaryKES.balance < 0 || summaryUSD.balance < 0) {
+        doc.text("⚠ You have outstanding balances (money owed)", 15, yPosition);
       }
       yPosition += 10;
     }

@@ -514,11 +514,11 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
             <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-5 text-white">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs bg-white/20 px-3 py-1 rounded-full font-bold uppercase">
-                  OUT
+                  RECEIVABLES
                 </span>
                 <TrendingDown className="w-5 h-5" />
               </div>
-              <p className="text-white/80 text-sm mb-1">Total OUT</p>
+              <p className="text-white/80 text-sm mb-1">Total Receivables</p>
               <p className="text-2xl font-black">
                 {formatCurrency(currentSummary.receivable, currencySymbol)}
               </p>
@@ -528,11 +528,11 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
             <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-5 text-white">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs bg-white/20 px-3 py-1 rounded-full font-bold uppercase">
-                  IN
+                  RECEIVED
                 </span>
                 <TrendingUp className="w-5 h-5" />
               </div>
-              <p className="text-white/80 text-sm mb-1">Total IN</p>
+              <p className="text-white/80 text-sm mb-1">Payments Received</p>
               <p className="text-2xl font-black">
                 {formatCurrency(currentSummary.paid, currencySymbol)}
               </p>
@@ -548,13 +548,20 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs bg-white/20 px-3 py-1 rounded-full font-bold uppercase">
-                  BALANCE
+                  {currentSummary.balance >= 0 ? "CREDIT" : "OUTSTANDING"}
                 </span>
                 <DollarSign className="w-5 h-5" />
               </div>
-              <p className="text-white/80 text-sm mb-1">Net Balance</p>
+              <p className="text-white/80 text-sm mb-1">
+                {currentSummary.balance >= 0
+                  ? "Credit Balance"
+                  : "Outstanding Balance"}
+              </p>
               <p className="text-2xl font-black">
-                {formatCurrency(currentSummary.balance, currencySymbol)}
+                {formatCurrency(
+                  Math.abs(currentSummary.balance),
+                  currencySymbol
+                )}
               </p>
             </div>
           </div>
