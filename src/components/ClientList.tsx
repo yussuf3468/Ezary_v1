@@ -48,6 +48,43 @@ interface ClientListProps {
 type SortField = "name" | "date" | "balance" | "transactions";
 type SortOrder = "asc" | "desc";
 
+const LoadingSkeleton = () => (
+  <div className="p-4 md:p-8">
+    <div className="mb-8">
+      <div className="h-10 w-64 bg-white/10 rounded-lg mb-4 animate-pulse"></div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="bg-white/5 backdrop-blur-xl rounded-xl p-6 shadow-sm border border-white/10"
+          >
+            <div className="h-4 w-24 bg-white/10 rounded mb-2 animate-pulse"></div>
+            <div className="h-8 w-16 bg-white/10 rounded animate-pulse"></div>
+          </div>
+        ))}
+      </div>
+      <div className="bg-white/5 backdrop-blur-xl rounded-xl p-4 shadow-sm border border-white/10 mb-6">
+        <div className="h-12 bg-white/10 rounded-lg animate-pulse"></div>
+      </div>
+    </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+      {[1, 2, 3, 4, 5, 6].map((i) => (
+        <div
+          key={i}
+          className="bg-white/5 backdrop-blur-xl rounded-xl p-6 shadow-sm border border-white/10"
+        >
+          <div className="h-6 w-32 bg-white/10 rounded mb-3 animate-pulse"></div>
+          <div className="h-4 w-24 bg-white/10 rounded mb-4 animate-pulse"></div>
+          <div className="space-y-2">
+            <div className="h-4 w-full bg-white/10 rounded animate-pulse"></div>
+            <div className="h-4 w-3/4 bg-white/10 rounded animate-pulse"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 const ClientList = React.memo(function ClientList({
   onSelectClient,
 }: ClientListProps) {
@@ -411,43 +448,6 @@ const ClientList = React.memo(function ClientList({
       }
     },
     [user]
-  );
-
-  const LoadingSkeleton = () => (
-    <div className="p-4 md:p-8">
-      <div className="mb-8">
-        <div className="h-10 w-64 bg-white/10 rounded-lg mb-4 animate-pulse"></div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="bg-white/5 backdrop-blur-xl rounded-xl p-6 shadow-sm border border-white/10"
-            >
-              <div className="h-4 w-24 bg-white/10 rounded mb-2 animate-pulse"></div>
-              <div className="h-8 w-16 bg-white/10 rounded animate-pulse"></div>
-            </div>
-          ))}
-        </div>
-        <div className="bg-white/5 backdrop-blur-xl rounded-xl p-4 shadow-sm border border-white/10 mb-6">
-          <div className="h-12 bg-white/10 rounded-lg animate-pulse"></div>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div
-            key={i}
-            className="bg-white/5 backdrop-blur-xl rounded-xl p-6 shadow-sm border border-white/10"
-          >
-            <div className="h-6 w-32 bg-white/10 rounded mb-3 animate-pulse"></div>
-            <div className="h-4 w-24 bg-white/10 rounded mb-4 animate-pulse"></div>
-            <div className="space-y-2">
-              <div className="h-4 w-full bg-white/10 rounded animate-pulse"></div>
-              <div className="h-4 w-3/4 bg-white/10 rounded animate-pulse"></div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 
   if (loading) {
