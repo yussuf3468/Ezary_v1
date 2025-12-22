@@ -399,6 +399,9 @@ export default function Debts() {
                   Client
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                  Number
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
                   Amount
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
@@ -443,6 +446,9 @@ export default function Debts() {
                           {debt.client_code}
                         </p>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 text-gray-300">
+                      {debt.phone || "N/A"}
                     </td>
                     <td className="px-6 py-4 text-white">
                       {formatCurrency(debt.amount, debt.currency)}
@@ -677,6 +683,9 @@ export default function Debts() {
                   </p>
                   <p className="text-sm text-gray-400">
                     {selectedDebt.client_code}
+                  </p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Number: {selectedDebt.phone || "N/A"}
                   </p>
                 </div>
                 <span
