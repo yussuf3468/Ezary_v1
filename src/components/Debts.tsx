@@ -414,7 +414,8 @@ export default function Debts() {
                 return (
                   <tr
                     key={debt.id}
-                    className="hover:bg-white/10 transition-colors"
+                    onClick={() => handleViewDebt(debt)}
+                    className="hover:bg-white/10 transition-colors cursor-pointer"
                   >
                     <td className="px-6 py-4 text-gray-300">
                       {debt.debt_date
@@ -485,15 +486,8 @@ export default function Debts() {
                     <td className="px-6 py-4 text-white max-w-xs truncate">
                       {debt.description}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                       <div className="flex gap-3">
-                        <button
-                          onClick={() => handleViewDebt(debt)}
-                          className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-all"
-                          title="View & Record Payment"
-                        >
-                          <Eye className="w-5 h-5" />
-                        </button>
                         <button
                           onClick={() => handleDeleteDebt(debt.id)}
                           className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all"
