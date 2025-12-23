@@ -352,7 +352,7 @@ export default function Debts() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 bg-white/10 text-white border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500"
+            className="px-4 py-2 bg-white/10 text-white border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-500 [&>option]:text-gray-900 [&>option]:bg-white"
           >
             <option value="all">All Status</option>
             <option value="overdue">Overdue</option>
