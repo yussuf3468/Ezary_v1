@@ -13,6 +13,8 @@ import {
   Trash2,
   FileText,
   X,
+  Edit2,
+  Lock,
 } from "lucide-react";
 import { formatCurrency } from "../lib/currency";
 import { generateClientPDFReport } from "../lib/pdfGenerator";
@@ -55,6 +57,15 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"kes" | "usd">("kes");
   const [showAddTransaction, setShowAddTransaction] = useState(false);
+  const [showEditTransaction, setShowEditTransaction] = useState(false);
+  const [editingTransaction, setEditingTransaction] =
+    useState<Transaction | null>(null);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinAction, setPinAction] = useState<{
+    type: "edit" | "delete";
+    data: any;
+  } | null>(null);
+  const [pinInput, setPinInput] = useState("");
   const [summaryKES, setSummaryKES] = useState({
     receivable: 0,
     paid: 0,
@@ -129,19 +140,21 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         supabase
           .from("client_transactions_kes")
           .select(
-            "id, transaction_date, description, credit, debit, reference_number, payment_method, notes"
+            "id, transaction_date, description, credit, debit, reference_number, payment_method, notes, created_at"
           )
           .eq("client_id", clientId)
           .eq("user_id", user.id)
-          .order("transaction_date", { ascending: false }),
+          .order("transaction_date", { ascending: false })
+          .order("created_at", { ascending: false }),
         supabase
           .from("client_transactions_usd")
           .select(
-            "id, transaction_date, description, credit, debit, reference_number, payment_method, notes"
+            "id, transaction_date, description, credit, debit, reference_number, payment_method, notes, created_at"
           )
           .eq("client_id", clientId)
           .eq("user_id", user.id)
-          .order("transaction_date", { ascending: false }),
+          .order("transaction_date", { ascending: false })
+          .order("created_at", { ascending: false }),
       ]);
 
       if (clientResult.error) throw clientResult.error;
@@ -167,6 +180,128 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
       onBack();
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePinProtectedAction = (action: "edit" | "delete", data: any) => {
+    setPinAction({ type: action, data });
+    setShowPinModal(true);
+    setPinInput("");
+  };
+
+  const verifyPinAndExecute = async () => {
+    const correctPin = "2580"; // You can change this or store in environment variable
+
+    if (pinInput !== correctPin) {
+      toast.error("Incorrect PIN!");
+      setPinInput("");
+      return;
+    }
+
+    setShowPinModal(false);
+    setPinInput("");
+
+    if (!pinAction) return;
+
+    if (pinAction.type === "delete") {
+      await executeDelete(
+        pinAction.data.transactionId,
+        pinAction.data.currency
+      );
+    } else if (pinAction.type === "edit") {
+      setEditingTransaction(pinAction.data.transaction);
+      setShowEditTransaction(true);
+    }
+
+    setPinAction(null);
+  };
+
+  const executeDelete = async (
+    transactionId: string,
+    currency: "kes" | "usd"
+  ) => {
+    try {
+      const table =
+        currency === "kes"
+          ? "client_transactions_kes"
+          : "client_transactions_usd";
+      const { error: deleteError } = await supabase
+        .from(table)
+        .delete()
+        .eq("id", transactionId);
+
+      if (deleteError) {
+        console.error("Error deleting transaction:", deleteError);
+        toast.error("Failed to delete transaction.");
+        return;
+      }
+
+      // Remove transaction from state without full reload
+      if (currency === "kes") {
+        const updatedTransactions = transactionsKES.filter(
+          (t) => t.id !== transactionId
+        );
+        setTransactionsKES(updatedTransactions);
+        calculateSummary(updatedTransactions, setSummaryKES);
+      } else {
+        const updatedTransactions = transactionsUSD.filter(
+          (t) => t.id !== transactionId
+        );
+        setTransactionsUSD(updatedTransactions);
+        calculateSummary(updatedTransactions, setSummaryUSD);
+      }
+      toast.success("Transaction deleted successfully!");
+    } catch (error) {
+      console.error("Unexpected error:", error);
+      toast.error("An unexpected error occurred.");
+    }
+  };
+
+  const handleEditTransaction = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingTransaction) return;
+
+    const formData = new FormData(e.currentTarget);
+    const transactionType = formData.get("transaction_type") as string;
+    const amount = Number(formData.get("amount"));
+
+    try {
+      const transactionData = {
+        debit: ["invoice", "charge", "expense"].includes(transactionType)
+          ? amount
+          : 0,
+        credit: ["payment", "refund", "credit"].includes(transactionType)
+          ? amount
+          : 0,
+        description: formData.get("description"),
+        transaction_date: formData.get("transaction_date"),
+      };
+
+      const table =
+        activeTab === "kes"
+          ? "client_transactions_kes"
+          : "client_transactions_usd";
+
+      const { error: updateError } = await supabase
+        .from(table)
+        .update(transactionData)
+        .eq("id", editingTransaction.id);
+
+      if (updateError) {
+        console.error("Error updating transaction:", updateError);
+        toast.error("Failed to update transaction. Please try again.");
+        return;
+      }
+
+      // Reload data to reflect changes
+      await loadClientData();
+
+      setShowEditTransaction(false);
+      setEditingTransaction(null);
+      toast.success("Transaction updated successfully!");
+    } catch (error) {
+      console.error("Unexpected error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
     }
   };
 
@@ -229,49 +364,6 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
     } catch (error) {
       console.error("Unexpected error:", error);
       toast.error("An unexpected error occurred. Please try again.");
-    }
-  };
-
-  const deleteTransaction = async (
-    transactionId: string,
-    currency: "kes" | "usd"
-  ) => {
-    if (!confirm("Are you sure you want to delete this transaction?")) return;
-
-    try {
-      const table =
-        currency === "kes"
-          ? "client_transactions_kes"
-          : "client_transactions_usd";
-      const { error: deleteError } = await supabase
-        .from(table)
-        .delete()
-        .eq("id", transactionId);
-
-      if (deleteError) {
-        console.error("Error deleting transaction:", deleteError);
-        toast.error("Failed to delete transaction.");
-        return;
-      }
-
-      // Remove transaction from state without full reload
-      if (currency === "kes") {
-        const updatedTransactions = transactionsKES.filter(
-          (t) => t.id !== transactionId
-        );
-        setTransactionsKES(updatedTransactions);
-        calculateSummary(updatedTransactions, setSummaryKES);
-      } else {
-        const updatedTransactions = transactionsUSD.filter(
-          (t) => t.id !== transactionId
-        );
-        setTransactionsUSD(updatedTransactions);
-        calculateSummary(updatedTransactions, setSummaryUSD);
-      }
-      toast.success("Transaction deleted successfully!");
-    } catch (error) {
-      console.error("Unexpected error:", error);
-      toast.error("An unexpected error occurred.");
     }
   };
 
@@ -725,14 +817,32 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                             })}
                           </p>
                         </div>
-                        <button
-                          onClick={() =>
-                            deleteTransaction(transaction.id, activeTab)
-                          }
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors active:scale-90"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() =>
+                              handlePinProtectedAction("edit", {
+                                transaction,
+                                currency: activeTab,
+                              })
+                            }
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors active:scale-90"
+                            title="Edit transaction"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() =>
+                              handlePinProtectedAction("delete", {
+                                transactionId: transaction.id,
+                                currency: activeTab,
+                              })
+                            }
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors active:scale-90"
+                            title="Delete transaction"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-3 gap-2">
@@ -988,15 +1098,32 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                             </div>
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <button
-                              onClick={() =>
-                                deleteTransaction(transaction.id, activeTab)
-                              }
-                              className="p-2.5 text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-200 hover:scale-110"
-                              title="Delete transaction"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            <div className="flex gap-2 justify-center">
+                              <button
+                                onClick={() =>
+                                  handlePinProtectedAction("edit", {
+                                    transaction,
+                                    currency: activeTab,
+                                  })
+                                }
+                                className="p-2.5 text-blue-400 hover:bg-blue-500/10 rounded-xl transition-all duration-200 hover:scale-110"
+                                title="Edit transaction"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handlePinProtectedAction("delete", {
+                                    transactionId: transaction.id,
+                                    currency: activeTab,
+                                  })
+                                }
+                                className="p-2.5 text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-200 hover:scale-110"
+                                title="Delete transaction"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -1136,6 +1263,198 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Transaction Modal */}
+        {showEditTransaction && editingTransaction && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-3 sm:p-4 animate-fadeIn">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full max-h-[95vh] overflow-hidden transform animate-scaleIn">
+              <div className="sticky top-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between shadow-lg z-10">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <Edit2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-white drop-shadow-lg">
+                    Edit Transaction
+                  </h2>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowEditTransaction(false);
+                    setEditingTransaction(null);
+                  }}
+                  className="p-2 hover:bg-white/20 rounded-xl transition-all duration-200 active:scale-90"
+                >
+                  <X className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                </button>
+              </div>
+
+              <form
+                onSubmit={handleEditTransaction}
+                className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto max-h-[calc(95vh-80px)]"
+              >
+                <div className="grid grid-cols-1 gap-4 sm:gap-5">
+                  <div className="group">
+                    <label className="flex items-center gap-2 text-sm font-bold text-gray-400 mb-2">
+                      <span className="text-blue-400">💱</span>
+                      Transaction Type *
+                    </label>
+                    <select
+                      name="transaction_type"
+                      defaultValue={
+                        editingTransaction.credit > 0 ? "payment" : "invoice"
+                      }
+                      className="w-full px-4 py-3 sm:py-3.5 bg-white/10 text-white border-2 border-white/20 rounded-xl sm:rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm sm:text-base font-semibold hover:border-blue-400 [&>option]:text-gray-900 [&>option]:bg-white"
+                      required
+                    >
+                      <option value="payment">💰 Money IN (Payment)</option>
+                      <option value="invoice">
+                        📤 Money OUT (Invoice/Charge)
+                      </option>
+                    </select>
+                  </div>
+
+                  <div className="group">
+                    <label className="flex items-center gap-2 text-sm font-bold text-gray-400 mb-2">
+                      <span className="text-blue-400">💵</span>
+                      Amount ({currencySymbol}) *
+                    </label>
+                    <input
+                      type="number"
+                      name="amount"
+                      step="0.01"
+                      min="0"
+                      defaultValue={
+                        editingTransaction.credit > 0
+                          ? editingTransaction.credit
+                          : editingTransaction.debit
+                      }
+                      required
+                      className="w-full px-4 py-3 sm:py-3.5 bg-white/10 text-white border-2 border-white/20 rounded-xl sm:rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm sm:text-base font-bold hover:border-blue-400"
+                    />
+                  </div>
+
+                  <div className="group">
+                    <label className="flex items-center gap-2 text-sm font-bold text-gray-400 mb-2">
+                      <span className="text-blue-400">📝</span>
+                      Description *
+                    </label>
+                    <input
+                      type="text"
+                      name="description"
+                      defaultValue={editingTransaction.description}
+                      required
+                      className="w-full px-4 py-3 sm:py-3.5 bg-white/10 text-white border-2 border-white/20 rounded-xl sm:rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm sm:text-base font-semibold hover:border-blue-400"
+                    />
+                  </div>
+
+                  <div className="group">
+                    <label className="flex items-center gap-2 text-sm font-bold text-gray-400 mb-2">
+                      <span className="text-blue-400">📅</span>
+                      Date *
+                    </label>
+                    <input
+                      type="date"
+                      name="transaction_date"
+                      defaultValue={editingTransaction.transaction_date}
+                      required
+                      className="w-full px-4 py-3 sm:py-3.5 bg-white/10 text-white border-2 border-white/20 rounded-xl sm:rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm sm:text-base font-semibold hover:border-blue-400"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditTransaction(false);
+                      setEditingTransaction(null);
+                    }}
+                    className="flex-1 px-6 py-3 sm:py-3.5 bg-white/10 border-2 border-white/20 rounded-xl sm:rounded-2xl text-gray-300 font-bold hover:bg-white/20 hover:border-white/30 transition-all duration-200 text-sm sm:text-base active:scale-95"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-6 py-3 sm:py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 text-white rounded-xl sm:rounded-2xl font-black hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 text-sm sm:text-base active:scale-95"
+                  >
+                    ✓ Update Transaction
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* PIN Modal */}
+        {showPinModal && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fadeIn">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-md w-full transform animate-scaleIn">
+              <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-600 px-6 py-5 flex items-center justify-between rounded-t-2xl">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <Lock className="w-6 h-6 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-black text-white drop-shadow-lg">
+                    Enter PIN
+                  </h2>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowPinModal(false);
+                    setPinAction(null);
+                    setPinInput("");
+                  }}
+                  className="p-2 hover:bg-white/20 rounded-xl transition-all duration-200 active:scale-90"
+                >
+                  <X className="w-6 h-6 text-white" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <p className="text-gray-300 text-center">
+                  Enter your PIN to{" "}
+                  {pinAction?.type === "edit" ? "edit" : "delete"} this
+                  transaction
+                </p>
+                <input
+                  type="password"
+                  value={pinInput}
+                  onChange={(e) => setPinInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      verifyPinAndExecute();
+                    }
+                  }}
+                  placeholder="Enter PIN"
+                  maxLength={4}
+                  autoFocus
+                  className="w-full px-4 py-3.5 bg-white/10 text-white text-center text-2xl tracking-widest border-2 border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200 font-bold"
+                />
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPinModal(false);
+                      setPinAction(null);
+                      setPinInput("");
+                    }}
+                    className="flex-1 px-6 py-3.5 bg-white/10 border-2 border-white/20 rounded-xl text-gray-300 font-bold hover:bg-white/20 hover:border-white/30 transition-all duration-200 active:scale-95"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={verifyPinAndExecute}
+                    className="flex-1 px-6 py-3.5 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-600 text-white rounded-xl font-black hover:shadow-2xl hover:shadow-amber-500/50 transition-all duration-300 active:scale-95"
+                  >
+                    🔓 Verify
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

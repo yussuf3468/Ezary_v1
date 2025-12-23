@@ -770,11 +770,12 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
                             : "text-gray-400"
                         }`}
                       >
-                        {clientBalance?.kes_count && clientBalance?.usd_count
-                          ? `KES ${balance.toLocaleString()}`
+                        {clientBalance?.kes_balance &&
+                        clientBalance.kes_balance !== 0
+                          ? `KES ${clientBalance.kes_balance.toLocaleString()}`
                           : clientBalance?.usd_count
                           ? `USD ${clientBalance.usd_balance.toLocaleString()}`
-                          : `KES ${balance.toLocaleString()}`}
+                          : `KES 0`}
                       </p>
                     </div>
 
