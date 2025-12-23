@@ -486,7 +486,10 @@ export default function Debts() {
                     <td className="px-6 py-4 text-white max-w-xs truncate">
                       {debt.description}
                     </td>
-                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                    <td
+                      className="px-6 py-4"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <div className="flex gap-3">
                         <button
                           onClick={() => handleDeleteDebt(debt.id)}
