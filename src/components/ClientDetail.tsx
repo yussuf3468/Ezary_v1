@@ -1437,8 +1437,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                   autoComplete="one-time-code"
                   data-lpignore="true"
                   data-form-type="other"
-                  className="w-full px-4 py-3.5 bg-white/10 text-white text-center text-2xl tracking-widest border-2 border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200 font-bold"
-                  style={{ WebkitTextSecurity: 'disc' }}
+                  className="w-full px-4 py-3.5 bg-white/10 text-white text-center text-2xl tracking-widest border-2 border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200 font-bold [text-security:disc]"
                 />
 
                 <div className="flex gap-3 pt-2">
