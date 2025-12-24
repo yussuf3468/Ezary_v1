@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 @layer utilities {
-  /* Smooth animations for modal */
+  /* Premium Smooth animations */
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -35,16 +35,52 @@
     }
   }
 
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+
   .animate-fadeIn {
     animation: fadeIn 0.2s ease-out;
   }
 
   .animate-scaleIn {
-    animation: scaleIn 0.3s ease-out;
+    animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .animate-slide-in-right {
-    animation: slideInRight 0.3s ease-out;
+    animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite linear;
+    background: linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(255, 255, 255, 0.3) 50%,
+      transparent 100%
+    );
+    background-size: 1000px 100%;
+  }
+
+  /* Premium shadows */
+  .shadow-premium {
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1),
+      0 0 1px rgba(0, 0, 0, 0.05);
+  }
+
+  .shadow-premium-lg {
+    box-shadow: 0 20px 60px -15px rgba(0, 0, 0, 0.15),
+      0 0 1px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Smooth transitions */
+  .transition-premium {
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
 }
 

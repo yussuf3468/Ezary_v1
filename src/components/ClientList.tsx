@@ -402,33 +402,33 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
   const LoadingSkeleton = () => (
     <div className="p-4 md:p-8">
       <div className="mb-8">
-        <div className="h-10 w-64 bg-white/10 rounded-lg mb-4 animate-pulse"></div>
+        <div className="h-10 w-64 bg-gray-200 rounded-lg mb-4 animate-pulse"></div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="bg-white/5 backdrop-blur-xl rounded-xl p-6 shadow-sm border border-white/10"
+              className="bg-white/90 backdrop-blur-xl rounded-xl p-6 shadow-sm border border-gray-200"
             >
-              <div className="h-4 w-24 bg-white/10 rounded mb-2 animate-pulse"></div>
-              <div className="h-8 w-16 bg-white/10 rounded animate-pulse"></div>
+              <div className="h-4 w-24 bg-gray-200 rounded mb-2 animate-pulse"></div>
+              <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
             </div>
           ))}
         </div>
-        <div className="bg-white/5 backdrop-blur-xl rounded-xl p-4 shadow-sm border border-white/10 mb-6">
-          <div className="h-12 bg-white/10 rounded-lg animate-pulse"></div>
+        <div className="bg-white/90 backdrop-blur-xl rounded-xl p-4 shadow-sm border border-gray-200 mb-6">
+          <div className="h-12 bg-gray-200 rounded-lg animate-pulse"></div>
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <div
             key={i}
-            className="bg-white/5 backdrop-blur-xl rounded-xl p-6 shadow-sm border border-white/10"
+            className="bg-white/90 backdrop-blur-xl rounded-xl p-6 shadow-sm border border-gray-200"
           >
-            <div className="h-6 w-32 bg-white/10 rounded mb-3 animate-pulse"></div>
-            <div className="h-4 w-24 bg-white/10 rounded mb-4 animate-pulse"></div>
+            <div className="h-6 w-32 bg-gray-200 rounded mb-3 animate-pulse"></div>
+            <div className="h-4 w-24 bg-gray-200 rounded mb-4 animate-pulse"></div>
             <div className="space-y-2">
-              <div className="h-4 w-full bg-white/10 rounded animate-pulse"></div>
-              <div className="h-4 w-3/4 bg-white/10 rounded animate-pulse"></div>
+              <div className="h-4 w-full bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse"></div>
             </div>
           </div>
         ))}
@@ -452,12 +452,12 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
                   E
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white flex items-center gap-2 sm:gap-3">
-                <Users className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-emerald-400" />
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3">
+                <Users className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-emerald-500" />
                 Client Management
               </h1>
             </div>
-            <p className="text-xs sm:text-sm text-gray-400 ml-10 sm:ml-13">
+            <p className="text-xs sm:text-sm text-gray-600 ml-10 sm:ml-13">
               Manage and track all your clients • Ezary CMS
             </p>
           </div>
@@ -472,13 +472,13 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 gap-3 sm:gap-4 xl:gap-6 mb-4 sm:mb-6">
-          <div className="bg-white/5 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-white/10 hover:border-blue-500/50 transition-all">
+          <div className="bg-white/90 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-gray-200 hover:border-blue-500/50 transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-xs sm:text-sm mb-1">
+                <p className="text-gray-600 text-xs sm:text-sm mb-1">
                   Total Clients
                 </p>
-                <p className="text-2xl sm:text-3xl font-bold text-white">
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900">
                   {stats.total}
                 </p>
               </div>
@@ -494,14 +494,14 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
           <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-emerald-500/20 hover:border-emerald-500/50 transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-xs sm:text-sm mb-1">
+                <p className="text-gray-600 text-xs sm:text-sm mb-1">
                   Total Balance (KES)
                 </p>
                 <p
                   className={`text-2xl sm:text-3xl font-bold ${
                     totalBalances.totalKES >= 0
-                      ? "text-emerald-400"
-                      : "text-red-400"
+                      ? "text-emerald-600"
+                      : "text-red-600"
                   }`}
                 >
                   KES {totalBalances.totalKES.toLocaleString()}
@@ -516,14 +516,14 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
           <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-blue-500/20 hover:border-blue-500/50 transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-xs sm:text-sm mb-1">
+                <p className="text-gray-600 text-xs sm:text-sm mb-1">
                   Total Balance (USD)
                 </p>
                 <p
                   className={`text-2xl sm:text-3xl font-bold ${
                     totalBalances.totalUSD >= 0
-                      ? "text-blue-400"
-                      : "text-red-400"
+                      ? "text-blue-600"
+                      : "text-red-600"
                   }`}
                 >
                   USD {totalBalances.totalUSD.toLocaleString()}
@@ -537,22 +537,22 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
         </div>
 
         {/* Search, Filters, and Sort */}
-        <div className="bg-white/5 backdrop-blur-xl rounded-xl p-3 sm:p-4 border border-white/10 space-y-3 sm:space-y-4">
+        <div className="bg-white/90 backdrop-blur-xl rounded-xl p-3 sm:p-4 border border-gray-200 space-y-3 sm:space-y-4">
           <div className="flex flex-col sm:flex-col md:flex-row gap-3 sm:gap-4">
             {/* Search */}
             <div className="flex-1 relative">
-              <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
+              <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
               <input
                 type="text"
                 placeholder="Search clients by name, code, email, phone..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 sm:pl-12 pr-10 sm:pr-4 py-2.5 sm:py-3 text-sm sm:text-base bg-white/10 border-2 border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-white placeholder-gray-400 hover:bg-white/15 font-medium"
+                className="w-full pl-10 sm:pl-12 pr-10 sm:pr-4 py-2.5 sm:py-3 text-sm sm:text-base bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-gray-900 placeholder-gray-500 hover:border-gray-300 font-medium"
               />
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm("")}
-                  className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg"
+                  className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-900 transition-colors p-1 hover:bg-gray-100 rounded-lg"
                 >
                   <X className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
@@ -561,7 +561,7 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
 
             {/* Sort Dropdown */}
             <div className="flex items-center gap-2 w-full md:w-auto">
-              <ArrowUpDown className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" />
+              <ArrowUpDown className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 flex-shrink-0" />
               <select
                 value={`${sortField}-${sortOrder}`}
                 onChange={(e) => {
@@ -569,35 +569,35 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
                   setSortField(field as SortField);
                   setSortOrder(order as SortOrder);
                 }}
-                className="flex-1 md:flex-none px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/10 text-white font-semibold hover:bg-white/15 transition-all"
+                className="flex-1 md:flex-none px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-gray-900 font-semibold hover:border-gray-300 transition-all"
               >
-                <option value="date-desc" className="bg-gray-900 text-white">
+                <option value="date-desc" className="bg-white text-gray-900">
                   Newest First
                 </option>
-                <option value="date-asc" className="bg-gray-900 text-white">
+                <option value="date-asc" className="bg-white text-gray-900">
                   Oldest First
                 </option>
-                <option value="name-asc" className="bg-gray-900 text-white">
+                <option value="name-asc" className="bg-white text-gray-900">
                   Name (A-Z)
                 </option>
-                <option value="name-desc" className="bg-gray-900 text-white">
+                <option value="name-desc" className="bg-white text-gray-900">
                   Name (Z-A)
                 </option>
-                <option value="balance-desc" className="bg-gray-900 text-white">
+                <option value="balance-desc" className="bg-white text-gray-900">
                   Highest Balance
                 </option>
-                <option value="balance-asc" className="bg-gray-900 text-white">
+                <option value="balance-asc" className="bg-white text-gray-900">
                   Lowest Balance
                 </option>
                 <option
                   value="transactions-desc"
-                  className="bg-gray-900 text-white"
+                  className="bg-white text-gray-900"
                 >
                   Most Transactions
                 </option>
                 <option
                   value="transactions-asc"
-                  className="bg-gray-900 text-white"
+                  className="bg-white text-gray-900"
                 >
                   Least Transactions
                 </option>
@@ -607,13 +607,13 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
 
           {/* Status Filter Chips */}
           <div className="flex items-center gap-2 flex-wrap">
-            <Filter className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <Filter className="w-4 h-4 text-gray-600 flex-shrink-0" />
             <button
               onClick={() => setStatusFilter("all")}
               className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${
                 statusFilter === "all"
                   ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg border-2 border-emerald-400/50"
-                  : "bg-white/10 text-gray-300 hover:bg-white/20 border-2 border-white/10 hover:border-white/30"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-gray-200 hover:border-gray-300"
               }`}
             >
               All ({stats.total})
@@ -623,7 +623,7 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
               className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${
                 statusFilter === "active"
                   ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg border-2 border-emerald-400/50"
-                  : "bg-white/10 text-gray-300 hover:bg-white/20 border-2 border-white/10 hover:border-white/30"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-gray-200 hover:border-gray-300"
               }`}
             >
               Active ({stats.active})
@@ -633,7 +633,7 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
               className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${
                 statusFilter === "inactive"
                   ? "bg-gradient-to-r from-gray-600 to-gray-700 text-white shadow-lg border-2 border-gray-400/50"
-                  : "bg-white/10 text-gray-300 hover:bg-white/20 border-2 border-white/10 hover:border-white/30"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-gray-200 hover:border-gray-300"
               }`}
             >
               Inactive ({stats.inactive})
@@ -641,13 +641,15 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
           </div>
 
           {/* Results count */}
-          <div className="text-sm text-gray-400">
+          <div className="text-sm text-gray-600">
             Showing{" "}
-            <span className="font-semibold text-white">
+            <span className="font-semibold text-gray-900">
               {filteredClients.length}
             </span>{" "}
             of{" "}
-            <span className="font-semibold text-white">{clients.length}</span>{" "}
+            <span className="font-semibold text-gray-900">
+              {clients.length}
+            </span>{" "}
             clients
           </div>
         </div>
@@ -655,16 +657,16 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
 
       {/* Client List */}
       {filteredClients.length === 0 ? (
-        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-12 text-center shadow-sm border border-white/10">
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-12 text-center shadow-sm border border-gray-200">
           <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center shadow-lg">
             <Users className="w-12 h-12 text-white" />
           </div>
-          <h3 className="text-2xl font-bold text-white mb-2">
+          <h3 className="text-2xl font-bold text-gray-900 mb-2">
             {searchTerm || statusFilter !== "all"
               ? "No clients found"
               : "No clients yet"}
           </h3>
-          <p className="text-gray-400 mb-6 max-w-md mx-auto">
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
             {searchTerm || statusFilter !== "all"
               ? "Try adjusting your search or filters to find what you're looking for"
               : "Start building your client database by adding your first client"}
@@ -691,7 +693,7 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
             return (
               <div
                 key={client.id}
-                className="group bg-white/5 backdrop-blur-sm rounded-2xl shadow-sm border border-white/10 hover:shadow-xl hover:border-emerald-500/50 transition-all duration-300 overflow-hidden"
+                className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200 hover:shadow-xl hover:border-emerald-500/50 transition-all duration-300 overflow-hidden"
               >
                 {/* Gradient Header */}
                 <div
@@ -716,7 +718,7 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
                         {client.client_name.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-base font-bold text-white group-hover:text-emerald-400 transition-colors truncate">
+                        <h3 className="text-base font-bold text-gray-900 group-hover:text-emerald-600 transition-colors truncate">
                           {client.client_name}
                         </h3>
                         <p className="text-xs text-gray-500 font-mono">
@@ -729,8 +731,8 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
                   {/* Contact Info */}
                   <div className="space-y-1.5 mb-3">
                     {client.phone && (
-                      <div className="flex items-center gap-2 text-xs text-gray-400">
-                        <Phone className="w-3.5 h-3.5 flex-shrink-0 text-gray-400" />
+                      <div className="flex items-center gap-2 text-xs text-gray-600">
+                        <Phone className="w-3.5 h-3.5 flex-shrink-0 text-gray-600" />
                         <span>{client.phone}</span>
                       </div>
                     )}
@@ -744,30 +746,30 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
                           ? "bg-emerald-500/10 border border-emerald-500/20"
                           : isNegative
                           ? "bg-red-500/10 border border-red-500/20"
-                          : "bg-white/10 border border-white/20"
+                          : "bg-gray-100 border border-gray-200"
                       }`}
                     >
                       <div className="flex items-center gap-1.5 mb-1">
                         <DollarSign
                           className={`w-3.5 h-3.5 ${
                             isPositive
-                              ? "text-emerald-400"
+                              ? "text-emerald-600"
                               : isNegative
-                              ? "text-red-400"
-                              : "text-gray-400"
+                              ? "text-red-600"
+                              : "text-gray-600"
                           }`}
                         />
-                        <span className="text-xs text-gray-400 font-medium">
+                        <span className="text-xs text-gray-600 font-medium">
                           Balance
                         </span>
                       </div>
                       <p
                         className={`text-sm font-bold ${
                           isPositive
-                            ? "text-emerald-400"
+                            ? "text-emerald-600"
                             : isNegative
-                            ? "text-red-400"
-                            : "text-gray-400"
+                            ? "text-red-600"
+                            : "text-gray-600"
                         }`}
                       >
                         {clientBalance?.kes_balance &&
@@ -781,12 +783,12 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
 
                     <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2.5">
                       <div className="flex items-center gap-1.5 mb-1">
-                        <Clock className="w-3.5 h-3.5 text-blue-400" />
-                        <span className="text-xs text-gray-400 font-medium">
+                        <Clock className="w-3.5 h-3.5 text-blue-600" />
+                        <span className="text-xs text-gray-600 font-medium">
                           Txns
                         </span>
                       </div>
-                      <p className="text-sm font-bold text-blue-400">
+                      <p className="text-sm font-bold text-blue-600">
                         {txnCount}
                       </p>
                     </div>
@@ -809,7 +811,7 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
                   </div>
 
                   {/* Quick Actions */}
-                  <div className="pt-3 border-t border-white/10 flex gap-2">
+                  <div className="pt-3 border-t border-gray-200 flex gap-2">
                     <button
                       onClick={() => onSelectClient(client.id)}
                       className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg text-xs font-medium hover:shadow-lg transition-all duration-200 active:scale-95"
@@ -821,8 +823,8 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
                       onClick={() => handleToggleStatus(client)}
                       className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 active:scale-95 ${
                         client.status === "active"
-                          ? "bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/30"
-                          : "bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30"
+                          ? "bg-yellow-500/20 border border-yellow-500/30 text-yellow-600 hover:bg-yellow-500/30"
+                          : "bg-emerald-500/20 border border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/30"
                       }`}
                       title={
                         client.status === "active"
@@ -838,7 +840,7 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
                     </button>
                     <button
                       onClick={() => setClientToDelete(client)}
-                      className="px-3 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg text-xs font-medium hover:bg-red-500/30 transition-all duration-200 active:scale-95"
+                      className="px-3 py-2 bg-red-500/20 border border-red-500/30 text-red-600 rounded-lg text-xs font-medium hover:bg-red-500/30 transition-all duration-200 active:scale-95"
                       title="Delete Client"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -854,7 +856,7 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
       {/* Add Client Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className="bg-white/5 backdrop-blur-xl rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/10 animate-scaleIn">
+          <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 animate-scaleIn">
             <div className="sticky top-0 bg-gradient-to-r from-emerald-600 to-teal-600 border-b border-emerald-500/30 px-6 py-5 flex items-center justify-between shadow-lg">
               <h2 className="text-2xl font-black text-white">Add New Client</h2>
               <button
@@ -867,33 +869,33 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
 
             <form onSubmit={handleAddClient} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-bold text-gray-400 mb-2">
+                <label className="block text-sm font-bold text-gray-600 mb-2">
                   Client Name *
                 </label>
                 <input
                   type="text"
                   name="client_name"
                   required
-                  className="w-full px-4 py-3 border-2 border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/10 text-white placeholder-gray-400 hover:border-white/30 transition-all font-medium"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-gray-900 placeholder-gray-500 hover:border-gray-300 transition-all font-medium"
                   placeholder="John Doe"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-400 mb-2">
+                <label className="block text-sm font-bold text-gray-600 mb-2">
                   Phone
                 </label>
                 <input
                   type="tel"
                   name="phone"
-                  className="w-full px-4 py-3 border-2 border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/10 text-white placeholder-gray-400 hover:border-white/30 transition-all font-medium"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-gray-900 placeholder-gray-500 hover:border-gray-300 transition-all font-medium"
                   placeholder="+254 700 000000"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-bold text-gray-400 mb-2">
+                  <label className="block text-sm font-bold text-gray-600 mb-2">
                     Initial Balance (Optional)
                   </label>
                   <input
@@ -901,24 +903,24 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
                     name="initial_balance"
                     step="0.01"
                     min="0"
-                    className="w-full px-4 py-3 border-2 border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/10 text-white placeholder-gray-400 hover:border-white/30 transition-all font-medium"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-gray-900 placeholder-gray-500 hover:border-gray-300 transition-all font-medium"
                     placeholder="0.00"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-400 mb-2">
+                  <label className="block text-sm font-bold text-gray-600 mb-2">
                     Currency
                   </label>
                   <select
                     name="initial_currency"
                     defaultValue="KES"
-                    className="w-full px-4 py-3 border-2 border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/10 text-white hover:border-white/30 transition-all font-medium"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-gray-900 hover:border-gray-300 transition-all font-medium"
                   >
-                    <option value="KES" className="bg-gray-900">
+                    <option value="KES" className="bg-white text-gray-900">
                       KES
                     </option>
-                    <option value="USD" className="bg-gray-900">
+                    <option value="USD" className="bg-white text-gray-900">
                       USD
                     </option>
                   </select>
@@ -929,7 +931,7 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-6 py-3 border-2 border-white/20 rounded-xl text-gray-300 font-bold hover:bg-white/10 hover:border-white/30 transition-all active:scale-95"
+                  className="flex-1 px-6 py-3 border-2 border-gray-200 rounded-xl text-gray-700 font-bold hover:bg-gray-100 hover:border-gray-300 transition-all active:scale-95"
                 >
                   Cancel
                 </button>
@@ -948,7 +950,7 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
       {/* Delete Confirmation Modal */}
       {clientToDelete && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className="bg-white/5 backdrop-blur-xl rounded-2xl shadow-2xl max-w-md w-full border border-red-500/20 animate-scaleIn">
+          <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl max-w-md w-full border border-red-500/20 animate-scaleIn">
             <div className="bg-gradient-to-r from-red-600 to-red-700 border-b border-red-500/30 px-6 py-5 flex items-center justify-between">
               <h2 className="text-2xl font-black text-white">Delete Client</h2>
               <button
@@ -963,16 +965,16 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
               <div className="flex items-center gap-3 mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
                 <Trash2 className="w-6 h-6 text-red-400 flex-shrink-0" />
                 <div>
-                  <p className="text-white font-bold">
+                  <p className="text-gray-900 font-bold">
                     {clientToDelete.client_name}
                   </p>
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm text-gray-600">
                     {clientToDelete.client_code}
                   </p>
                 </div>
               </div>
 
-              <p className="text-gray-300 mb-4">
+              <p className="text-gray-700 mb-4">
                 Are you sure you want to delete this client? This will also
                 delete all associated transactions. This action cannot be
                 undone.
@@ -982,7 +984,7 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
                 <button
                   type="button"
                   onClick={() => setClientToDelete(null)}
-                  className="flex-1 px-6 py-3 border-2 border-white/20 rounded-xl text-gray-300 font-bold hover:bg-white/10 hover:border-white/30 transition-all active:scale-95"
+                  className="flex-1 px-6 py-3 border-2 border-gray-200 rounded-xl text-gray-700 font-bold hover:bg-gray-100 hover:border-gray-300 transition-all active:scale-95"
                 >
                   Cancel
                 </button>
