@@ -1293,6 +1293,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
 
               <form
                 onSubmit={handleEditTransaction}
+                autoComplete="off"
                 className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto max-h-[calc(95vh-80px)]"
               >
                 <div className="grid grid-cols-1 gap-4 sm:gap-5">
@@ -1431,6 +1432,8 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                   placeholder="Enter PIN"
                   maxLength={4}
                   autoFocus
+                  autoComplete="off"
+                  name="pin-input"
                   className="w-full px-4 py-3.5 bg-white/10 text-white text-center text-2xl tracking-widest border-2 border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200 font-bold"
                 />
 
