@@ -23,13 +23,15 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-zinc-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        <div className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-2xl shadow-xl p-8">
+        <div className="bg-white/90 backdrop-blur-xl border-2 border-gray-200 rounded-3xl shadow-2xl p-8">
           {/* Ezary Logo */}
           <div className="flex items-center justify-center mb-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <span className="text-gray-900 font-bold text-3xl">E</span>
+            <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-xl shadow-emerald-500/30">
+              <span className="text-white font-bold text-3xl drop-shadow-lg">
+                E
+              </span>
             </div>
           </div>
 
@@ -40,11 +42,11 @@ export default function Auth() {
             Professional Client Management System
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-600 mb-1"
+                className="block text-sm font-bold text-gray-700 mb-2"
               >
                 Email
               </label>
@@ -54,7 +56,7 @@ export default function Auth() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-2 bg-white text-gray-900 placeholder-gray-500 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition"
+                className="w-full px-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all font-semibold shadow-lg"
                 placeholder="you@example.com"
               />
             </div>
@@ -62,7 +64,7 @@ export default function Auth() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-600 mb-1"
+                className="block text-sm font-bold text-gray-700 mb-2"
               >
                 Password
               </label>
@@ -73,13 +75,13 @@ export default function Auth() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-4 py-2 bg-white text-gray-900 placeholder-gray-500 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition"
+                className="w-full px-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all font-semibold shadow-lg"
                 placeholder="••••••••"
               />
             </div>
 
             {error && (
-              <div className="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg text-sm">
+              <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-semibold shadow-lg">
                 {error}
               </div>
             )}
@@ -87,20 +89,20 @@ export default function Auth() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-3 rounded-lg font-semibold hover:from-emerald-600 hover:to-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+              className="w-full bg-gradient-to-r from-emerald-500 via-teal-600 to-emerald-500 text-white py-4 rounded-xl font-black hover:shadow-2xl hover:shadow-emerald-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-xl active:scale-95 border-2 border-emerald-500"
             >
               {loading ? "Loading..." : "Sign In"}
             </button>
           </form>
 
-          <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+          <div className="mt-6 p-5 bg-blue-50 border-2 border-blue-200 rounded-xl shadow-lg">
             <div className="flex items-center gap-2 mb-2">
-              <Shield className="w-5 h-5 text-blue-400" />
-              <p className="text-sm font-bold text-blue-300">
+              <Shield className="w-5 h-5 text-blue-600" />
+              <p className="text-sm font-black text-blue-700">
                 Staff Access Only
               </p>
             </div>
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-gray-700 font-semibold">
               Contact administrator if you need access
             </p>
           </div>
