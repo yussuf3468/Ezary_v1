@@ -60,6 +60,11 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
   const [showEditTransaction, setShowEditTransaction] = useState(false);
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
+  const [showEditClient, setShowEditClient] = useState(false);
+  const [editClientData, setEditClientData] = useState({
+    client_name: "",
+    phone: "",
+  });
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinAction, setPinAction] = useState<{
     type: "edit" | "delete";
@@ -214,6 +219,34 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
     }
 
     setPinAction(null);
+  };
+
+  const handleUpdateClientInfo = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!client) return;
+
+    try {
+      const { error } = await supabase
+        .from("clients")
+        .update({
+          client_name: editClientData.client_name,
+          phone: editClientData.phone,
+        })
+        .eq("id", clientId);
+
+      if (error) throw error;
+
+      setClient({
+        ...client,
+        client_name: editClientData.client_name,
+        phone: editClientData.phone,
+      });
+      setShowEditClient(false);
+      toast.success("Client information updated successfully!");
+    } catch (error: any) {
+      toast.error("Error updating client: " + error.message);
+    }
   };
 
   const executeDelete = async (
@@ -530,6 +563,19 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                 <h1 className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent tracking-tight">
                   {client.client_name}
                 </h1>
+                <button
+                  onClick={() => {
+                    setEditClientData({
+                      client_name: client.client_name,
+                      phone: client.phone || "",
+                    });
+                    setShowEditClient(true);
+                  }}
+                  className="p-2 hover:bg-emerald-50 rounded-lg transition-all duration-200 active:scale-90 group"
+                  title="Edit client info"
+                >
+                  <Edit2 className="w-5 h-5 text-gray-500 group-hover:text-emerald-600" />
+                </button>
                 <span className="px-4 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold rounded-full shadow-lg shadow-emerald-500/30 border border-emerald-400">
                   {client.status.toUpperCase()}
                 </span>
@@ -1477,6 +1523,95 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Client Info Modal */}
+        {showEditClient && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-3 sm:p-4 animate-fadeIn">
+            <div className="bg-white/95 backdrop-blur-xl border-2 border-gray-200 rounded-3xl shadow-2xl max-w-md w-full max-h-[95vh] overflow-hidden transform animate-scaleIn">
+              {/* Modal Header */}
+              <div className="sticky top-0 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 px-6 py-5 shadow-lg z-10">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                      <Edit2 className="w-6 h-6 text-white" />
+                    </div>
+                    <h2 className="text-2xl font-black text-white drop-shadow-lg">
+                      Edit Client Info
+                    </h2>
+                  </div>
+                  <button
+                    onClick={() => setShowEditClient(false)}
+                    className="p-2 hover:bg-white/20 rounded-xl transition-all duration-200 active:scale-90"
+                  >
+                    <X className="w-6 h-6 text-white" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <form
+                onSubmit={handleUpdateClientInfo}
+                className="p-6 space-y-5 overflow-y-auto max-h-[calc(95vh-80px)]"
+              >
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
+                    <span className="text-emerald-600">👤</span>
+                    Client Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={editClientData.client_name}
+                    onChange={(e) =>
+                      setEditClientData({
+                        ...editClientData,
+                        client_name: e.target.value,
+                      })
+                    }
+                    required
+                    className="w-full px-4 py-3 bg-white text-gray-900 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 font-semibold shadow-lg hover:border-emerald-400"
+                    placeholder="Enter client name"
+                  />
+                </div>
+
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
+                    <span className="text-emerald-600">📱</span>
+                    Phone Number *
+                  </label>
+                  <input
+                    type="tel"
+                    value={editClientData.phone}
+                    onChange={(e) =>
+                      setEditClientData({
+                        ...editClientData,
+                        phone: e.target.value,
+                      })
+                    }
+                    required
+                    className="w-full px-4 py-3 bg-white text-gray-900 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 font-semibold shadow-lg hover:border-emerald-400"
+                    placeholder="Enter phone number"
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditClient(false)}
+                    className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 border-2 border-gray-200 font-bold transition-all duration-200 shadow-lg active:scale-95"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 text-white rounded-xl hover:shadow-2xl hover:shadow-emerald-500/50 transition-all duration-300 font-black shadow-xl active:scale-95 border-2 border-emerald-500"
+                  >
+                    Update Client
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
