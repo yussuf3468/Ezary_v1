@@ -9,6 +9,7 @@ import {
   Calendar,
   DollarSign,
   Eye,
+  TrendingUp,
 } from "lucide-react";
 import { formatCurrency } from "../lib/currency";
 import Modal from "./Modal";
@@ -54,6 +55,9 @@ export default function Debts() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedDebt, setSelectedDebt] = useState<DebtWithClient | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
+  const [showAddMoreDebt, setShowAddMoreDebt] = useState(false);
+  const [addMoreAmount, setAddMoreAmount] = useState("");
+  const [addMoreReason, setAddMoreReason] = useState("");
   const [loading, setLoading] = useState(true);
 
   const [newDebt, setNewDebt] = useState({
@@ -84,12 +88,23 @@ export default function Debts() {
 
       if (error) throw error;
 
-      const debtsWithClients = (data || []).map((debt: any) => ({
-        ...debt,
-        client_name: debt.debtor_name || "Unknown",
-        client_code: "",
-        phone: debt.debtor_phone || "",
-      }));
+      const debtsWithClients = (data || []).map((debt: any) => {
+        const dueDate = new Date(debt.due_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        dueDate.setHours(0, 0, 0, 0);
+        
+        // Auto-update status to overdue if past due date and not paid
+        const status = debt.status !== "paid" && dueDate < today ? "overdue" : debt.status;
+        
+        return {
+          ...debt,
+          status,
+          client_name: debt.debtor_name || "Unknown",
+          client_code: "",
+          phone: debt.debtor_phone || "",
+        };
+      });
 
       setDebts(debtsWithClients);
       calculateStats(debtsWithClients);
@@ -101,8 +116,24 @@ export default function Debts() {
   }
 
   function calculateStats(debtsData: DebtWithClient[]) {
-    const overdue = debtsData.filter((d) => d.status === "overdue").length;
-    const pending = debtsData.filter((d) => d.status === "pending").length;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day
+
+    // Count overdue: either status is overdue OR due date has passed and not paid
+    const overdue = debtsData.filter((d) => {
+      if (d.status === "paid" || d.status === "cancelled") return false;
+      const dueDate = new Date(d.due_date);
+      dueDate.setHours(0, 0, 0, 0);
+      return d.status === "overdue" || dueDate < today;
+    }).length;
+
+    const pending = debtsData.filter((d) => {
+      if (d.status === "paid" || d.status === "cancelled") return false;
+      const dueDate = new Date(d.due_date);
+      dueDate.setHours(0, 0, 0, 0);
+      return d.status === "pending" && dueDate >= today;
+    }).length;
+
     const paid = debtsData.filter((d) => d.status === "paid").length;
     const totalBalance = debtsData
       .filter((d) => d.status !== "paid" && d.status !== "cancelled")
@@ -141,7 +172,7 @@ export default function Debts() {
   function getStatusColor(status: string): string {
     switch (status) {
       case "overdue":
-        return "text-red-600 bg-red-500/20";
+        return "text-red-700 bg-red-100 border-2 border-red-500";
       case "pending":
         return "text-amber-400 bg-amber-500/20";
       case "paid":
@@ -267,6 +298,52 @@ export default function Debts() {
       toast.success("Debt deleted successfully!");
     } catch (error: any) {
       toast.error("Error deleting debt: " + error.message);
+    }
+  }
+
+  async function handleAddMoreDebt() {
+    if (!selectedDebt || !addMoreAmount) return;
+
+    const additionalAmount = parseFloat(addMoreAmount);
+    if (isNaN(additionalAmount) || additionalAmount <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+
+    try {
+      const newAmount = selectedDebt.amount + additionalAmount;
+      const today = new Date().toLocaleDateString();
+      const additionNote = `\n[${today}] Added ${formatCurrency(
+        additionalAmount,
+        selectedDebt.currency
+      )}${addMoreReason ? `: ${addMoreReason}` : ""}`;
+      const updatedDescription = selectedDebt.description
+        ? selectedDebt.description + additionNote
+        : additionNote;
+
+      const { error } = await supabase
+        .from("client_debts")
+        .update({
+          amount: newAmount,
+          description: updatedDescription,
+        })
+        .eq("id", selectedDebt.id);
+
+      if (error) throw error;
+
+      toast.success(
+        `Added ${formatCurrency(
+          additionalAmount,
+          selectedDebt.currency
+        )} to debt!`
+      );
+      setShowAddMoreDebt(false);
+      setAddMoreAmount("");
+      setAddMoreReason("");
+      setSelectedDebt(null);
+      await loadDebts();
+    } catch (error: any) {
+      toast.error("Failed to add to debt: " + error.message);
     }
   }
 
@@ -421,11 +498,12 @@ export default function Debts() {
             <tbody className="bg-white/80 divide-y divide-gray-200">
               {filteredDebts.map((debt) => {
                 const daysUntilDue = getDaysUntilDue(debt.due_date);
+                const isOverdue = debt.status === "overdue";
                 return (
                   <tr
                     key={debt.id}
                     onClick={() => handleViewDebt(debt)}
-                    className="hover:bg-gray-100 transition-colors cursor-pointer"
+                    className="hover:bg-gray-50 transition-all cursor-pointer"
                   >
                     <td className="px-6 py-4 text-gray-700">
                       {debt.debt_date
@@ -477,11 +555,13 @@ export default function Debts() {
                     </td>
                     <td className="px-6 py-4">
                       <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
-                          debt.status
-                        )}`}
+                        className={`px-2 py-1 text-xs rounded-full ${
+                          debt.status === "overdue"
+                            ? "font-extrabold text-sm"
+                            : "font-medium"
+                        } ${getStatusColor(debt.status)}`}
                       >
-                        {debt.status}
+                        {debt.status.toUpperCase()}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -502,8 +582,19 @@ export default function Debts() {
                     >
                       <div className="flex gap-3">
                         <button
+                          onClick={() => {
+                            setSelectedDebt(debt);
+                            setAddMoreAmount("");
+                            setShowAddMoreDebt(true);
+                          }}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                          title="Add more to debt"
+                        >
+                          <TrendingUp className="w-5 h-5" />
+                        </button>
+                        <button
                           onClick={() => handleDeleteDebt(debt.id)}
-                          className="p-2 text-red-600 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all"
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
                           title="Delete"
                         >
                           <Trash2 className="w-5 h-5" />
@@ -788,6 +879,129 @@ export default function Debts() {
             >
               Close
             </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Add More Debt Modal */}
+      {showAddMoreDebt && selectedDebt && (
+        <Modal
+          isOpen={showAddMoreDebt}
+          onClose={() => {
+            setShowAddMoreDebt(false);
+            setAddMoreAmount("");
+            setSelectedDebt(null);
+          }}
+          title="Add More to Debt"
+        >
+          <div className="space-y-5">
+            {/* Current Debt Info */}
+            <div className="bg-gradient-to-r from-gray-50 via-white to-gray-50 rounded-2xl p-6 border-2 border-gray-200 shadow-lg">
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-gray-600 font-semibold">Debtor</p>
+                  <p className="text-lg font-black text-gray-900">
+                    {selectedDebt.client_name}
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600 font-semibold">
+                      Current Debt
+                    </p>
+                    <p className="text-xl font-black text-red-600">
+                      {formatCurrency(
+                        selectedDebt.amount,
+                        selectedDebt.currency
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 font-semibold">
+                      Balance
+                    </p>
+                    <p className="text-xl font-black text-amber-600">
+                      {formatCurrency(
+                        selectedDebt.balance,
+                        selectedDebt.currency
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Add Amount Section */}
+            <div className="bg-gradient-to-r from-orange-50 via-red-50 to-orange-50 rounded-2xl p-6 border-2 border-orange-200 shadow-lg">
+              <h3 className="text-lg font-black text-gray-900 mb-4 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-orange-600" />
+                Increase Debt Amount
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Additional Amount ({selectedDebt.currency})
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={addMoreAmount}
+                    onChange={(e) => setAddMoreAmount(e.target.value)}
+                    placeholder="Enter amount to add"
+                    className="w-full px-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-semibold shadow-lg"
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Reason (Optional)
+                  </label>
+                  <textarea
+                    value={addMoreReason}
+                    onChange={(e) => setAddMoreReason(e.target.value)}
+                    placeholder="Why is this debt increasing?"
+                    rows={3}
+                    className="w-full px-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-semibold shadow-lg resize-none"
+                  />
+                </div>
+
+                {addMoreAmount && parseFloat(addMoreAmount) > 0 && (
+                  <div className="bg-white rounded-xl p-4 border-2 border-orange-200">
+                    <p className="text-sm text-gray-600 font-semibold mb-1">
+                      New Total Debt:
+                    </p>
+                    <p className="text-2xl font-black text-red-600">
+                      {formatCurrency(
+                        selectedDebt.amount + parseFloat(addMoreAmount),
+                        selectedDebt.currency
+                      )}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => {
+                  setShowAddMoreDebt(false);
+                  setAddMoreAmount("");
+                  setSelectedDebt(null);
+                }}
+                className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 border-2 border-gray-200 font-bold transition-all duration-200 shadow-lg active:scale-95"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddMoreDebt}
+                disabled={!addMoreAmount || parseFloat(addMoreAmount) <= 0}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-600 via-red-600 to-orange-600 text-white rounded-xl hover:shadow-2xl hover:shadow-orange-500/50 transition-all duration-300 font-black shadow-xl disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 border-2 border-orange-500"
+              >
+                Add to Debt
+              </button>
+            </div>
           </div>
         </Modal>
       )}
