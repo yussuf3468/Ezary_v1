@@ -506,9 +506,26 @@ export default function Reports() {
         (a, b) => a[1].clientName.localeCompare(b[1].clientName)
       );
 
+      // Add new page for client transactions section
+      if (sortedClients.length > 0) {
+        doc.addPage();
+        yPosition = 15;
+
+        // Section header
+        doc.setFillColor(59, 130, 246);
+        doc.rect(0, 0, pageWidth, 30, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(18);
+        doc.setFont("helvetica", "bold");
+        doc.text("Client Transactions & Balances", pageWidth / 2, 18, {
+          align: "center",
+        });
+        yPosition = 40;
+      }
+
       for (const [clientId, clientData] of sortedClients) {
         // Add new page if needed
-        if (yPosition > 250) {
+        if (yPosition > 240) {
           doc.addPage();
           yPosition = 15;
         }
