@@ -294,7 +294,8 @@ export default function Reports() {
       const { startDate, endDate } = getDateRange;
       const { data: kesTransactions } = await supabase
         .from("client_transactions_kes")
-        .select(`
+        .select(
+          `
           id,
           client_id,
           debit,
@@ -304,7 +305,8 @@ export default function Reports() {
           description,
           reference,
           clients!inner(user_id, client_name, client_code)
-        `)
+        `
+        )
         .eq("clients.user_id", user.id)
         .gte("transaction_date", startDate)
         .lte("transaction_date", endDate)
@@ -312,7 +314,8 @@ export default function Reports() {
 
       const { data: usdTransactions } = await supabase
         .from("client_transactions_usd")
-        .select(`
+        .select(
+          `
           id,
           client_id,
           debit,
@@ -322,7 +325,8 @@ export default function Reports() {
           description,
           reference,
           clients!inner(user_id, client_name, client_code)
-        `)
+        `
+        )
         .eq("clients.user_id", user.id)
         .gte("transaction_date", startDate)
         .lte("transaction_date", endDate)
@@ -442,110 +446,196 @@ export default function Reports() {
         yPosition = (doc as any).lastAutoTable.finalY + 15;
       }
 
-      // KES Transactions
-      if (kesTransactions && kesTransactions.length > 0) {
+      // Group transactions by client
+      const clientTransactionsMap = new Map<
+        string,
+        {
+          clientName: string;
+          clientCode: string;
+          kesTransactions: any[];
+          usdTransactions: any[];
+          kesBalance: number;
+          usdBalance: number;
+        }
+      >();
+
+      // Process KES transactions
+      kesTransactions?.forEach((t: any) => {
+        const clientData = Array.isArray(t.clients) ? t.clients[0] : t.clients;
+        const clientKey = t.client_id;
+
+        if (!clientTransactionsMap.has(clientKey)) {
+          clientTransactionsMap.set(clientKey, {
+            clientName: clientData?.client_name || "Unknown",
+            clientCode: clientData?.client_code || "N/A",
+            kesTransactions: [],
+            usdTransactions: [],
+            kesBalance: 0,
+            usdBalance: 0,
+          });
+        }
+
+        const clientData2 = clientTransactionsMap.get(clientKey)!;
+        clientData2.kesTransactions.push(t);
+        clientData2.kesBalance = t.balance || 0;
+      });
+
+      // Process USD transactions
+      usdTransactions?.forEach((t: any) => {
+        const clientData = Array.isArray(t.clients) ? t.clients[0] : t.clients;
+        const clientKey = t.client_id;
+
+        if (!clientTransactionsMap.has(clientKey)) {
+          clientTransactionsMap.set(clientKey, {
+            clientName: clientData?.client_name || "Unknown",
+            clientCode: clientData?.client_code || "N/A",
+            kesTransactions: [],
+            usdTransactions: [],
+            kesBalance: 0,
+            usdBalance: 0,
+          });
+        }
+
+        const clientData2 = clientTransactionsMap.get(clientKey)!;
+        clientData2.usdTransactions.push(t);
+        clientData2.usdBalance = t.balance || 0;
+      });
+
+      // Export each client's transactions
+      const sortedClients = Array.from(clientTransactionsMap.entries()).sort(
+        (a, b) => a[1].clientName.localeCompare(b[1].clientName)
+      );
+
+      for (const [clientId, clientData] of sortedClients) {
+        // Add new page if needed
         if (yPosition > 250) {
           doc.addPage();
           yPosition = 15;
         }
-        doc.setFontSize(16);
-        doc.setFont("helvetica", "bold");
-        doc.text("KES Transactions", 14, yPosition);
-        yPosition += 10;
 
-        const kesData = kesTransactions.map((t: any) => {
-          const clientData = Array.isArray(t.clients) ? t.clients[0] : t.clients;
-          return [
+        // Client header
+        doc.setFillColor(16, 185, 129);
+        doc.rect(14, yPosition - 5, pageWidth - 28, 12, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text(
+          `${clientData.clientName} (${clientData.clientCode})`,
+          18,
+          yPosition + 3
+        );
+        yPosition += 15;
+
+        // Balances
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text(
+          `KES Balance: ${clientData.kesBalance.toLocaleString()}`,
+          18,
+          yPosition
+        );
+        doc.text(
+          `USD Balance: ${clientData.usdBalance.toLocaleString()}`,
+          110,
+          yPosition
+        );
+        yPosition += 8;
+
+        // KES Transactions
+        if (clientData.kesTransactions.length > 0) {
+          doc.setFontSize(11);
+          doc.setFont("helvetica", "bold");
+          doc.text("KES Transactions", 18, yPosition);
+          yPosition += 5;
+
+          const kesData = clientData.kesTransactions.map((t: any) => [
             new Date(t.transaction_date).toLocaleDateString(),
-            clientData?.client_name || "",
-            clientData?.client_code || "",
-            t.debit ? `${t.debit.toLocaleString()}` : "-",
-            t.credit ? `${t.credit.toLocaleString()}` : "-",
+            t.debit ? t.debit.toLocaleString() : "-",
+            t.credit ? t.credit.toLocaleString() : "-",
             t.balance?.toLocaleString() || "0",
             t.description || "-",
             t.reference || "-",
-          ];
-        });
+          ]);
 
-        autoTable(doc, {
-          startY: yPosition,
-          head: [["Date", "Client", "Code", "Debit", "Credit", "Balance", "Description", "Reference"]],
-          body: kesData,
-          theme: "striped",
-          headStyles: {
-            fillColor: [16, 185, 129],
-            textColor: 255,
-            fontStyle: "bold",
-            fontSize: 8,
-          },
-          bodyStyles: { fontSize: 7 },
-          alternateRowStyles: { fillColor: [240, 253, 244] },
-          margin: { left: 10, right: 10 },
-          columnStyles: {
-            0: { cellWidth: 20 },
-            1: { cellWidth: 25 },
-            2: { cellWidth: 15 },
-            3: { cellWidth: 18 },
-            4: { cellWidth: 18 },
-            5: { cellWidth: 18 },
-            6: { cellWidth: 30 },
-            7: { cellWidth: 20 },
-          },
-        });
+          autoTable(doc, {
+            startY: yPosition,
+            head: [
+              [
+                "Date",
+                "Debit",
+                "Credit",
+                "Balance",
+                "Description",
+                "Reference",
+              ],
+            ],
+            body: kesData,
+            theme: "striped",
+            headStyles: {
+              fillColor: [52, 211, 153],
+              textColor: 255,
+              fontStyle: "bold",
+              fontSize: 8,
+            },
+            bodyStyles: { fontSize: 7 },
+            alternateRowStyles: { fillColor: [240, 253, 244] },
+            margin: { left: 14, right: 14 },
+          });
 
-        yPosition = (doc as any).lastAutoTable.finalY + 15;
-      }
-
-      // USD Transactions
-      if (usdTransactions && usdTransactions.length > 0) {
-        if (yPosition > 250) {
-          doc.addPage();
-          yPosition = 15;
+          yPosition = (doc as any).lastAutoTable.finalY + 8;
         }
-        doc.setFontSize(16);
-        doc.setFont("helvetica", "bold");
-        doc.text("USD Transactions", 14, yPosition);
-        yPosition += 10;
 
-        const usdData = usdTransactions.map((t: any) => {
-          const clientData = Array.isArray(t.clients) ? t.clients[0] : t.clients;
-          return [
+        // USD Transactions
+        if (clientData.usdTransactions.length > 0) {
+          if (yPosition > 250) {
+            doc.addPage();
+            yPosition = 15;
+          }
+
+          doc.setFontSize(11);
+          doc.setFont("helvetica", "bold");
+          doc.text("USD Transactions", 18, yPosition);
+          yPosition += 5;
+
+          const usdData = clientData.usdTransactions.map((t: any) => [
             new Date(t.transaction_date).toLocaleDateString(),
-            clientData?.client_name || "",
-            clientData?.client_code || "",
             t.debit ? `$${t.debit.toLocaleString()}` : "-",
             t.credit ? `$${t.credit.toLocaleString()}` : "-",
             `$${t.balance?.toLocaleString() || "0"}`,
             t.description || "-",
             t.reference || "-",
-          ];
-        });
+          ]);
 
-        autoTable(doc, {
-          startY: yPosition,
-          head: [["Date", "Client", "Code", "Debit", "Credit", "Balance", "Description", "Reference"]],
-          body: usdData,
-          theme: "striped",
-          headStyles: {
-            fillColor: [16, 185, 129],
-            textColor: 255,
-            fontStyle: "bold",
-            fontSize: 8,
-          },
-          bodyStyles: { fontSize: 7 },
-          alternateRowStyles: { fillColor: [240, 253, 244] },
-          margin: { left: 10, right: 10 },
-          columnStyles: {
-            0: { cellWidth: 20 },
-            1: { cellWidth: 25 },
-            2: { cellWidth: 15 },
-            3: { cellWidth: 18 },
-            4: { cellWidth: 18 },
-            5: { cellWidth: 18 },
-            6: { cellWidth: 30 },
-            7: { cellWidth: 20 },
-          },
-        });
+          autoTable(doc, {
+            startY: yPosition,
+            head: [
+              [
+                "Date",
+                "Debit",
+                "Credit",
+                "Balance",
+                "Description",
+                "Reference",
+              ],
+            ],
+            body: usdData,
+            theme: "striped",
+            headStyles: {
+              fillColor: [59, 130, 246],
+              textColor: 255,
+              fontStyle: "bold",
+              fontSize: 8,
+            },
+            bodyStyles: { fontSize: 7 },
+            alternateRowStyles: { fillColor: [239, 246, 255] },
+            margin: { left: 14, right: 14 },
+          });
+
+          yPosition = (doc as any).lastAutoTable.finalY + 8;
+        }
+
+        yPosition += 5;
       }
 
       // Footer
@@ -586,7 +676,8 @@ export default function Reports() {
       const { startDate, endDate } = getDateRange;
       const { data: kesTransactions } = await supabase
         .from("client_transactions_kes")
-        .select(`
+        .select(
+          `
           id,
           client_id,
           debit,
@@ -596,7 +687,8 @@ export default function Reports() {
           description,
           reference,
           clients!inner(user_id, client_name, client_code)
-        `)
+        `
+        )
         .eq("clients.user_id", user.id)
         .gte("transaction_date", startDate)
         .lte("transaction_date", endDate)
@@ -604,7 +696,8 @@ export default function Reports() {
 
       const { data: usdTransactions } = await supabase
         .from("client_transactions_usd")
-        .select(`
+        .select(
+          `
           id,
           client_id,
           debit,
@@ -614,7 +707,8 @@ export default function Reports() {
           description,
           reference,
           clients!inner(user_id, client_name, client_code)
-        `)
+        `
+        )
         .eq("clients.user_id", user.id)
         .gte("transaction_date", startDate)
         .lte("transaction_date", endDate)
@@ -655,41 +749,108 @@ export default function Reports() {
         csvContent += "\n";
       }
 
-      // KES Transactions
-      if (kesTransactions && kesTransactions.length > 0) {
-        csvContent += "KES TRANSACTIONS\n";
-        csvContent += "Date,Client Name,Client Code,Debit,Credit,Balance,Description,Reference\n";
-        kesTransactions.forEach((t: any) => {
-          const clientData = Array.isArray(t.clients) ? t.clients[0] : t.clients;
-          const date = new Date(t.transaction_date).toLocaleDateString();
-          const clientName = clientData?.client_name || "";
-          const clientCode = clientData?.client_code || "";
-          const debit = t.debit || 0;
-          const credit = t.credit || 0;
-          const balance = t.balance || 0;
-          const description = (t.description || "").replace(/"/g, '""');
-          const reference = t.reference || "";
-          csvContent += `${date},"${clientName}",${clientCode},${debit},${credit},${balance},"${description}",${reference}\n`;
-        });
-        csvContent += "\n";
-      }
+      // Group transactions by client
+      const clientTransactionsMap = new Map<
+        string,
+        {
+          clientName: string;
+          clientCode: string;
+          kesTransactions: any[];
+          usdTransactions: any[];
+          kesBalance: number;
+          usdBalance: number;
+        }
+      >();
 
-      // USD Transactions
-      if (usdTransactions && usdTransactions.length > 0) {
-        csvContent += "USD TRANSACTIONS\n";
-        csvContent += "Date,Client Name,Client Code,Debit,Credit,Balance,Description,Reference\n";
-        usdTransactions.forEach((t: any) => {
-          const clientData = Array.isArray(t.clients) ? t.clients[0] : t.clients;
-          const date = new Date(t.transaction_date).toLocaleDateString();
-          const clientName = clientData?.client_name || "";
-          const clientCode = clientData?.client_code || "";
-          const debit = t.debit || 0;
-          const credit = t.credit || 0;
-          const balance = t.balance || 0;
-          const description = (t.description || "").replace(/"/g, '""');
-          const reference = t.reference || "";
-          csvContent += `${date},"${clientName}",${clientCode},${debit},${credit},${balance},"${description}",${reference}\n`;
-        });
+      // Process KES transactions
+      kesTransactions?.forEach((t: any) => {
+        const clientData = Array.isArray(t.clients) ? t.clients[0] : t.clients;
+        const clientKey = t.client_id;
+
+        if (!clientTransactionsMap.has(clientKey)) {
+          clientTransactionsMap.set(clientKey, {
+            clientName: clientData?.client_name || "Unknown",
+            clientCode: clientData?.client_code || "N/A",
+            kesTransactions: [],
+            usdTransactions: [],
+            kesBalance: 0,
+            usdBalance: 0,
+          });
+        }
+
+        const clientDataMap = clientTransactionsMap.get(clientKey)!;
+        clientDataMap.kesTransactions.push(t);
+        clientDataMap.kesBalance = t.balance || 0;
+      });
+
+      // Process USD transactions
+      usdTransactions?.forEach((t: any) => {
+        const clientData = Array.isArray(t.clients) ? t.clients[0] : t.clients;
+        const clientKey = t.client_id;
+
+        if (!clientTransactionsMap.has(clientKey)) {
+          clientTransactionsMap.set(clientKey, {
+            clientName: clientData?.client_name || "Unknown",
+            clientCode: clientData?.client_code || "N/A",
+            kesTransactions: [],
+            usdTransactions: [],
+            kesBalance: 0,
+            usdBalance: 0,
+          });
+        }
+
+        const clientDataMap = clientTransactionsMap.get(clientKey)!;
+        clientDataMap.usdTransactions.push(t);
+        clientDataMap.usdBalance = t.balance || 0;
+      });
+
+      // Export each client's transactions
+      const sortedClients = Array.from(clientTransactionsMap.entries()).sort(
+        (a, b) => a[1].clientName.localeCompare(b[1].clientName)
+      );
+
+      csvContent += "\n========================================\n";
+      csvContent += "CLIENT TRANSACTIONS\n";
+      csvContent += "========================================\n\n";
+
+      for (const [clientId, clientData] of sortedClients) {
+        csvContent += `\n--- ${clientData.clientName} (${clientData.clientCode}) ---\n`;
+        csvContent += `KES Balance: ${clientData.kesBalance.toLocaleString()}\n`;
+        csvContent += `USD Balance: ${clientData.usdBalance.toLocaleString()}\n\n`;
+
+        // KES Transactions
+        if (clientData.kesTransactions.length > 0) {
+          csvContent += "KES TRANSACTIONS\n";
+          csvContent += "Date,Debit,Credit,Balance,Description,Reference\n";
+          clientData.kesTransactions.forEach((t: any) => {
+            const date = new Date(t.transaction_date).toLocaleDateString();
+            const debit = t.debit || 0;
+            const credit = t.credit || 0;
+            const balance = t.balance || 0;
+            const description = (t.description || "").replace(/"/g, '""');
+            const reference = t.reference || "";
+            csvContent += `${date},${debit},${credit},${balance},"${description}",${reference}\n`;
+          });
+          csvContent += "\n";
+        }
+
+        // USD Transactions
+        if (clientData.usdTransactions.length > 0) {
+          csvContent += "USD TRANSACTIONS\n";
+          csvContent += "Date,Debit,Credit,Balance,Description,Reference\n";
+          clientData.usdTransactions.forEach((t: any) => {
+            const date = new Date(t.transaction_date).toLocaleDateString();
+            const debit = t.debit || 0;
+            const credit = t.credit || 0;
+            const balance = t.balance || 0;
+            const description = (t.description || "").replace(/"/g, '""');
+            const reference = t.reference || "";
+            csvContent += `${date},${debit},${credit},${balance},"${description}",${reference}\n`;
+          });
+          csvContent += "\n";
+        }
+
+        csvContent += "\n";
       }
 
       // Create and download
