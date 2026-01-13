@@ -93,10 +93,11 @@ export default function Debts() {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         dueDate.setHours(0, 0, 0, 0);
-        
+
         // Auto-update status to overdue if past due date and not paid
-        const status = debt.status !== "paid" && dueDate < today ? "overdue" : debt.status;
-        
+        const status =
+          debt.status !== "paid" && dueDate < today ? "overdue" : debt.status;
+
         return {
           ...debt,
           status,
