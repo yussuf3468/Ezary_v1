@@ -127,6 +127,40 @@ export default function Layout({
         {children}
       </main>
 
+      {/* Footer */}
+<footer className="border-t border-gray-200 bg-gradient-to-r from-white/60 via-teal-50 to-white/60 backdrop-blur-xl mt-12 shadow-inner">
+  <div className="max-w-[1600px] 2xl:max-w-[1800px] mx-auto px-4 md:px-8 xl:px-14 py-8 flex items-center justify-center">
+    <a
+      href="https://lenzro.com"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group inline-flex items-center gap-2 text-base font-medium text-gray-700 hover:text-teal-700 transition-colors duration-200"
+    >
+      <span className="relative flex items-center">
+        <svg
+          className="w-5 h-5 mr-1 opacity-80 group-hover:scale-110 group-hover:rotate-6 transition-all"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none" viewBox="0 0 24 24"
+        >
+          <path d="M12 2 L14.09 8.26 L20.97 8.27 L15.45 12.14 L17.55 18.4 L12 14.53 L6.45 18.4 L8.55 12.14 L3.03 8.27 L9.91 8.26 Z" fill="url(#grad1)" />
+          <defs>
+            <linearGradient id="grad1" x1="3" x2="21" y1="12" y2="12" gradientUnits="userSpaceOnUse">
+              <stop stopColor="#10b981"/>
+              <stop offset="1" stopColor="#14b8a6"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <span>
+          Developed by
+        </span>
+      </span>
+      <span className="font-extrabold tracking-tight bg-gradient-to-r from-emerald-500 to-teal-500 text-transparent bg-clip-text transition-all duration-300">
+        Lenzro
+      </span>
+    </a>
+  </div>
+</footer>
+
       {/* Mobile Bottom Navigation - App Style */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-gray-200 shadow-2xl z-50">
         <div className="safe-area-inset-bottom">
