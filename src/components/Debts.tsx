@@ -8,7 +8,6 @@ import {
   AlertCircle,
   Calendar,
   DollarSign,
-  Eye,
   TrendingUp,
 } from "lucide-react";
 import { formatCurrency } from "../lib/currency";
@@ -21,12 +20,14 @@ interface DebtWithClient {
   client_code: string;
   phone: string;
   amount: number;
+  amount_paid?: number;
   currency: "KES" | "USD";
   balance: number;
   description: string;
   reference_number: string;
   debt_date: string;
   due_date: string;
+  paid_date?: string | null;
   status: "pending" | "overdue" | "paid" | "cancelled";
   priority: "low" | "normal" | "high" | "urgent";
   notes: string;
@@ -51,6 +52,7 @@ export default function Debts() {
   });
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"active" | "history">("active"); // active / history
   const [showAddModal, setShowAddModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedDebt, setSelectedDebt] = useState<DebtWithClient | null>(null);
@@ -75,14 +77,14 @@ export default function Debts() {
 
   useEffect(() => {
     filterDebts();
-  }, [debts, searchTerm, statusFilter]);
+  }, [debts, searchTerm, statusFilter, viewMode]);
 
   async function loadDebts() {
     try {
       const { data, error } = await supabase
         .from("client_debts")
         .select(
-          "id, debtor_name, debtor_phone, amount, currency, balance, description, debt_date, due_date, status, priority, created_at"
+          "id, debtor_name, debtor_phone, amount, amount_paid, currency, balance, description, debt_date, due_date, paid_date, status, priority, created_at"
         )
         .order("due_date", { ascending: true });
 
@@ -94,7 +96,6 @@ export default function Debts() {
         today.setHours(0, 0, 0, 0);
         dueDate.setHours(0, 0, 0, 0);
 
-        // Auto-update status to overdue if past due date and not paid
         const status =
           debt.status !== "paid" && dueDate < today ? "overdue" : debt.status;
 
@@ -118,9 +119,8 @@ export default function Debts() {
 
   function calculateStats(debtsData: DebtWithClient[]) {
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset time to start of day
+    today.setHours(0, 0, 0, 0);
 
-    // Count overdue: either status is overdue OR due date has passed and not paid
     const overdue = debtsData.filter((d) => {
       if (d.status === "paid" || d.status === "cancelled") return false;
       const dueDate = new Date(d.due_date);
@@ -146,6 +146,14 @@ export default function Debts() {
   const filterDebts = useCallback(() => {
     let filtered = debts;
 
+    if (viewMode === "active") {
+      filtered = filtered.filter(
+        (d) => d.status !== "paid" && d.status !== "cancelled"
+      );
+    } else {
+      filtered = filtered.filter((d) => d.status === "paid");
+    }
+
     if (statusFilter !== "all") {
       filtered = filtered.filter((d) => d.status === statusFilter);
     }
@@ -154,14 +162,14 @@ export default function Debts() {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (d) =>
-          d.client_name.toLowerCase().includes(term) ||
-          d.client_code.toLowerCase().includes(term) ||
-          d.description.toLowerCase().includes(term)
+          (d.client_name || "").toLowerCase().includes(term) ||
+          (d.client_code || "").toLowerCase().includes(term) ||
+          (d.description || "").toLowerCase().includes(term)
       );
     }
 
     setFilteredDebts(filtered);
-  }, [debts, searchTerm, statusFilter]);
+  }, [debts, searchTerm, statusFilter, viewMode]);
 
   function getDaysUntilDue(dueDate: string): number {
     const today = new Date();
@@ -200,6 +208,48 @@ export default function Debts() {
     }
   }
 
+  // Parse description into structured history entries.
+  function parseDebtHistory(description: string | null | undefined) {
+    if (!description) return [];
+    const lines = description
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+
+    const entries = lines
+      .filter((l) => l.startsWith("["))
+      .map((line) => {
+        const m = line.match(/^\[([^\]]+)\]\s*Added\s+(.+?)(?:\s*:\s*(.*))?$/i);
+        if (m) {
+          return {
+            date: m[1],
+            amount: m[2],
+            note: m[3] || "",
+            raw: line,
+          };
+        } else {
+          return {
+            date: "",
+            amount: "",
+            note: line,
+            raw: line,
+          };
+        }
+      });
+
+    return entries;
+  }
+
+  function getInitialDescription(description: string | null | undefined) {
+    if (!description) return "";
+    const lines = description
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+    const initialLines = lines.filter((l) => !l.startsWith("["));
+    return initialLines.join("\n");
+  }
+
   async function handleAddDebt(e: React.FormEvent) {
     e.preventDefault();
     try {
@@ -208,7 +258,6 @@ export default function Debts() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Create debt directly without creating a client
       const { error: debtError } = await supabase.from("client_debts").insert([
         {
           user_id: user.id,
@@ -267,7 +316,7 @@ export default function Debts() {
       const { error } = await supabase
         .from("client_debts")
         .update({
-          amount_paid: selectedDebt.amount - selectedDebt.balance + amount,
+          amount_paid: (selectedDebt.amount_paid || 0) + amount,
           status: newStatus,
           paid_date:
             newBalance === 0 ? new Date().toISOString().split("T")[0] : null,
@@ -280,6 +329,10 @@ export default function Debts() {
       setShowViewModal(false);
       setPaymentAmount("");
       await loadDebts();
+
+      if (newStatus === "paid") {
+        setViewMode("history");
+      }
     } catch (error: any) {
       toast.error("Failed to record payment: " + error.message);
     }
@@ -363,12 +416,8 @@ export default function Debts() {
         <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border-2 border-gray-200 hover:shadow-3xl hover:scale-105 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-gray-600 mb-2">
-                Overdue
-              </p>
-              <p className="text-2xl font-black text-red-600">
-                {stats.overdue}
-              </p>
+              <p className="text-sm font-semibold text-gray-600 mb-2">Overdue</p>
+              <p className="text-2xl font-black text-red-600">{stats.overdue}</p>
             </div>
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-xl shadow-red-500/30">
               <AlertCircle className="w-7 h-7 text-white" />
@@ -379,12 +428,8 @@ export default function Debts() {
         <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border-2 border-gray-200 hover:shadow-3xl hover:scale-105 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-gray-600 mb-2">
-                Pending
-              </p>
-              <p className="text-2xl font-black text-amber-600">
-                {stats.pending}
-              </p>
+              <p className="text-sm font-semibold text-gray-600 mb-2">Pending</p>
+              <p className="text-2xl font-black text-amber-600">{stats.pending}</p>
             </div>
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-xl shadow-amber-500/30">
               <Calendar className="w-7 h-7 text-white" />
@@ -396,9 +441,7 @@ export default function Debts() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-gray-600 mb-2">Paid</p>
-              <p className="text-2xl font-black text-emerald-600">
-                {stats.paid}
-              </p>
+              <p className="text-2xl font-black text-emerald-600">{stats.paid}</p>
             </div>
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-xl shadow-emerald-500/30">
               <DollarSign className="w-7 h-7 text-white" />
@@ -409,9 +452,7 @@ export default function Debts() {
         <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border-2 border-gray-200 hover:shadow-3xl hover:scale-105 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-gray-600 mb-2">
-                Total Balance
-              </p>
+              <p className="text-sm font-semibold text-gray-600 mb-2">Total Balance</p>
               <p className="text-2xl font-black text-blue-600">
                 {formatCurrency(stats.totalBalance, "KES")}
               </p>
@@ -425,22 +466,49 @@ export default function Debts() {
 
       {/* Toolbar */}
       <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border-2 border-gray-200">
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex flex-col md:flex-row gap-4 items-center">
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
             <input
               type="text"
-              placeholder="Search by debtor name or description..."
+              placeholder={
+                viewMode === "active"
+                  ? "Search active debts by debtor name or description..."
+                  : "Search paid debts (history)..."
+              }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-semibold shadow-lg"
+              className="w-full pl-12 pr-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
             />
+          </div>
+
+          <div className="flex gap-2 items-center">
+            <button
+              onClick={() => setViewMode("active")}
+              className={`px-4 py-2 rounded-xl font-semibold border-2 transition-all ${
+                viewMode === "active"
+                  ? "bg-blue-600 text-white border-blue-600"
+                  : "bg-white text-gray-700 border-gray-200"
+              }`}
+            >
+              Active
+            </button>
+            <button
+              onClick={() => setViewMode("history")}
+              className={`px-4 py-2 rounded-xl font-semibold border-2 transition-all ${
+                viewMode === "history"
+                  ? "bg-emerald-600 text-white border-emerald-600"
+                  : "bg-white text-gray-700 border-gray-200"
+              }`}
+            >
+              History
+            </button>
           </div>
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-6 py-3 bg-white text-gray-900 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 font-semibold shadow-lg transition-all [&>option]:text-gray-900 [&>option]:bg-white"
+            className="px-6 py-3 bg-white text-gray-900 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 font-semibold shadow-lg transition-all"
           >
             <option value="all">All Status</option>
             <option value="overdue">Overdue</option>
@@ -450,7 +518,7 @@ export default function Debts() {
 
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 text-white rounded-xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 font-black shadow-xl active:scale-95 border-2 border-blue-500"
+            className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 text-white rounded-xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-200"
           >
             <Plus className="w-5 h-5" />
             Add Debt
@@ -458,160 +526,143 @@ export default function Debts() {
         </div>
       </div>
 
-      {/* Debts List */}
-      <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border-2 border-gray-200">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gradient-to-r from-gray-50 via-white to-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
-                  Debt Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
-                  Client
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
-                  Number
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
-                  Amount
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
-                  Balance
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
-                  Due Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
-                  Priority
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
-                  Description
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white/80 divide-y divide-gray-200">
-              {filteredDebts.map((debt) => {
-                const daysUntilDue = getDaysUntilDue(debt.due_date);
-                const isOverdue = debt.status === "overdue";
-                return (
-                  <tr
-                    key={debt.id}
-                    onClick={() => handleViewDebt(debt)}
-                    className="hover:bg-gray-50 transition-all cursor-pointer"
-                  >
-                    <td className="px-6 py-4 text-gray-700">
-                      {debt.debt_date
-                        ? new Date(debt.debt_date).toLocaleDateString()
-                        : "N/A"}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {debt.client_name}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {debt.client_code}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-gray-700">
-                      {debt.phone || "N/A"}
-                    </td>
-                    <td className="px-6 py-4 text-gray-900">
-                      {formatCurrency(debt.amount, debt.currency)}
-                    </td>
-                    <td className="px-6 py-4 font-medium text-gray-900">
-                      {formatCurrency(debt.balance, debt.currency)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="text-gray-900">
-                          {new Date(debt.due_date).toLocaleDateString()}
-                        </p>
-                        {debt.status !== "paid" && (
-                          <p
-                            className={`text-sm ${
-                              daysUntilDue < 0
-                                ? "text-red-600"
-                                : daysUntilDue <= 7
-                                ? "text-amber-400"
-                                : "text-gray-600"
-                            }`}
-                          >
-                            {daysUntilDue < 0
-                              ? `${Math.abs(daysUntilDue)} days overdue`
-                              : daysUntilDue === 0
-                              ? "Due today"
-                              : `${daysUntilDue} days left`}
-                          </p>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
+      {/* Cards List (active & history) */}
+      <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border-2 border-gray-200 p-6">
+        {filteredDebts.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-600">
+              {viewMode === "active" ? "No active debts found" : "No history"}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredDebts.map((debt) => {
+              const daysUntilDue = getDaysUntilDue(debt.due_date);
+              return (
+                <div
+                  key={debt.id}
+                  onClick={() => handleViewDebt(debt)}
+                  className="group bg-gradient-to-br from-white to-gray-50 border-2 border-gray-100 rounded-2xl p-5 hover:shadow-2xl transition-all cursor-pointer"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm text-gray-500">Client</p>
+                      <p className="text-xl font-extrabold text-indigo-900">
+                        {debt.client_name}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {debt.client_code || "—"}
+                      </p>
+                      <p className="text-sm text-gray-500 mt-1">{debt.phone || "N/A"}</p>
+                    </div>
+
+                    <div className="text-right">
                       <span
-                        className={`px-2 py-1 text-xs rounded-full ${
-                          debt.status === "overdue"
-                            ? "font-extrabold text-sm"
-                            : "font-medium"
-                        } ${getStatusColor(debt.status)}`}
+                        className={`inline-block px-3 py-1 text-xs rounded-full ${getStatusColor(
+                          debt.status
+                        )}`}
                       >
                         {debt.status.toUpperCase()}
                       </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(
-                          debt.priority
-                        )}`}
+                      <p className="text-sm text-gray-500 mt-2">
+                        {viewMode === "history" && debt.paid_date
+                          ? `Paid: ${new Date(debt.paid_date).toLocaleDateString()}`
+                          : `Due: ${new Date(debt.due_date).toLocaleDateString()}`}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Only show balance owed (no total amount) */}
+                  <div className="mt-4">
+                    <p className="text-sm text-gray-500">Balance</p>
+                    <p className="text-2xl font-extrabold text-amber-600">
+                      {formatCurrency(debt.balance, debt.currency)}
+                    </p>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between">
+                    <div>
+                      <p
+                        className={`text-sm ${
+                          daysUntilDue < 0
+                            ? "text-red-600"
+                            : daysUntilDue <= 7
+                            ? "text-amber-600"
+                            : "text-gray-600"
+                        }`}
                       >
-                        {debt.priority}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-gray-900 max-w-xs truncate">
-                      {debt.description}
-                    </td>
-                    <td
-                      className="px-6 py-4"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="flex gap-3">
+                        {viewMode === "history"
+                          ? debt.paid_date
+                            ? `Paid on ${new Date(debt.paid_date).toLocaleDateString()}`
+                            : "—"
+                          : daysUntilDue < 0
+                          ? `${Math.abs(daysUntilDue)} days overdue`
+                          : daysUntilDue === 0
+                          ? "Due today"
+                          : `${daysUntilDue} days left`}
+                      </p>
+                      <p className="text-sm mt-2 text-gray-500">
+                        Priority{" "}
+                        <span
+                          className={`inline-block px-2 py-0.5 text-xs rounded-full ${getPriorityColor(
+                            debt.priority
+                          )}`}
+                        >
+                          {debt.priority}
+                        </span>
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-2">
+                      <div className="flex gap-2">
+                        {viewMode === "active" && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedDebt(debt);
+                              setAddMoreAmount("");
+                              setShowAddMoreDebt(true);
+                            }}
+                            title="Add more"
+                            className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition"
+                          >
+                            <TrendingUp className="w-4 h-4" />
+                          </button>
+                        )}
                         <button
-                          onClick={() => {
-                            setSelectedDebt(debt);
-                            setAddMoreAmount("");
-                            setShowAddMoreDebt(true);
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteDebt(debt.id);
                           }}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                          title="Add more to debt"
-                        >
-                          <TrendingUp className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteDebt(debt.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
                           title="Delete"
+                          className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition"
                         >
-                          <Trash2 className="w-5 h-5" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
 
-        {filteredDebts.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-600">No debts found</p>
+                      <button
+                        className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewDebt(debt);
+                        }}
+                      >
+                        View
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 text-sm text-gray-700 max-h-16 overflow-hidden">
+                    {debt.description ? (
+                      <p className="whitespace-pre-wrap line-clamp-3">{debt.description}</p>
+                    ) : (
+                      <p className="text-gray-400 italic">No description</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -637,7 +688,7 @@ export default function Debts() {
                   onChange={(e) =>
                     setNewDebt({ ...newDebt, clientName: e.target.value })
                   }
-                  className="w-full px-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-semibold shadow-lg"
+                  className="w-full px-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                 />
               </div>
 
@@ -653,7 +704,7 @@ export default function Debts() {
                   onChange={(e) =>
                     setNewDebt({ ...newDebt, clientPhone: e.target.value })
                   }
-                  className="w-full px-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-semibold shadow-lg"
+                  className="w-full px-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                 />
               </div>
             </div>
@@ -671,7 +722,7 @@ export default function Debts() {
                   onChange={(e) =>
                     setNewDebt({ ...newDebt, amount: e.target.value })
                   }
-                  className="w-full px-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-semibold shadow-lg"
+                  className="w-full px-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                 />
               </div>
 
@@ -687,7 +738,7 @@ export default function Debts() {
                       currency: e.target.value as "KES" | "USD",
                     })
                   }
-                  className="w-full px-4 py-3 bg-white text-gray-900 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-semibold shadow-lg"
+                  className="w-full px-4 py-3 bg-white text-gray-900 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-semibold"
                 >
                   <option value="KES" className="bg-white text-gray-900">
                     KES
@@ -710,7 +761,7 @@ export default function Debts() {
                 onChange={(e) =>
                   setNewDebt({ ...newDebt, description: e.target.value })
                 }
-                className="w-full px-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-semibold shadow-lg"
+                className="w-full px-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
               />
             </div>
 
@@ -725,7 +776,7 @@ export default function Debts() {
                 onChange={(e) =>
                   setNewDebt({ ...newDebt, due_date: e.target.value })
                 }
-                className="w-full px-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-semibold shadow-lg [color-scheme:light]"
+                className="w-full px-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
               />
             </div>
 
@@ -739,7 +790,7 @@ export default function Debts() {
               </button>
               <button
                 type="submit"
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 text-white rounded-xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 font-black shadow-xl active:scale-95 border-2 border-blue-500"
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 text-white rounded-xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 font-bold"
               >
                 Add Debt
               </button>
@@ -790,10 +841,7 @@ export default function Debts() {
                 <div>
                   <p className="text-sm text-gray-600">Balance Due</p>
                   <p className="text-lg font-semibold text-emerald-600">
-                    {formatCurrency(
-                      selectedDebt.balance,
-                      selectedDebt.currency
-                    )}
+                    {formatCurrency(selectedDebt.balance, selectedDebt.currency)}
                   </p>
                 </div>
               </div>
@@ -829,8 +877,48 @@ export default function Debts() {
 
               <div>
                 <p className="text-sm text-gray-600">Description</p>
-                <p className="text-gray-900">{selectedDebt.description}</p>
+                <p className="text-gray-900 whitespace-pre-wrap">
+                  {getInitialDescription(selectedDebt.description) ||
+                    "— No initial description —"}
+                </p>
               </div>
+
+              {/* Debt History Table (kept for detailed view inside modal) */}
+              {(() => {
+                const history = parseDebtHistory(selectedDebt.description);
+                if (!history || history.length === 0) return null;
+                return (
+                  <div>
+                    <p className="text-sm text-gray-600 mb-2">Debt History</p>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead>
+                          <tr className="bg-gray-100">
+                            <th className="px-3 py-2 text-left font-medium text-gray-700">
+                              Date
+                            </th>
+                            <th className="px-3 py-2 text-left font-medium text-gray-700">
+                              Change
+                            </th>
+                            <th className="px-3 py-2 text-left font-medium text-gray-700">
+                              Note
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {history.map((h, idx) => (
+                            <tr key={idx} className="even:bg-white odd:bg-gray-50">
+                              <td className="px-3 py-2 text-gray-800">{h.date || "—"}</td>
+                              <td className="px-3 py-2 text-gray-800">{h.amount || "—"}</td>
+                              <td className="px-3 py-2 text-gray-700">{h.note || "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Record Payment Section */}
@@ -852,13 +940,13 @@ export default function Debts() {
                       value={paymentAmount}
                       onChange={(e) => setPaymentAmount(e.target.value)}
                       placeholder={`Max: ${selectedDebt.balance}`}
-                      className="w-full px-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-semibold shadow-lg"
+                      className="w-full px-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                     />
                   </div>
                   <button
                     onClick={handleRecordPayment}
                     disabled={!paymentAmount || parseFloat(paymentAmount) <= 0}
-                    className="w-full px-6 py-3 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 text-white rounded-xl hover:shadow-2xl hover:shadow-emerald-500/50 transition-all duration-300 font-black shadow-xl disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 border-2 border-emerald-500"
+                    className="w-full px-6 py-3 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 text-white rounded-xl hover:shadow-2xl hover:shadow-emerald-500/50 transition-all duration-200"
                   >
                     Record Payment
                   </button>
@@ -871,6 +959,11 @@ export default function Debts() {
                 <p className="text-emerald-600 font-black text-center text-lg">
                   ✓ This debt has been fully paid
                 </p>
+                {selectedDebt.paid_date && (
+                  <p className="text-center text-sm text-gray-600 mt-2">
+                    Paid on: {new Date(selectedDebt.paid_date).toLocaleDateString()}
+                  </p>
+                )}
               </div>
             )}
 
@@ -907,25 +1000,15 @@ export default function Debts() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-gray-600 font-semibold">
-                      Current Debt
-                    </p>
+                    <p className="text-sm text-gray-600 font-semibold">Current Debt</p>
                     <p className="text-xl font-black text-red-600">
-                      {formatCurrency(
-                        selectedDebt.amount,
-                        selectedDebt.currency
-                      )}
+                      {formatCurrency(selectedDebt.amount, selectedDebt.currency)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600 font-semibold">
-                      Balance
-                    </p>
+                    <p className="text-sm text-gray-600 font-semibold">Balance</p>
                     <p className="text-xl font-black text-amber-600">
-                      {formatCurrency(
-                        selectedDebt.balance,
-                        selectedDebt.currency
-                      )}
+                      {formatCurrency(selectedDebt.balance, selectedDebt.currency)}
                     </p>
                   </div>
                 </div>
@@ -950,7 +1033,7 @@ export default function Debts() {
                     value={addMoreAmount}
                     onChange={(e) => setAddMoreAmount(e.target.value)}
                     placeholder="Enter amount to add"
-                    className="w-full px-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-semibold shadow-lg"
+                    className="w-full px-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
                     autoFocus
                   />
                 </div>
@@ -964,20 +1047,15 @@ export default function Debts() {
                     onChange={(e) => setAddMoreReason(e.target.value)}
                     placeholder="Why is this debt increasing?"
                     rows={3}
-                    className="w-full px-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-semibold shadow-lg resize-none"
+                    className="w-full px-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
                   />
                 </div>
 
                 {addMoreAmount && parseFloat(addMoreAmount) > 0 && (
                   <div className="bg-white rounded-xl p-4 border-2 border-orange-200">
-                    <p className="text-sm text-gray-600 font-semibold mb-1">
-                      New Total Debt:
-                    </p>
+                    <p className="text-sm text-gray-600 font-semibold mb-1">New Total Debt:</p>
                     <p className="text-2xl font-black text-red-600">
-                      {formatCurrency(
-                        selectedDebt.amount + parseFloat(addMoreAmount),
-                        selectedDebt.currency
-                      )}
+                      {formatCurrency(selectedDebt.amount + parseFloat(addMoreAmount), selectedDebt.currency)}
                     </p>
                   </div>
                 )}
@@ -998,7 +1076,7 @@ export default function Debts() {
               <button
                 onClick={handleAddMoreDebt}
                 disabled={!addMoreAmount || parseFloat(addMoreAmount) <= 0}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-600 via-red-600 to-orange-600 text-white rounded-xl hover:shadow-2xl hover:shadow-orange-500/50 transition-all duration-300 font-black shadow-xl disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 border-2 border-orange-500"
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-600 via-red-600 to-orange-600 text-white rounded-xl hover:shadow-2xl hover:shadow-orange-500/50 transition-all duration-300 font-bold"
               >
                 Add to Debt
               </button>
