@@ -52,7 +52,7 @@ export default function Debts() {
   });
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<"active" | "history">("active"); // active / history
+  const [viewMode, setViewMode] = useState<"active" | "history">("active");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedDebt, setSelectedDebt] = useState<DebtWithClient | null>(null);
@@ -466,7 +466,16 @@ export default function Debts() {
 
       {/* Toolbar */}
       <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border-2 border-gray-200">
-        <div className="flex flex-col md:flex-row gap-4 items-center">
+        {/*
+          Responsive toolbar improvements:
+           - search input takes full width
+           - controls grouped to the right on larger screens
+           - on mobile controls stack neatly with sensible widths:
+             * toggle buttons appear side-by-side and stretch to fill available width
+             * select and Add button become full width
+        */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          {/* Search */}
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
             <input
@@ -482,47 +491,55 @@ export default function Debts() {
             />
           </div>
 
-          <div className="flex gap-2 items-center">
-            <button
-              onClick={() => setViewMode("active")}
-              className={`px-4 py-2 rounded-xl font-semibold border-2 transition-all ${
-                viewMode === "active"
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-white text-gray-700 border-gray-200"
-              }`}
+          {/* Controls group: toggles, status select, add button */}
+          <div className="w-full sm:w-auto flex flex-col sm:flex-row sm:items-center gap-3">
+            {/* Active / History toggles */}
+            <div className="flex gap-2 w-full sm:w-auto">
+              <button
+                onClick={() => setViewMode("active")}
+                className={`flex-1 sm:flex-none px-4 py-2 rounded-xl font-semibold border-2 transition-all ${
+                  viewMode === "active"
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-gray-700 border-gray-200"
+                }`}
+                aria-pressed={viewMode === "active"}
+              >
+                Active
+              </button>
+              <button
+                onClick={() => setViewMode("history")}
+                className={`flex-1 sm:flex-none px-4 py-2 rounded-xl font-semibold border-2 transition-all ${
+                  viewMode === "history"
+                    ? "bg-emerald-600 text-white border-emerald-600"
+                    : "bg-white text-gray-700 border-gray-200"
+                }`}
+                aria-pressed={viewMode === "history"}
+              >
+                History
+              </button>
+            </div>
+
+            {/* Status filter */}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full sm:w-40 px-4 py-2 bg-white text-gray-900 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 font-semibold shadow-sm"
             >
-              Active
-            </button>
+              <option value="all">All Status</option>
+              <option value="overdue">Overdue</option>
+              <option value="pending">Pending</option>
+              <option value="paid">Paid</option>
+            </select>
+
+            {/* Add Debt */}
             <button
-              onClick={() => setViewMode("history")}
-              className={`px-4 py-2 rounded-xl font-semibold border-2 transition-all ${
-                viewMode === "history"
-                  ? "bg-emerald-600 text-white border-emerald-600"
-                  : "bg-white text-gray-700 border-gray-200"
-              }`}
+              onClick={() => setShowAddModal(true)}
+              className="w-full sm:w-auto flex items-center justify-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 text-white rounded-xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all"
             >
-              History
+              <Plus className="w-5 h-5" />
+              <span className="font-semibold">Add Debt</span>
             </button>
           </div>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-6 py-3 bg-white text-gray-900 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 font-semibold shadow-lg transition-all"
-          >
-            <option value="all">All Status</option>
-            <option value="overdue">Overdue</option>
-            <option value="pending">Pending</option>
-            <option value="paid">Paid</option>
-          </select>
-
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 text-white rounded-xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-200"
-          >
-            <Plus className="w-5 h-5" />
-            Add Debt
-          </button>
         </div>
       </div>
 
@@ -574,7 +591,7 @@ export default function Debts() {
 
                   {/* Only show balance owed (no total amount) */}
                   <div className="mt-4">
-                    <p className="text-sm text-gray-500">Balance</p>
+                    <p className="text-sm text-gray-500">Balance Owed</p>
                     <p className="text-2xl font-extrabold text-amber-600">
                       {formatCurrency(debt.balance, debt.currency)}
                     </p>
@@ -667,7 +684,7 @@ export default function Debts() {
         )}
       </div>
 
-      {/* Add Debt Modal */}
+      {/* The rest of the modals (Add, View, Add More) remain unchanged */}
       {showAddModal && (
         <Modal
           isOpen={showAddModal}
@@ -799,7 +816,6 @@ export default function Debts() {
         </Modal>
       )}
 
-      {/* View Debt & Record Payment Modal */}
       {showViewModal && selectedDebt && (
         <Modal
           isOpen={showViewModal}
@@ -807,7 +823,6 @@ export default function Debts() {
           title="Debt Details & Payment"
         >
           <div className="space-y-5">
-            {/* Debt Information */}
             <div className="bg-gradient-to-r from-gray-50 via-white to-gray-50 rounded-2xl p-6 space-y-4 border-2 border-gray-200 shadow-lg">
               <div className="flex justify-between items-start">
                 <div>
@@ -883,7 +898,6 @@ export default function Debts() {
                 </p>
               </div>
 
-              {/* Debt History Table (kept for detailed view inside modal) */}
               {(() => {
                 const history = parseDebtHistory(selectedDebt.description);
                 if (!history || history.length === 0) return null;
@@ -921,7 +935,6 @@ export default function Debts() {
               })()}
             </div>
 
-            {/* Record Payment Section */}
             {selectedDebt.status !== "paid" && selectedDebt.balance > 0 && (
               <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 rounded-2xl p-6 border-2 border-emerald-200 shadow-lg">
                 <h3 className="text-lg font-black text-gray-900 mb-4 flex items-center gap-2">
@@ -977,7 +990,6 @@ export default function Debts() {
         </Modal>
       )}
 
-      {/* Add More Debt Modal */}
       {showAddMoreDebt && selectedDebt && (
         <Modal
           isOpen={showAddMoreDebt}
@@ -989,7 +1001,6 @@ export default function Debts() {
           title="Add More to Debt"
         >
           <div className="space-y-5">
-            {/* Current Debt Info */}
             <div className="bg-gradient-to-r from-gray-50 via-white to-gray-50 rounded-2xl p-6 border-2 border-gray-200 shadow-lg">
               <div className="space-y-3">
                 <div>
@@ -1015,7 +1026,6 @@ export default function Debts() {
               </div>
             </div>
 
-            {/* Add Amount Section */}
             <div className="bg-gradient-to-r from-orange-50 via-red-50 to-orange-50 rounded-2xl p-6 border-2 border-orange-200 shadow-lg">
               <h3 className="text-lg font-black text-gray-900 mb-4 flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-orange-600" />
