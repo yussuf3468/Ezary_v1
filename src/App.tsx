@@ -45,11 +45,13 @@ function AppContent() {
   }
 
   const handleSelectClient = (clientId: string) => {
+    window.scrollTo(0, 0);
     setSelectedClientId(clientId);
     setCurrentPage("client-detail");
   };
 
   const handleBackToClients = () => {
+    window.scrollTo(0, 0);
     setSelectedClientId(null);
     setCurrentPage("clients");
   };
@@ -78,7 +80,10 @@ function AppContent() {
 
   return (
     <>
-      <Layout currentPage={currentPage} onNavigate={setCurrentPage}>
+      <Layout currentPage={currentPage} onNavigate={(page) => {
+        window.scrollTo(0, 0);
+        setCurrentPage(page);
+      }}>
         {renderPage()}
       </Layout>
       <OfflineIndicator />
