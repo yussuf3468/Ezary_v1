@@ -96,11 +96,15 @@ export default function Debts() {
         today.setHours(0, 0, 0, 0);
         dueDate.setHours(0, 0, 0, 0);
 
+        // Calculate balance from amount and amount_paid to ensure accuracy
+        const calculatedBalance = debt.amount - (debt.amount_paid || 0);
+
         const status =
           debt.status !== "paid" && dueDate < today ? "overdue" : debt.status;
 
         return {
           ...debt,
+          balance: calculatedBalance,
           status,
           client_name: debt.debtor_name || "Unknown",
           client_code: "",
