@@ -42,35 +42,35 @@ const Modal = memo(function Modal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-screen items-center justify-center p-4 text-center sm:p-0">
-        {/* Backdrop */}
-        <div
-          className="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity backdrop-blur-sm"
-          onClick={onClose}
-        />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity backdrop-blur-sm"
+        onClick={onClose}
+      />
 
-        {/* Modal */}
-        <div
-          className={`relative transform overflow-hidden rounded-3xl bg-white/95 backdrop-blur-xl border-2 border-gray-200 text-left shadow-2xl transition-all w-full ${sizeClasses[size]} animate-slideUp`}
-        >
-          {/* Header */}
-          <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 px-6 py-5 shadow-lg">
-            <div className="flex items-center justify-between">
-              <h3 className="text-2xl font-black text-white drop-shadow-lg">
-                {title}
-              </h3>
-              <button
-                onClick={onClose}
-                className="rounded-xl p-2 text-white hover:bg-white/20 transition-all duration-200 active:scale-90"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
+      {/* Modal */}
+      <div
+        className={`relative transform rounded-3xl bg-white backdrop-blur-xl border-2 border-gray-200 text-left shadow-2xl transition-all w-full ${sizeClasses[size]} animate-slideUp max-h-[85vh] flex flex-col`}
+      >
+        {/* Header */}
+        <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 px-6 py-5 shadow-lg flex-shrink-0 rounded-t-3xl">
+          <div className="flex items-center justify-between">
+            <h3 className="text-2xl font-black text-white drop-shadow-lg">
+              {title}
+            </h3>
+            <button
+              onClick={onClose}
+              className="rounded-xl p-2 text-white hover:bg-white/20 transition-all duration-200 active:scale-90"
+            >
+              <X className="h-6 w-6" />
+            </button>
           </div>
+        </div>
 
-          {/* Content */}
-          <div className="px-6 py-6 text-gray-900">{children}</div>
+        {/* Content */}
+        <div className="px-6 py-6 text-gray-900 overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+          {children}
         </div>
       </div>
     </div>

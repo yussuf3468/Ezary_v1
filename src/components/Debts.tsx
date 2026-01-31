@@ -992,7 +992,7 @@ export default function Debts() {
                   <button
                     onClick={handleRecordPayment}
                     disabled={!paymentAmount || parseFloat(paymentAmount) <= 0}
-                    className="w-full px-6 py-3 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 text-white rounded-xl hover:shadow-2xl hover:shadow-emerald-500/50 transition-all duration-200"
+                    className="w-full px-6 py-3 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 text-white rounded-xl hover:shadow-2xl hover:shadow-emerald-500/50 transition-all duration-200 font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
                   >
                     Record Payment
                   </button>

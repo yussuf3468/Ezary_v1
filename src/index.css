@@ -2,6 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom Scrollbar */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 10px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
 @layer utilities {
   /* Premium Smooth animations */
   @keyframes fadeIn {
@@ -69,12 +87,14 @@
 
   /* Premium shadows */
   .shadow-premium {
-    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1),
+    box-shadow:
+      0 10px 40px -10px rgba(0, 0, 0, 0.1),
       0 0 1px rgba(0, 0, 0, 0.05);
   }
 
   .shadow-premium-lg {
-    box-shadow: 0 20px 60px -15px rgba(0, 0, 0, 0.15),
+    box-shadow:
+      0 20px 60px -15px rgba(0, 0, 0, 0.15),
       0 0 1px rgba(0, 0, 0, 0.05);
   }
 

@@ -80,10 +80,13 @@ function AppContent() {
 
   return (
     <>
-      <Layout currentPage={currentPage} onNavigate={(page) => {
-        window.scrollTo(0, 0);
-        setCurrentPage(page);
-      }}>
+      <Layout
+        currentPage={currentPage}
+        onNavigate={(page) => {
+          window.scrollTo(0, 0);
+          setCurrentPage(page);
+        }}
+      >
         {renderPage()}
       </Layout>
       <OfflineIndicator />
