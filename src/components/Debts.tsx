@@ -415,74 +415,72 @@ export default function Debts() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 xl:gap-6">
-        <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border-2 border-gray-200 hover:shadow-3xl hover:scale-105 transition-all duration-300">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
+        <div className="bg-white/90 backdrop-blur-xl rounded-xl p-3 shadow-md border border-gray-200 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-gray-600 mb-2">
+              <p className="text-xs font-semibold text-gray-600 mb-1">
                 Overdue
               </p>
-              <p className="text-2xl font-black text-red-600">
-                {stats.overdue}
-              </p>
+              <p className="text-xl font-black text-red-600">{stats.overdue}</p>
             </div>
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-xl shadow-red-500/30">
-              <AlertCircle className="w-7 h-7 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
+              <AlertCircle className="w-4 h-4 text-white" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border-2 border-gray-200 hover:shadow-3xl hover:scale-105 transition-all duration-300">
+        <div className="bg-white/90 backdrop-blur-xl rounded-xl p-3 shadow-md border border-gray-200 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-gray-600 mb-2">
+              <p className="text-xs font-semibold text-gray-600 mb-1">
                 Pending
               </p>
-              <p className="text-2xl font-black text-amber-600">
+              <p className="text-xl font-black text-amber-600">
                 {stats.pending}
               </p>
             </div>
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-xl shadow-amber-500/30">
-              <Calendar className="w-7 h-7 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
+              <Calendar className="w-4 h-4 text-white" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border-2 border-gray-200 hover:shadow-3xl hover:scale-105 transition-all duration-300">
+        <div className="bg-white/90 backdrop-blur-xl rounded-xl p-3 shadow-md border border-gray-200 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-gray-600 mb-2">Paid</p>
-              <p className="text-2xl font-black text-emerald-600">
+              <p className="text-xs font-semibold text-gray-600 mb-1">Paid</p>
+              <p className="text-xl font-black text-emerald-600">
                 {stats.paid}
               </p>
             </div>
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-xl shadow-emerald-500/30">
-              <DollarSign className="w-7 h-7 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-white" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border-2 border-gray-200 hover:shadow-3xl hover:scale-105 transition-all duration-300">
+        <div className="bg-white/90 backdrop-blur-xl rounded-xl p-3 shadow-md border border-gray-200 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-gray-600 mb-2">
+              <p className="text-xs font-semibold text-gray-600 mb-1">
                 Total Balance
               </p>
-              <p className="text-2xl font-black text-blue-600">
+              <p className="text-sm font-black text-blue-600">
                 {formatCurrency(stats.totalBalance, "KES")}
               </p>
             </div>
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-xl shadow-blue-500/30">
-              <DollarSign className="w-7 h-7 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-white" />
             </div>
           </div>
         </div>
       </div>
 
       {/* Toolbar */}
-      <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border-2 border-gray-200">
+      <div className="bg-white/90 backdrop-blur-xl rounded-xl p-3 shadow-md border border-gray-200">
         {/*
           Responsive toolbar improvements:
            - search input takes full width
@@ -491,58 +489,56 @@ export default function Debts() {
              * toggle buttons appear side-by-side and stretch to fill available width
              * select and Add button become full width
         */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
           {/* Search */}
           <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
             <input
               type="text"
               placeholder={
                 viewMode === "active"
-                  ? "Search active debts by debtor name or description..."
-                  : "Search paid debts (history)..."
+                  ? "Search active debts..."
+                  : "Search paid debts..."
               }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full pl-9 pr-4 py-2 bg-white text-gray-900 placeholder-gray-500 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
             />
           </div>
 
           {/* Controls group: toggles, status select, add button */}
-          <div className="w-full sm:w-auto flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Active / History toggles */}
-            <div className="flex gap-2 w-full sm:w-auto">
-              <button
-                onClick={() => setViewMode("active")}
-                className={`flex-1 sm:flex-none px-4 py-2 rounded-xl font-semibold border-2 transition-all ${
-                  viewMode === "active"
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-white text-gray-700 border-gray-200"
-                }`}
-                aria-pressed={viewMode === "active"}
-              >
-                Active
-              </button>
-              <button
-                onClick={() => setViewMode("history")}
-                className={`flex-1 sm:flex-none px-4 py-2 rounded-xl font-semibold border-2 transition-all ${
-                  viewMode === "history"
-                    ? "bg-emerald-600 text-white border-emerald-600"
-                    : "bg-white text-gray-700 border-gray-200"
-                }`}
-                aria-pressed={viewMode === "history"}
-              >
-                History
-              </button>
-            </div>
+            <button
+              onClick={() => setViewMode("active")}
+              className={`px-3 py-1.5 rounded-xl text-sm font-semibold border-2 transition-all ${
+                viewMode === "active"
+                  ? "bg-blue-600 text-white border-blue-600"
+                  : "bg-white text-gray-700 border-gray-200"
+              }`}
+              aria-pressed={viewMode === "active"}
+            >
+              Active
+            </button>
+            <button
+              onClick={() => setViewMode("history")}
+              className={`px-3 py-1.5 rounded-xl text-sm font-semibold border-2 transition-all ${
+                viewMode === "history"
+                  ? "bg-emerald-600 text-white border-emerald-600"
+                  : "bg-white text-gray-700 border-gray-200"
+              }`}
+              aria-pressed={viewMode === "history"}
+            >
+              History
+            </button>
 
             {/* Status filter */}
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full sm:w-40 px-4 py-2 bg-white text-gray-900 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 font-semibold shadow-sm"
+              className="px-3 py-1.5 bg-white text-gray-900 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-sm"
             >
-              <option value="all">All Status</option>
+              <option value="all">All</option>
               <option value="overdue">Overdue</option>
               <option value="pending">Pending</option>
               <option value="paid">Paid</option>
@@ -551,17 +547,17 @@ export default function Debts() {
             {/* Add Debt */}
             <button
               onClick={() => setShowAddModal(true)}
-              className="w-full sm:w-auto flex items-center justify-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 text-white rounded-xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all"
+              className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all text-sm font-semibold"
             >
-              <Plus className="w-5 h-5" />
-              <span className="font-semibold">Add Debt</span>
+              <Plus className="w-4 h-4" />
+              <span>Add Debt</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Cards List (active & history) */}
-      <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border-2 border-gray-200 p-6">
+      <div className="bg-white/90 backdrop-blur-xl rounded-xl shadow-md border border-gray-200 p-3 sm:p-4">
         {filteredDebts.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-600">
@@ -576,127 +572,95 @@ export default function Debts() {
                 <div
                   key={debt.id}
                   onClick={() => handleViewDebt(debt)}
-                  className="group bg-gradient-to-br from-white to-gray-50 border-2 border-gray-100 rounded-2xl p-5 hover:shadow-2xl transition-all cursor-pointer"
+                  className="group bg-white border border-gray-200 rounded-xl p-3 hover:shadow-md transition-all cursor-pointer"
                 >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-sm text-gray-500">Client</p>
-                      <p className="text-xl font-extrabold text-indigo-900">
+                  {/* Header row: name + status */}
+                  <div className="flex justify-between items-start gap-2 mb-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-indigo-900 truncate">
                         {debt.client_name}
                       </p>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-xs text-gray-500 font-mono">
                         {debt.client_code || "—"}
                       </p>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {debt.phone || "N/A"}
-                      </p>
                     </div>
-
-                    <div className="text-right">
-                      <span
-                        className={`inline-block px-3 py-1 text-xs rounded-full ${getStatusColor(
-                          debt.status,
-                        )}`}
-                      >
-                        {debt.status.toUpperCase()}
-                      </span>
-                      <p className="text-sm text-gray-500 mt-2">
-                        {viewMode === "history" && debt.paid_date
-                          ? `Paid: ${new Date(debt.paid_date).toLocaleDateString()}`
-                          : `Due: ${new Date(debt.due_date).toLocaleDateString()}`}
-                      </p>
-                    </div>
+                    <span
+                      className={`shrink-0 inline-block px-2 py-0.5 text-[10px] font-bold rounded-full ${getStatusColor(debt.status)}`}
+                    >
+                      {debt.status.toUpperCase()}
+                    </span>
                   </div>
 
-                  {/* Only show balance owed (no total amount) */}
-                  <div className="mt-4">
-                    <p className="text-sm text-gray-500">Balance Owed</p>
-                    <p className="text-2xl font-extrabold text-amber-600">
-                      {formatCurrency(debt.balance, debt.currency)}
+                  {/* Balance + due date */}
+                  <div className="flex items-end justify-between mb-2">
+                    <div>
+                      <p className="text-[10px] text-gray-400">Balance Owed</p>
+                      <p className="text-base font-extrabold text-amber-600">
+                        {formatCurrency(debt.balance, debt.currency)}
+                      </p>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      {viewMode === "history" && debt.paid_date
+                        ? `Paid: ${new Date(debt.paid_date).toLocaleDateString()}`
+                        : `Due: ${new Date(debt.due_date).toLocaleDateString()}`}
                     </p>
                   </div>
 
-                  <div className="mt-3 flex items-center justify-between">
-                    <div>
+                  {/* Footer: days/priority + actions */}
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <p
-                        className={`text-sm ${
+                        className={`text-xs ${
                           daysUntilDue < 0
                             ? "text-red-600"
                             : daysUntilDue <= 7
                               ? "text-amber-600"
-                              : "text-gray-600"
+                              : "text-gray-500"
                         }`}
                       >
                         {viewMode === "history"
                           ? debt.paid_date
-                            ? `Paid on ${new Date(debt.paid_date).toLocaleDateString()}`
+                            ? `Paid ${new Date(debt.paid_date).toLocaleDateString()}`
                             : "—"
                           : daysUntilDue < 0
-                            ? `${Math.abs(daysUntilDue)} days overdue`
+                            ? `${Math.abs(daysUntilDue)}d overdue`
                             : daysUntilDue === 0
                               ? "Due today"
-                              : `${daysUntilDue} days left`}
+                              : `${daysUntilDue}d left`}
                       </p>
-                      <p className="text-sm mt-2 text-gray-500">
-                        Priority{" "}
-                        <span
-                          className={`inline-block px-2 py-0.5 text-xs rounded-full ${getPriorityColor(
-                            debt.priority,
-                          )}`}
-                        >
-                          {debt.priority}
-                        </span>
-                      </p>
+                      <span
+                        className={`inline-block px-1.5 py-0.5 text-[10px] rounded-full ${getPriorityColor(debt.priority)}`}
+                      >
+                        {debt.priority}
+                      </span>
                     </div>
 
-                    <div className="flex flex-col items-end gap-2">
-                      <div className="flex gap-2">
-                        {viewMode === "active" && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedDebt(debt);
-                              setAddMoreAmount("");
-                              setShowAddMoreDebt(true);
-                            }}
-                            title="Add more"
-                            className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition"
-                          >
-                            <TrendingUp className="w-4 h-4" />
-                          </button>
-                        )}
+                    <div className="flex gap-1">
+                      {viewMode === "active" && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDeleteDebt(debt.id);
+                            setSelectedDebt(debt);
+                            setAddMoreAmount("");
+                            setShowAddMoreDebt(true);
                           }}
-                          title="Delete"
-                          className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition"
+                          title="Add more"
+                          className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <TrendingUp className="w-3.5 h-3.5" />
                         </button>
-                      </div>
-
+                      )}
                       <button
-                        className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleViewDebt(debt);
+                          handleDeleteDebt(debt.id);
                         }}
+                        title="Delete"
+                        className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition"
                       >
-                        View
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                  </div>
-
-                  <div className="mt-4 text-sm text-gray-700 max-h-16 overflow-hidden">
-                    {debt.description ? (
-                      <p className="whitespace-pre-wrap line-clamp-3">
-                        {debt.description}
-                      </p>
-                    ) : (
-                      <p className="text-gray-400 italic">No description</p>
-                    )}
                   </div>
                 </div>
               );

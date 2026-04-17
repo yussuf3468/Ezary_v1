@@ -101,29 +101,29 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
     (transactions: Transaction[], setSummary: Function) => {
       const receivable = transactions.reduce(
         (sum, t) => sum + (t.debit || 0),
-        0
+        0,
       );
       const paid = transactions.reduce((sum, t) => sum + (t.credit || 0), 0);
       const balance = paid - receivable;
 
       setSummary({ receivable, paid, balance });
     },
-    []
+    [],
   );
 
   const currentTransactions = useMemo(
     () => (activeTab === "kes" ? transactionsKES : transactionsUSD),
-    [activeTab, transactionsKES, transactionsUSD]
+    [activeTab, transactionsKES, transactionsUSD],
   );
 
   const currentSummary = useMemo(
     () => (activeTab === "kes" ? summaryKES : summaryUSD),
-    [activeTab, summaryKES, summaryUSD]
+    [activeTab, summaryKES, summaryUSD],
   );
 
   const currencySymbol = useMemo(
     () => (activeTab === "kes" ? "KES" : "USD"),
-    [activeTab]
+    [activeTab],
   );
 
   const loadClientData = async () => {
@@ -137,7 +137,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         supabase
           .from("clients")
           .select(
-            "id, client_name, client_code, email, phone, business_name, address, status, notes, created_at, last_transaction_date"
+            "id, client_name, client_code, email, phone, business_name, address, status, notes, created_at, last_transaction_date",
           )
           .eq("id", clientId)
           .eq("user_id", user.id)
@@ -145,7 +145,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         supabase
           .from("client_transactions_kes")
           .select(
-            "id, transaction_date, description, credit, debit, reference_number, payment_method, notes, created_at"
+            "id, transaction_date, description, credit, debit, reference_number, payment_method, notes, created_at",
           )
           .eq("client_id", clientId)
           .eq("user_id", user.id)
@@ -154,7 +154,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         supabase
           .from("client_transactions_usd")
           .select(
-            "id, transaction_date, description, credit, debit, reference_number, payment_method, notes, created_at"
+            "id, transaction_date, description, credit, debit, reference_number, payment_method, notes, created_at",
           )
           .eq("client_id", clientId)
           .eq("user_id", user.id)
@@ -211,7 +211,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
     if (pinAction.type === "delete") {
       await executeDelete(
         pinAction.data.transactionId,
-        pinAction.data.currency
+        pinAction.data.currency,
       );
     } else if (pinAction.type === "edit") {
       setEditingTransaction(pinAction.data.transaction);
@@ -251,7 +251,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
 
   const executeDelete = async (
     transactionId: string,
-    currency: "kes" | "usd"
+    currency: "kes" | "usd",
   ) => {
     try {
       const table =
@@ -272,13 +272,13 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
       // Remove transaction from state without full reload
       if (currency === "kes") {
         const updatedTransactions = transactionsKES.filter(
-          (t) => t.id !== transactionId
+          (t) => t.id !== transactionId,
         );
         setTransactionsKES(updatedTransactions);
         calculateSummary(updatedTransactions, setSummaryKES);
       } else {
         const updatedTransactions = transactionsUSD.filter(
-          (t) => t.id !== transactionId
+          (t) => t.id !== transactionId,
         );
         setTransactionsUSD(updatedTransactions);
         calculateSummary(updatedTransactions, setSummaryUSD);
@@ -510,7 +510,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
       toast.error(
         `Failed to generate PDF report: ${
           error instanceof Error ? error.message : "Unknown error"
-        }. Please try again.`
+        }. Please try again.`,
       );
     }
   };
@@ -540,27 +540,23 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50 pb-8">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
-        {/* Back Button - Mobile Optimized */}
-        <button
-          onClick={onBack}
-          className="group flex items-center gap-3 text-gray-700 hover:text-emerald-600 mb-6 sm:mb-8 transition-all duration-500 active:scale-95 hover:-translate-x-1"
-        >
-          <div className="p-2.5 rounded-xl bg-white border-2 border-gray-200 shadow-lg group-hover:shadow-xl group-hover:shadow-emerald-500/20 group-hover:border-emerald-400 group-hover:bg-gradient-to-br group-hover:from-emerald-50 group-hover:to-teal-50 transition-all duration-500">
-            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:-translate-x-0.5" />
-          </div>
-          <span className="font-bold text-sm sm:text-base tracking-tight">
-            Back to Clients
-          </span>
-        </button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50 pb-4">
+      {/* Sticky floating back button - always visible */}
+      <button
+        onClick={onBack}
+        className="fixed bottom-20 left-4 md:bottom-6 z-40 flex items-center gap-2 bg-white border border-gray-200 shadow-lg rounded-full px-3 py-2 text-gray-700 hover:text-emerald-600 hover:border-emerald-400 hover:shadow-xl transition-all duration-200 active:scale-95"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        <span className="font-bold text-xs">Back</span>
+      </button>
 
-        {/* Client Header - Ultra Premium */}
-        <div className="bg-white backdrop-blur-xl rounded-3xl border-2 border-gray-200 shadow-2xl shadow-gray-200/50 hover:shadow-3xl hover:shadow-gray-300/50 p-6 sm:p-8 mb-8 transition-all duration-500">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-2 sm:py-3">
+        {/* Client Header */}
+        <div className="bg-white backdrop-blur-xl rounded-2xl border border-gray-200 shadow-lg p-4 sm:p-5 mb-3 transition-all duration-300">
           <div className="flex flex-col sm:flex-row items-start justify-between gap-6">
             <div className="flex-1">
               <div className="flex items-center gap-4 mb-3">
-                <h1 className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent tracking-tight">
                   {client.client_name}
                 </h1>
                 <button
@@ -589,24 +585,24 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
             </div>
             <button
               onClick={generatePDFReport}
-              className="group flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-2xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-500 font-bold text-sm active:scale-95 hover:scale-105 border-2 border-blue-500"
+              className="group flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-xl hover:shadow-lg hover:shadow-blue-500/40 transition-all duration-300 font-bold text-sm active:scale-95 border border-blue-500"
             >
-              <Download className="w-5 h-5 transition-transform group-hover:translate-y-0.5" />
-              <span className="tracking-wide">Download Statement</span>
+              <Download className="w-4 h-4" />
+              <span>Statement</span>
             </button>
           </div>
         </div>
 
         {/* Client Info Grid - Compact */}
-        <div className="mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="mb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {client.phone && (
-              <div className="flex items-center gap-4 p-5 rounded-2xl bg-white border-2 border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-purple-300">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-pink-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-purple-500/30">
-                  <Phone className="w-6 h-6 text-white" />
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 hover:border-purple-300">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-purple-500 via-pink-500 to-pink-600 flex items-center justify-center flex-shrink-0">
+                  <Phone className="w-4 h-4 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-0.5">
+                  <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">
                     Phone
                   </p>
                   <p className="text-sm font-bold text-gray-900 truncate">
@@ -619,89 +615,83 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         </div>
 
         {/* Currency Tabs */}
-        <div className="flex gap-4 mb-8">
+        <div className="flex gap-2 mb-3">
           <button
             onClick={() => setActiveTab("kes")}
-            className={`flex-1 px-8 py-5 rounded-2xl font-black transition-all duration-500 text-sm sm:text-base shadow-lg border-2 ${
+            className={`flex-1 px-4 py-2.5 rounded-xl font-bold transition-all duration-300 text-sm shadow-sm border ${
               activeTab === "kes"
-                ? "bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-white shadow-emerald-500/40 border-emerald-400"
-                : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300 hover:border-emerald-300 hover:shadow-xl"
+                ? "bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-white shadow-emerald-500/30 border-emerald-400"
+                : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
             }`}
           >
-            <span className="hidden sm:inline">🇰🇪 Kenyan Shillings</span>
+            <span className="hidden sm:inline">🇰🇪 Kenyan Shillings (KES)</span>
             <span className="sm:hidden">KES</span>
           </button>
           <button
             onClick={() => setActiveTab("usd")}
-            className={`flex-1 px-8 py-5 rounded-2xl font-black transition-all duration-500 text-sm sm:text-base shadow-lg border-2 ${
+            className={`flex-1 px-4 py-2.5 rounded-xl font-bold transition-all duration-300 text-sm shadow-sm border ${
               activeTab === "usd"
-                ? "bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-600 text-white shadow-blue-500/40 border-blue-400"
-                : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300 hover:border-blue-300 hover:shadow-xl"
+                ? "bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-600 text-white shadow-blue-500/30 border-blue-400"
+                : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
             }`}
           >
-            <span className="hidden sm:inline">🇺🇸 US Dollars</span>
+            <span className="hidden sm:inline">🇺🇸 US Dollars (USD)</span>
             <span className="sm:hidden">USD</span>
           </button>
         </div>
 
         {/* Financial Summary */}
-        <div className="mb-8">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="mb-3">
+          <div className="grid grid-cols-3 gap-2">
             {/* Total OUT Card */}
-            <div className="bg-gradient-to-br from-red-500 via-red-600 to-rose-700 rounded-2xl p-6 text-white shadow-2xl shadow-red-500/30 hover:shadow-3xl hover:shadow-red-500/40 transition-all duration-500 hover:scale-105 border-2 border-red-400/50">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs bg-white/30 px-3 py-1.5 rounded-full font-black uppercase tracking-wide backdrop-blur-sm border border-white/40">
+            <div className="bg-gradient-to-br from-red-500 via-red-600 to-rose-700 rounded-xl p-3 text-white shadow-lg shadow-red-500/20 border border-red-400/50">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] bg-white/25 px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">
                   RECEIVABLES
                 </span>
-                <TrendingDown className="w-6 h-6 drop-shadow-lg" />
+                <TrendingDown className="w-4 h-4" />
               </div>
-              <p className="text-white/90 text-sm mb-2 font-semibold">
-                Total Receivables
-              </p>
-              <p className="text-3xl font-black tracking-tight drop-shadow-lg">
+              <p className="text-white/80 text-xs mb-0.5">Total Receivables</p>
+              <p className="text-lg font-black tracking-tight">
                 {formatCurrency(currentSummary.receivable, currencySymbol)}
               </p>
             </div>
 
             {/* Total IN Card */}
-            <div className="bg-gradient-to-br from-emerald-500 via-teal-600 to-green-700 rounded-2xl p-6 text-white shadow-2xl shadow-emerald-500/30 hover:shadow-3xl hover:shadow-emerald-500/40 transition-all duration-500 hover:scale-105 border-2 border-emerald-400/50">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs bg-white/30 px-3 py-1.5 rounded-full font-black uppercase tracking-wide backdrop-blur-sm border border-white/40">
+            <div className="bg-gradient-to-br from-emerald-500 via-teal-600 to-green-700 rounded-xl p-3 text-white shadow-lg shadow-emerald-500/20 border border-emerald-400/50">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] bg-white/25 px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">
                   RECEIVED
                 </span>
-                <TrendingUp className="w-6 h-6 drop-shadow-lg" />
+                <TrendingUp className="w-4 h-4" />
               </div>
-              <p className="text-white/90 text-sm mb-2 font-semibold">
-                Payments Received
-              </p>
-              <p className="text-3xl font-black tracking-tight drop-shadow-lg">
+              <p className="text-white/80 text-xs mb-0.5">Payments Received</p>
+              <p className="text-lg font-black tracking-tight">
                 {formatCurrency(currentSummary.paid, currencySymbol)}
               </p>
             </div>
 
             {/* Balance Card */}
             <div
-              className={`rounded-2xl p-6 text-white shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-105 border-2 ${
+              className={`rounded-xl p-3 text-white shadow-lg border ${
                 currentSummary.balance >= 0
-                  ? "bg-gradient-to-br from-blue-500 via-indigo-600 to-blue-700 shadow-blue-500/30 hover:shadow-blue-500/40 border-blue-400/50"
-                  : "bg-gradient-to-br from-orange-500 via-amber-600 to-orange-700 shadow-orange-500/30 hover:shadow-orange-500/40 border-orange-400/50"
+                  ? "bg-gradient-to-br from-blue-500 via-indigo-600 to-blue-700 shadow-blue-500/20 border-blue-400/50"
+                  : "bg-gradient-to-br from-orange-500 via-amber-600 to-orange-700 shadow-orange-500/20 border-orange-400/50"
               }`}
             >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs bg-white/30 px-3 py-1.5 rounded-full font-black uppercase tracking-wide backdrop-blur-sm border border-white/40">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] bg-white/25 px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">
                   {currentSummary.balance >= 0 ? "CREDIT" : "OUTSTANDING"}
                 </span>
-                <DollarSign className="w-6 h-6 drop-shadow-lg" />
+                <DollarSign className="w-4 h-4" />
               </div>
-              <p className="text-white/90 text-sm mb-2 font-semibold">
-                {currentSummary.balance >= 0
-                  ? "Credit Balance"
-                  : "Outstanding Balance"}
+              <p className="text-white/80 text-xs mb-0.5">
+                {currentSummary.balance >= 0 ? "Credit Balance" : "Outstanding"}
               </p>
-              <p className="text-3xl font-black tracking-tight drop-shadow-lg">
+              <p className="text-lg font-black tracking-tight">
                 {formatCurrency(
                   Math.abs(currentSummary.balance),
-                  currencySymbol
+                  currencySymbol,
                 )}
               </p>
             </div>
@@ -709,23 +699,23 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         </div>
 
         {/* Transactions Section */}
-        <div className="bg-white backdrop-blur-xl rounded-3xl border-2 border-gray-200 shadow-2xl shadow-gray-200/50 overflow-hidden transition-all duration-500 hover:shadow-3xl hover:shadow-gray-300/50">
-          <div className="p-4 sm:p-8 bg-gradient-to-r from-gray-50 via-white to-gray-50 border-b-2 border-gray-200">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="bg-white backdrop-blur-xl rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
+          <div className="p-3 sm:p-5 bg-gradient-to-r from-gray-50 via-white to-gray-50 border-b border-gray-200">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <h2 className="text-xl sm:text-3xl font-black text-gray-900 mb-2 tracking-tight">
+                <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">
                   Transaction History
                 </h2>
-                <p className="text-sm sm:text-base text-gray-600 font-semibold">
+                <p className="text-xs text-gray-600 font-semibold">
                   {currentTransactions.length} transaction
                   {currentTransactions.length !== 1 ? "s" : ""}
                 </p>
               </div>
               <button
                 onClick={() => setShowAddTransaction(true)}
-                className="flex items-center justify-center gap-3 px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 text-white rounded-2xl hover:shadow-2xl hover:shadow-emerald-500/50 transition-all duration-500 font-black text-sm sm:text-base active:scale-95 hover:scale-105 border-2 border-emerald-500 w-full sm:w-auto"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 text-white rounded-xl hover:shadow-lg hover:shadow-emerald-500/40 transition-all duration-300 font-bold text-sm active:scale-95 border border-emerald-500 w-full sm:w-auto"
               >
-                <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
+                <Plus className="w-4 h-4" />
                 <span>Add Transaction</span>
               </button>
             </div>
@@ -752,42 +742,41 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
               {/* Mobile Card View */}
               <div className="md:hidden divide-y divide-gray-200">
                 {/* Mobile Inline Add Card - AT TOP */}
-                <div className="p-5 bg-gradient-to-br from-emerald-50 to-teal-50 border-b-4 border-emerald-500 space-y-4 sticky top-0 z-20 shadow-lg">
-                  <div className="flex items-center gap-3 mb-1">
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg">
-                      <Plus className="w-5 h-5 text-white" />
+                <div className="p-3 bg-emerald-50 border-b-2 border-emerald-500 space-y-2 sticky top-0 z-20 shadow-md">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600">
+                      <Plus className="w-4 h-4 text-white" />
                     </div>
-                    <p className="text-base font-black text-gray-900 tracking-tight">
-                      Quick Add Transaction
-                    </p>
+                    <p className="text-sm font-bold text-gray-900">Quick Add</p>
                   </div>
 
-                  <div className="space-y-3">
-                    <input
-                      type="date"
-                      value={newRow.date}
-                      onChange={(e) =>
-                        setNewRow({ ...newRow, date: e.target.value })
-                      }
-                      className="w-full px-4 py-3 text-sm bg-white text-gray-900 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-lg transition-all font-semibold [color-scheme:light]"
-                      disabled={isSavingInline}
-                    />
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="date"
+                        value={newRow.date}
+                        onChange={(e) =>
+                          setNewRow({ ...newRow, date: e.target.value })
+                        }
+                        className="w-36 px-2 py-1.5 text-xs bg-white text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-semibold [color-scheme:light]"
+                        disabled={isSavingInline}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Description..."
+                        value={newRow.description}
+                        onChange={(e) =>
+                          setNewRow({ ...newRow, description: e.target.value })
+                        }
+                        className="flex-1 px-2 py-1.5 text-xs bg-white text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 placeholder:text-gray-500 font-semibold"
+                        disabled={isSavingInline}
+                      />
+                    </div>
 
-                    <input
-                      type="text"
-                      placeholder="Description..."
-                      value={newRow.description}
-                      onChange={(e) =>
-                        setNewRow({ ...newRow, description: e.target.value })
-                      }
-                      className="w-full px-4 py-3 text-sm bg-white text-gray-900 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 placeholder:text-gray-500 shadow-lg transition-all font-semibold"
-                      disabled={isSavingInline}
-                    />
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-xs font-black text-emerald-700 mb-2 block uppercase tracking-wider">
-                          Money IN
+                    <div className="flex gap-2 items-end">
+                      <div className="flex-1">
+                        <label className="text-[10px] font-bold text-emerald-700 mb-1 block uppercase">
+                          IN
                         </label>
                         <input
                           type="number"
@@ -802,14 +791,13 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                               debit: "",
                             })
                           }
-                          className="w-full px-4 py-3 text-sm bg-emerald-50 text-gray-900 border-2 border-emerald-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/20 placeholder:text-gray-500 shadow-lg transition-all font-bold"
+                          className="w-full px-2 py-1.5 text-xs bg-emerald-50 text-gray-900 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 placeholder:text-gray-500 font-bold"
                           disabled={isSavingInline}
                         />
                       </div>
-
-                      <div>
-                        <label className="text-xs font-black text-red-700 mb-2 block uppercase tracking-wider">
-                          Money OUT
+                      <div className="flex-1">
+                        <label className="text-[10px] font-bold text-red-700 mb-1 block uppercase">
+                          OUT
                         </label>
                         <input
                           type="number"
@@ -824,20 +812,19 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                               credit: "",
                             })
                           }
-                          className="w-full px-4 py-3 text-sm bg-red-50 text-gray-900 border-2 border-red-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-red-500/20 placeholder:text-gray-500 shadow-lg transition-all font-bold"
+                          className="w-full px-2 py-1.5 text-xs bg-red-50 text-gray-900 border border-red-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 placeholder:text-gray-500 font-bold"
                           disabled={isSavingInline}
                         />
                       </div>
+                      <button
+                        type="button"
+                        onClick={handleInlineAdd}
+                        disabled={isSavingInline || !newRow.description.trim()}
+                        className="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 text-xs border border-emerald-500 whitespace-nowrap"
+                      >
+                        {isSavingInline ? "..." : "✓ Add"}
+                      </button>
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={handleInlineAdd}
-                      disabled={isSavingInline || !newRow.description.trim()}
-                      className="w-full py-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 text-white rounded-xl font-black hover:shadow-2xl hover:shadow-emerald-500/50 transition-all duration-500 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 text-base border-2 border-emerald-500"
-                    >
-                      {isSavingInline ? "Saving..." : "✓ Add Transaction"}
-                    </button>
                   </div>
                 </div>
 
@@ -848,7 +835,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                   const runningBalance = remainingTransactions.reduce(
                     (sum, t) =>
                       sum + Number(t.credit || 0) - Number(t.debit || 0),
-                    0
+                    0,
                   );
 
                   return (
@@ -863,7 +850,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                           </p>
                           <p className="text-xs text-gray-600 font-medium">
                             {new Date(
-                              transaction.transaction_date
+                              transaction.transaction_date,
                             ).toLocaleDateString("en-GB", {
                               day: "2-digit",
                               month: "short",
@@ -909,7 +896,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                               +
                               {formatCurrency(
                                 transaction.credit,
-                                currencySymbol
+                                currencySymbol,
                               )}
                             </p>
                           ) : (
@@ -926,7 +913,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                               -
                               {formatCurrency(
                                 transaction.debit,
-                                currencySymbol
+                                currencySymbol,
                               )}
                             </p>
                           ) : (
@@ -1089,7 +1076,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                       const runningBalance = remainingTransactions.reduce(
                         (sum, t) =>
                           sum + Number(t.credit || 0) - Number(t.debit || 0),
-                        0
+                        0,
                       );
 
                       return (
@@ -1100,7 +1087,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                           <td className="px-4 py-3 whitespace-nowrap">
                             <div className="text-sm font-semibold text-gray-900">
                               {new Date(
-                                transaction.transaction_date
+                                transaction.transaction_date,
                               ).toLocaleDateString("en-GB", {
                                 day: "2-digit",
                                 month: "short",
@@ -1119,7 +1106,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                                 +
                                 {formatCurrency(
                                   transaction.credit,
-                                  currencySymbol
+                                  currencySymbol,
                                 )}
                               </span>
                             ) : (
@@ -1132,7 +1119,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                                 -
                                 {formatCurrency(
                                   transaction.debit,
-                                  currencySymbol
+                                  currencySymbol,
                                 )}
                               </span>
                             ) : (
