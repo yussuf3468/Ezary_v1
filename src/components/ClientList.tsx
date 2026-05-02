@@ -28,7 +28,7 @@ interface Client {
   status: string;
   last_transaction_date: string | null;
   created_at: string;
-  updated_at: string;
+  updated_at: string | null;
 }
 
 interface ClientBalance {
@@ -214,9 +214,21 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
           compareValue = a.client_name.localeCompare(b.client_name);
           break;
         case "date":
-          compareValue =
-            new Date(a.updated_at || a.created_at).getTime() -
-            new Date(b.updated_at || b.created_at).getTime();
+          const aModifiedTime = Math.max(
+            a.updated_at ? new Date(a.updated_at).getTime() : 0,
+            a.last_transaction_date
+              ? new Date(a.last_transaction_date).getTime()
+              : 0,
+            new Date(a.created_at).getTime(),
+          );
+          const bModifiedTime = Math.max(
+            b.updated_at ? new Date(b.updated_at).getTime() : 0,
+            b.last_transaction_date
+              ? new Date(b.last_transaction_date).getTime()
+              : 0,
+            new Date(b.created_at).getTime(),
+          );
+          compareValue = aModifiedTime - bModifiedTime;
           break;
         case "balance":
           const balanceA = balances.get(a.id)?.balance || 0;
@@ -410,7 +422,7 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
     try {
       const { error } = await supabase
         .from("clients")
-        .update({ status: newStatus })
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
         .eq("id", client.id)
         .eq("user_id", user?.id);
 
@@ -568,10 +580,10 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
                 className="flex-1 sm:flex-none px-3 py-2 text-sm border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-gray-900 font-semibold hover:border-gray-300 transition-all"
               >
                 <option value="date-desc" className="bg-white text-gray-900">
-                  Newest First
+                  Recently Modified
                 </option>
                 <option value="date-asc" className="bg-white text-gray-900">
-                  Oldest First
+                  Least Recently Modified
                 </option>
                 <option value="name-asc" className="bg-white text-gray-900">
                   Name (A-Z)
