@@ -28,6 +28,7 @@ interface Client {
   status: string;
   last_transaction_date: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 interface ClientBalance {
@@ -85,10 +86,10 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
       const { data, error } = await supabase
         .from("clients")
         .select(
-          "id, client_name, client_code, email, phone, business_name, status, last_transaction_date, created_at",
+          "id, client_name, client_code, email, phone, business_name, status, last_transaction_date, created_at, updated_at",
         )
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .order("updated_at", { ascending: false });
 
       if (error) throw error;
 
@@ -214,7 +215,8 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
           break;
         case "date":
           compareValue =
-            new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+            new Date(a.updated_at || a.created_at).getTime() -
+            new Date(b.updated_at || b.created_at).getTime();
           break;
         case "balance":
           const balanceA = balances.get(a.id)?.balance || 0;
@@ -240,6 +242,30 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
     const formData = new FormData(form);
 
     try {
+      const clientName = (formData.get("client_name") as string).trim();
+      const phone = (formData.get("phone") as string)?.trim() || null;
+
+      // Duplicate check: same name (case-insensitive) OR same phone number
+      const { data: duplicates, error: dupError } = await supabase
+        .from("clients")
+        .select("client_name, phone")
+        .eq("user_id", user?.id)
+        .or(
+          `client_name.ilike.${clientName}${phone ? `,phone.eq.${phone}` : ""}`,
+        );
+
+      if (dupError) {
+        console.error("Error checking duplicates:", dupError);
+      } else if (duplicates && duplicates.length > 0) {
+        const match = duplicates[0];
+        const reason =
+          match.client_name.toLowerCase() === clientName.toLowerCase()
+            ? `name "${match.client_name}"`
+            : `phone number ${match.phone}`;
+        toast.error(`Client already exists with the same ${reason}.`);
+        return;
+      }
+
       // Generate client code by querying the last client code
       const { data: existingClients, error: queryError } = await supabase
         .from("clients")
@@ -268,9 +294,9 @@ export default function ClientList({ onSelectClient }: ClientListProps) {
         .from("clients")
         .insert({
           user_id: user?.id,
-          client_name: formData.get("client_name"),
+          client_name: clientName,
           email: formData.get("email") || null,
-          phone: formData.get("phone") || null,
+          phone: phone,
           business_name: formData.get("business_name") || null,
           address: formData.get("address") || null,
           client_code: clientCode,
