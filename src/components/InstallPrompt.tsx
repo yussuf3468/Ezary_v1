@@ -6,46 +6,31 @@ export default function InstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
-    // Check if already installed
-    if (window.matchMedia("(display-mode: standalone)").matches) {
-      return; // App is already installed
-    }
+    if (window.matchMedia("(display-mode: standalone)").matches) return;
 
-    // Check if user dismissed before
     const dismissed = localStorage.getItem("pwa-install-dismissed");
     if (dismissed) {
       const dismissedTime = parseInt(dismissed);
       const daysSinceDismissed =
         (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
-      if (daysSinceDismissed < 7) {
-        return; // Don't show again for 7 days
-      }
+      if (daysSinceDismissed < 7) return;
     }
 
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      // Show prompt after 30 seconds
       setTimeout(() => setShowPrompt(true), 30000);
     };
 
     window.addEventListener("beforeinstallprompt", handler);
-
-    return () => {
-      window.removeEventListener("beforeinstallprompt", handler);
-    };
+    return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
-
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-
-    if (outcome === "accepted") {
-      console.log("PWA installed");
-    }
-
+    if (outcome === "accepted") console.log("PWA installed");
     setDeferredPrompt(null);
     setShowPrompt(false);
   };
@@ -58,40 +43,36 @@ export default function InstallPrompt() {
   if (!showPrompt || !deferredPrompt) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-[9999] max-w-sm">
-      <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl shadow-2xl p-6 text-white animate-slide-in-right">
+    <div className="fixed bottom-20 md:bottom-6 right-4 z-[9999] max-w-[320px] animate-slide-up">
+      <div className="relative bg-white rounded-2xl shadow-lg border border-ink-200/70 p-4">
         <button
           onClick={handleDismiss}
-          className="absolute top-3 right-3 text-white/80 hover:text-white transition-colors"
+          className="absolute top-2.5 right-2.5 p-1 rounded-md text-ink-400 hover:bg-ink-100 hover:text-ink-700 transition-colors"
+          aria-label="Dismiss"
         >
-          <X className="w-5 h-5" />
+          <X className="w-3.5 h-3.5" />
         </button>
 
-        <div className="flex items-start gap-4">
-          <div className="bg-white/20 rounded-full p-3">
-            <Smartphone className="w-6 h-6" />
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center shrink-0">
+            <Smartphone className="w-4 h-4" />
           </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-bold mb-1">Install Ezary CMS</h3>
-            <p className="text-sm text-white/90 mb-4">
-              Access faster and work offline! Install our app for the best
-              experience.
+          <div className="flex-1 min-w-0 pr-5">
+            <h3 className="text-sm font-semibold text-ink-900 tracking-tight">
+              Install Ezary
+            </h3>
+            <p className="text-xs text-ink-500 mt-0.5">
+              Faster access, works offline, lives on your home screen.
             </p>
 
             <button
               onClick={handleInstall}
-              className="w-full bg-white text-emerald-600 font-semibold py-2.5 px-4 rounded-lg hover:bg-emerald-50 transition-colors flex items-center justify-center gap-2"
+              className="mt-3 w-full h-8 inline-flex items-center justify-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-medium rounded-md transition-colors press"
             >
-              <Download className="w-4 h-4" />
-              Install App
+              <Download className="w-3.5 h-3.5" />
+              Install app
             </button>
           </div>
-        </div>
-
-        <div className="mt-4 pt-4 border-t border-white/20">
-          <p className="text-xs text-white/80">
-            ✓ Works offline • ✓ Faster loading • ✓ Home screen access
-          </p>
         </div>
       </div>
     </div>

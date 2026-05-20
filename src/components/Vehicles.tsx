@@ -26,7 +26,7 @@ interface VehiclesProps {
   onBack?: () => void;
 }
 
-export default function Vehicles({ onBack }: VehiclesProps) {
+export default function Vehicles({ onBack: _onBack }: VehiclesProps) {
   const { user } = useAuth();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);

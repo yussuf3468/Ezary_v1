@@ -6,7 +6,6 @@ import { useToast } from "../contexts/ToastContext";
 import {
   Users,
   TrendingUp,
-  DollarSign,
   Plus,
   Search,
   Eye,

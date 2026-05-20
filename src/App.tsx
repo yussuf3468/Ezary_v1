@@ -34,8 +34,11 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center">
-        <div className="text-gray-600 text-lg">Loading...</div>
+      <div className="min-h-screen bg-surface-base flex items-center justify-center">
+        <div className="flex items-center gap-3 text-ink-500">
+          <div className="w-2 h-2 rounded-full bg-brand-500 animate-pulse" />
+          <span className="text-sm">Loading workspace…</span>
+        </div>
       </div>
     );
   }
