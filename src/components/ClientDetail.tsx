@@ -603,7 +603,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                     "h-7 px-2 sm:px-2.5 inline-flex items-center gap-1.5 rounded-md text-xs font-medium",
                     "transition-colors duration-150 focus-ring",
                     active
-                      ? "bg-white text-ink-900 shadow-xs"
+                      ? "bg-white text-brand-700 shadow-xs font-semibold"
                       : "text-ink-500 hover:text-ink-700",
                   ].join(" ")}
                 >
@@ -681,7 +681,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
 
       {/* Transaction ledger */}
       <Card className="overflow-hidden">
-        <div className="px-4 sm:px-5 py-3 border-b border-ink-100 flex items-center justify-between gap-3">
+        <div className="px-4 sm:px-5 py-3 border-b border-ink-100 bg-ink-50/50 flex items-center justify-between gap-3">
           <div>
             <h2 className="text-sm font-semibold text-ink-900 tracking-tight">
               Transaction history
@@ -711,7 +711,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
           <>
             {/* Desktop ledger */}
             <div className="hidden md:block">
-              <div className="grid grid-cols-12 px-4 py-2.5 bg-ink-50/60 border-b border-ink-100 text-[11px] uppercase tracking-wide text-ink-500 font-medium">
+              <div className="grid grid-cols-12 px-4 py-2.5 bg-ink-50 border-b border-ink-100 text-[11px] uppercase tracking-wide text-ink-500 font-semibold">
                 <div className="col-span-2">Date</div>
                 <div className="col-span-4">Description</div>
                 <div className="col-span-2 text-right">In</div>
@@ -731,7 +731,14 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                   return (
                     <div
                       key={t.id}
-                      className="grid grid-cols-12 items-center px-4 py-2.5 group hover:bg-ink-50/50 transition-colors"
+                      className={[
+                        "grid grid-cols-12 items-center px-4 py-2.5 group transition-colors hover:bg-brand-50/20",
+                        t.credit > 0
+                          ? "shadow-[inset_3px_0_0_#10b981]"
+                          : t.debit > 0
+                            ? "shadow-[inset_3px_0_0_#ef4444]"
+                            : "",
+                      ].join(" ")}
                     >
                       <div className="col-span-2 text-xs text-ink-600 tabular-nums">
                         {new Date(t.transaction_date).toLocaleDateString(
@@ -766,11 +773,12 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                       </div>
                       <div className="col-span-1 text-sm text-right tabular-nums font-medium">
                         <span
-                          className={
+                          className={[
+                            "inline-block px-1.5 py-0.5 rounded-md text-xs",
                             runningBalance >= 0
-                              ? "text-ink-900"
-                              : "text-negative-700"
-                          }
+                              ? "text-positive-700 bg-positive-50"
+                              : "text-negative-700 bg-negative-50",
+                          ].join(" ")}
                         >
                           {runningBalance >= 0 ? "" : "−"}
                           {formatCurrency(
@@ -809,86 +817,98 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                   );
                 })}
 
-                {/* Inline add row */}
-                <div className="grid grid-cols-12 items-center px-4 py-3 bg-brand-50/40 border-t border-brand-100">
-                  <div className="col-span-2 pr-2">
-                    <input
-                      type="date"
-                      value={newRow.date}
-                      onChange={(e) =>
-                        setNewRow({ ...newRow, date: e.target.value })
-                      }
-                      className="w-full h-8 px-2 text-xs bg-white text-ink-900 border border-ink-200 rounded-md focus:outline-none focus:border-brand-500 focus:shadow-focus [color-scheme:light] tabular-nums"
-                      disabled={isSavingInline}
-                    />
+                {/* Inline add — eye-catching */}
+                <div className="border-t-4 border-brand-500 bg-gradient-to-r from-brand-50 via-brand-100/70 to-brand-50 ">
+                  <div className="px-4 pt-2.5 pb-1.5 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-brand-600 text-white rounded-md text-[10px] font-bold uppercase tracking-wider shadow-sm">
+                        <Plus className="w-3 h-3" /> Quick add
+                      </span>
+                      <span className="text-[11px] text-brand-700 font-medium">
+                        Add a new {currencySymbol} transaction
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-brand-700/80 font-medium">
+                      {isSavingInline ? "Saving…" : "Press Enter ↵ to save"}
+                    </span>
                   </div>
-                  <div className="col-span-4 pr-2">
-                    <input
-                      type="text"
-                      placeholder="Quick add — describe the transaction…"
-                      value={newRow.description}
-                      onChange={(e) =>
-                        setNewRow({ ...newRow, description: e.target.value })
-                      }
-                      onKeyDown={(e) =>
-                        handleInlineKeyDown(e, "description")
-                      }
-                      className="w-full h-8 px-2.5 text-sm bg-white text-ink-900 border border-ink-200 rounded-md focus:outline-none focus:border-brand-500 focus:shadow-focus placeholder:text-ink-400"
-                      disabled={isSavingInline}
-                    />
-                    
-                  </div>
-                  <div className="col-span-2 pr-1">
-                    <input
-                      type="number"
-                      placeholder="0.00"
-                      step="0.01"
-                      min="0"
-                      value={newRow.credit}
-                      onChange={(e) =>
-                        setNewRow({
-                          ...newRow,
-                          credit: e.target.value,
-                          debit: "",
-                        })
-                      }
-                      onKeyDown={(e) => handleInlineKeyDown(e, "credit")}
-                      className="w-full h-8 px-2 text-xs text-right bg-white text-positive-700 border border-ink-200 rounded-md focus:outline-none focus:border-positive-500 focus:shadow-focus placeholder:text-ink-400 tabular-nums font-medium"
-                      disabled={isSavingInline}
-                    />
-                  </div>
-                  <div className="col-span-2 pr-1">
-                    <input
-                      type="number"
-                      placeholder="0.00"
-                      step="0.01"
-                      min="0"
-                      value={newRow.debit}
-                      onChange={(e) =>
-                        setNewRow({
-                          ...newRow,
-                          debit: e.target.value,
-                          credit: "",
-                        })
-                      }
-                      onKeyDown={(e) => handleInlineKeyDown(e, "debit")}
-                      className="w-full h-8 px-2 text-xs text-right bg-white text-negative-700 border border-ink-200 rounded-md focus:outline-none focus:border-negative-500 focus:shadow-focus-danger placeholder:text-ink-400 tabular-nums font-medium"
-                      disabled={isSavingInline}
-                    />
-                  </div>
-                  <div className="col-span-1 text-right text-[10px] text-ink-500 italic pr-2">
-                    {isSavingInline ? "Saving…" : "Enter ↵"}
-                  </div>
-                  <div className="col-span-1 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={handleInlineAdd}
-                      disabled={isSavingInline || !newRow.description.trim()}
-                      className="h-7 w-7 rounded-md inline-flex items-center justify-center bg-brand-600 text-white hover:bg-brand-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-ring"
-                      title="Save transaction"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
+                  <div className="grid grid-cols-12 items-center px-4 pb-3 gap-x-2">
+                    <div className="col-span-2">
+                      <input
+                        type="date"
+                        value={newRow.date}
+                        onChange={(e) =>
+                          setNewRow({ ...newRow, date: e.target.value })
+                        }
+                        className="w-full h-9 px-2 text-xs bg-white text-ink-900 border-2 border-brand-200 rounded-md focus:outline-none focus:border-brand-500 focus:shadow-focus [color-scheme:light] tabular-nums"
+                        disabled={isSavingInline}
+                      />
+                    </div>
+                    <div className="col-span-4">
+                      <input
+                        type="text"
+                        placeholder="Describe the transaction…"
+                        value={newRow.description}
+                        onChange={(e) =>
+                          setNewRow({ ...newRow, description: e.target.value })
+                        }
+                        onKeyDown={(e) =>
+                          handleInlineKeyDown(e, "description")
+                        }
+                        className="w-full h-9 px-2.5 text-sm bg-white text-ink-900 border-2 border-brand-200 rounded-md focus:outline-none focus:border-brand-500 focus:shadow-focus placeholder:text-ink-400"
+                        disabled={isSavingInline}
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <input
+                        type="number"
+                        placeholder="In +"
+                        step="0.01"
+                        min="0"
+                        value={newRow.credit}
+                        onChange={(e) =>
+                          setNewRow({
+                            ...newRow,
+                            credit: e.target.value,
+                            debit: "",
+                          })
+                        }
+                        onKeyDown={(e) => handleInlineKeyDown(e, "credit")}
+                        className="w-full h-9 px-2 text-xs text-right bg-white text-positive-700 border-2 border-positive-100 rounded-md focus:outline-none focus:border-positive-500 focus:shadow-focus placeholder:text-positive-500/60 tabular-nums font-semibold"
+                        disabled={isSavingInline}
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <input
+                        type="number"
+                        placeholder="Out −"
+                        step="0.01"
+                        min="0"
+                        value={newRow.debit}
+                        onChange={(e) =>
+                          setNewRow({
+                            ...newRow,
+                            debit: e.target.value,
+                            credit: "",
+                          })
+                        }
+                        onKeyDown={(e) => handleInlineKeyDown(e, "debit")}
+                        className="w-full h-9 px-2 text-xs text-right bg-white text-negative-700 border-2 border-negative-100 rounded-md focus:outline-none focus:border-negative-500 focus:shadow-focus-danger placeholder:text-negative-500/60 tabular-nums font-semibold"
+                        disabled={isSavingInline}
+                      />
+                    </div>
+                    <div className="col-span-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={handleInlineAdd}
+                        disabled={isSavingInline || !newRow.description.trim()}
+                        className="h-9 px-3 rounded-md inline-flex items-center justify-center gap-1.5 bg-brand-600 text-white text-xs font-semibold hover:bg-brand-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed focus-ring shadow-md hover:shadow-lg hover:-translate-y-0.5"
+                        title="Save transaction"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        {isSavingInline ? "Saving…" : "Add entry"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -905,7 +925,17 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                     0,
                   );
                 return (
-                  <div key={t.id} className="px-4 py-3">
+                  <div
+                    key={t.id}
+                    className={[
+                      "px-4 py-3",
+                      t.credit > 0
+                        ? "shadow-[inset_3px_0_0_#10b981]"
+                        : t.debit > 0
+                          ? "shadow-[inset_3px_0_0_#ef4444]"
+                          : "",
+                    ].join(" ")}
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="text-[11px] text-ink-500 tabular-nums">
@@ -962,13 +992,12 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                       </div>
                       <span
                         className={[
-                          "text-xs font-medium",
+                          "text-xs font-medium px-1.5 py-0.5 rounded-md",
                           runningBalance >= 0
-                            ? "text-ink-700"
-                            : "text-negative-700",
+                            ? "text-positive-800 bg-positive-50"
+                            : "text-negative-700 bg-negative-50",
                         ].join(" ")}
                       >
-                        bal:{" "}
                         {runningBalance >= 0 ? "" : "−"}
                         {formatCurrency(
                           Math.abs(runningBalance),
@@ -980,11 +1009,15 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                 );
               })}
 
-              {/* Mobile inline add */}
-              <div className="p-3 bg-brand-50/50 border-t border-brand-100 space-y-2">
-                <div className="flex items-center gap-2 text-xs font-medium text-ink-700">
-                  <Plus className="w-3.5 h-3.5 text-brand-600" />
-                  Quick add
+              {/* Mobile inline add — eye-catching */}
+              <div className="p-3 bg-gradient-to-br from-brand-50 via-brand-100/70 to-brand-50 border-t-4 border-brand-500 shadow-[inset_6px_0_0_#0d9488,0_-4px_12px_-4px_rgba(13,148,136,0.18)] space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-brand-600 text-white rounded-md text-[10px] font-bold uppercase tracking-wider shadow-sm">
+                    <Plus className="w-3 h-3" /> Quick add
+                  </span>
+                  <span className="text-[10px] text-brand-700/80 font-medium">
+                    New {currencySymbol} entry
+                  </span>
                 </div>
                 <div className="flex gap-2">
                   <input
@@ -993,24 +1026,24 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                     onChange={(e) =>
                       setNewRow({ ...newRow, date: e.target.value })
                     }
-                    className="w-32 h-8 px-2 text-xs bg-white border border-ink-200 rounded-md focus:outline-none focus:border-brand-500 [color-scheme:light] tabular-nums"
+                    className="w-32 h-9 px-2 text-xs bg-white border-2 border-brand-200 rounded-md focus:outline-none focus:border-brand-500 [color-scheme:light] tabular-nums"
                     disabled={isSavingInline}
                   />
                   <input
                     type="text"
-                    placeholder="Description"
+                    placeholder="Describe…"
                     value={newRow.description}
                     onChange={(e) =>
                       setNewRow({ ...newRow, description: e.target.value })
                     }
-                    className="flex-1 h-8 px-2.5 text-xs bg-white border border-ink-200 rounded-md focus:outline-none focus:border-brand-500 placeholder:text-ink-400"
+                    className="flex-1 h-9 px-2.5 text-xs bg-white border-2 border-brand-200 rounded-md focus:outline-none focus:border-brand-500 placeholder:text-ink-400"
                     disabled={isSavingInline}
                   />
                 </div>
                 <div className="flex items-end gap-2">
                   <div className="flex-1">
-                    <label className="block text-[10px] uppercase font-medium text-positive-700 mb-1">
-                      In
+                    <label className="block text-[10px] uppercase font-bold text-positive-700 mb-1">
+                      In +
                     </label>
                     <input
                       type="number"
@@ -1025,13 +1058,13 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                           debit: "",
                         })
                       }
-                      className="w-full h-8 px-2 text-xs text-right bg-white border border-ink-200 rounded-md focus:outline-none focus:border-positive-500 text-positive-700 tabular-nums font-medium"
+                      className="w-full h-9 px-2 text-xs text-right bg-white border-2 border-positive-100 rounded-md focus:outline-none focus:border-positive-500 text-positive-700 tabular-nums font-semibold"
                       disabled={isSavingInline}
                     />
                   </div>
                   <div className="flex-1">
-                    <label className="block text-[10px] uppercase font-medium text-negative-700 mb-1">
-                      Out
+                    <label className="block text-[10px] uppercase font-bold text-negative-700 mb-1">
+                      Out −
                     </label>
                     <input
                       type="number"
@@ -1046,18 +1079,19 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                           credit: "",
                         })
                       }
-                      className="w-full h-8 px-2 text-xs text-right bg-white border border-ink-200 rounded-md focus:outline-none focus:border-negative-500 text-negative-700 tabular-nums font-medium"
+                      className="w-full h-9 px-2 text-xs text-right bg-white border-2 border-negative-100 rounded-md focus:outline-none focus:border-negative-500 text-negative-700 tabular-nums font-semibold"
                       disabled={isSavingInline}
                     />
                   </div>
-                  <Button
-                    variant="primary"
-                    size="sm"
+                  <button
+                    type="button"
                     onClick={handleInlineAdd}
                     disabled={isSavingInline || !newRow.description.trim()}
+                    className="h-9 px-3 rounded-md inline-flex items-center justify-center gap-1.5 bg-brand-600 text-white text-xs font-semibold hover:bg-brand-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed focus-ring shadow-md"
                   >
+                    <Plus className="w-3.5 h-3.5" />
                     {isSavingInline ? "Saving…" : "Save"}
-                  </Button>
+                  </button>
                 </div>
               </div>
             </div>

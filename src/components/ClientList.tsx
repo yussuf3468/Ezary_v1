@@ -15,8 +15,10 @@ import {
   ChevronRight,
   LayoutGrid,
   List,
-
   AlertTriangle,
+  Calendar,
+  DollarSign,
+  Eye,
 } from "lucide-react";
 import {
   Avatar,
@@ -964,6 +966,31 @@ function ClientRows({
   );
 }
 
+// Per-client avatar palette — keeps each client visually distinct
+const AVATAR_BGS = [
+  "bg-brand-600",
+  "bg-blue-500",
+  "bg-amber-500",
+  "bg-emerald-500",
+  "bg-rose-500",
+  "bg-violet-500",
+  "bg-cyan-500",
+  "bg-pink-500",
+];
+
+function hashName(name: string) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return h % AVATAR_BGS.length;
+}
+
+const formatActivityDate = (iso: string | null) => {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
+
 function ClientGrid({
   clients,
   balances,
@@ -983,118 +1010,169 @@ function ClientGrid({
         const b = balances.get(client.id);
         const kes = b?.kes_balance || 0;
         const usd = b?.usd_balance || 0;
-        const txns = b?.transaction_count || 0;
+        const isInactive = client.status === "inactive";
+        const initials = client.client_name
+          .split(/\s+/)
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((s) => s.charAt(0).toUpperCase())
+          .join("") || "?";
+        const avatarBg = isInactive
+          ? "bg-ink-400"
+          : AVATAR_BGS[hashName(client.client_name)];
+        const lastActivity = formatActivityDate(
+          client.last_transaction_date || client.updated_at || client.created_at,
+        );
+
+        const kesColor =
+          kes < 0 ? "text-negative-600" : kes > 0 ? "text-positive-700" : "text-ink-400";
+        const usdColor =
+          usd < 0 ? "text-negative-600" : usd > 0 ? "text-positive-700" : "text-info-700";
+
         return (
-          <Card
+          <div
             key={client.id}
-            interactive
+            role="button"
+            tabIndex={0}
             onClick={() => onSelect(client.id)}
-            className="group"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelect(client.id);
+              }
+            }}
+            className={[
+              "group relative cursor-pointer bg-white rounded-2xl border-2 border-brand-100",
+              "shadow-xs transition-all duration-200 ease-out",
+              "hover:shadow-lg hover:-translate-y-0.5 hover:border-brand-300",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-1",
+              isInactive ? "opacity-75" : "",
+            ].join(" ")}
           >
-            <div className="p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <Avatar
-                    name={client.client_name}
-                    size="md"
-                    status={client.status as "active" | "inactive"}
-                  />
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-ink-900 truncate group-hover:text-brand-700 transition-colors">
-                      {client.client_name}
-                    </div>
-                    <div className="text-[11px] text-ink-500 font-mono truncate">
-                      {client.client_code}
-                    </div>
+            {/* Body */}
+            <div className="p-4 space-y-3">
+              {/* Avatar + name + code */}
+              <div className="flex items-center gap-3 min-w-0">
+                <div
+                  className={[
+                    "w-11 h-11 rounded-xl flex items-center justify-center shrink-0",
+                    "text-white text-base font-bold shadow-sm",
+                    avatarBg,
+                  ].join(" ")}
+                  aria-hidden
+                >
+                  {initials}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-base font-bold text-ink-900 truncate leading-tight">
+                    {client.client_name}
+                  </div>
+                  <div className="text-[11px] text-ink-400 font-mono truncate mt-0.5">
+                    {client.client_code}
                   </div>
                 </div>
-                <Badge
-                  tone={client.status === "active" ? "positive" : "muted"}
-                  size="sm"
-                  dot
-                >
-                  {client.status}
-                </Badge>
+                {isInactive && (
+                  <Badge tone="muted" size="sm">
+                    Off
+                  </Badge>
+                )}
               </div>
+
+              {/* Phone */}
               {client.phone && (
-                <div className="mt-3 flex items-center gap-1.5 text-xs text-ink-500">
-                  <Phone className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-1.5 text-xs text-ink-500">
+                  <Phone className="w-3.5 h-3.5 text-ink-400 shrink-0" />
                   <span className="truncate">{client.phone}</span>
                 </div>
               )}
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <div className="rounded-md bg-ink-50/70 px-2.5 py-2">
-                  <div className="text-[10px] uppercase tracking-wide text-ink-500">
-                    KES
+
+              {/* KES + USD balance boxes */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-lg bg-negative-50 px-2.5 py-2">
+                  <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide font-semibold text-ink-500">
+                    <DollarSign className="w-3 h-3 text-negative-600" />
+                    <span>Balance</span>
                   </div>
                   <div
                     className={[
-                      "text-sm font-semibold tabular-nums",
-                      kes > 0
-                        ? "text-positive-700"
-                        : kes < 0
-                          ? "text-negative-700"
-                          : "text-ink-400",
+                      "mt-0.5 text-sm font-bold tabular-nums truncate",
+                      kesColor,
                     ].join(" ")}
+                    title={`KES ${kes.toLocaleString()}`}
                   >
-                    {kes !== 0 ? kes.toLocaleString() : "—"}
+                    {kes === 0 ? "KES —" : `KES ${kes.toLocaleString()}`}
                   </div>
                 </div>
-                <div className="rounded-md bg-ink-50/70 px-2.5 py-2">
-                  <div className="text-[10px] uppercase tracking-wide text-ink-500">
-                    USD
+                <div className="rounded-lg bg-info-50 px-2.5 py-2">
+                  <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide font-semibold text-ink-500">
+                    <DollarSign className="w-3 h-3 text-info-600" />
+                    <span>USD</span>
                   </div>
                   <div
                     className={[
-                      "text-sm font-semibold tabular-nums",
-                      usd > 0
-                        ? "text-positive-700"
-                        : usd < 0
-                          ? "text-negative-700"
-                          : "text-ink-400",
+                      "mt-0.5 text-sm font-bold tabular-nums truncate",
+                      usdColor,
                     ].join(" ")}
+                    title={`$${usd.toLocaleString()}`}
                   >
-                    {usd !== 0 ? `$${usd.toLocaleString()}` : "—"}
+                    {usd === 0
+                      ? "$ —"
+                      : usd < 0
+                        ? `-$${Math.abs(usd).toLocaleString()}`
+                        : `$${usd.toLocaleString()}`}
                   </div>
                 </div>
               </div>
-              <div className="mt-3 pt-3 border-t border-ink-100 flex items-center justify-between">
-                <span className="text-[11px] text-ink-500">
-                  {txns} {txns === 1 ? "transaction" : "transactions"}
-                </span>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleStatus(client);
-                    }}
-                    className="p-1.5 rounded-md text-ink-400 hover:bg-ink-100 hover:text-ink-700 transition-colors focus-ring"
-                    title={
-                      client.status === "active"
-                        ? "Mark inactive"
-                        : "Mark active"
-                    }
-                  >
-                    {client.status === "active" ? (
-                      <Ban className="w-3.5 h-3.5" />
-                    ) : (
-                      <CheckCircle className="w-3.5 h-3.5" />
-                    )}
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(client);
-                    }}
-                    className="p-1.5 rounded-md text-ink-400 hover:bg-negative-50 hover:text-negative-600 transition-colors focus-ring"
-                    title="Delete"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+
+              {/* Last activity */}
+              {lastActivity && (
+                <div className="flex items-center gap-1.5 text-[11px] text-ink-500">
+                  <Calendar className="w-3 h-3 text-ink-400 shrink-0" />
+                  <span>{lastActivity}</span>
                 </div>
+              )}
+            </div>
+
+            {/* Action row — whole card is clickable; these are explicit secondary actions */}
+            <div className="px-4 pb-3 pt-2.5 border-t border-ink-100 flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-[11px] font-medium text-brand-700 group-hover:text-brand-800 transition-colors">
+                <Eye className="w-3.5 h-3.5" />
+                <span>Tap to view</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleStatus(client);
+                  }}
+                  className="w-8 h-8 rounded-lg bg-warning-50 text-warning-600 hover:bg-warning-100 transition-colors focus-ring press inline-flex items-center justify-center"
+                  title={client.status === "active" ? "Mark inactive" : "Mark active"}
+                  aria-label={
+                    client.status === "active" ? "Mark inactive" : "Mark active"
+                  }
+                >
+                  {client.status === "active" ? (
+                    <Ban className="w-3.5 h-3.5" />
+                  ) : (
+                    <CheckCircle className="w-3.5 h-3.5" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(client);
+                  }}
+                  className="w-8 h-8 rounded-lg bg-negative-50 text-negative-600 hover:bg-negative-100 transition-colors focus-ring press inline-flex items-center justify-center"
+                  title="Delete"
+                  aria-label="Delete client"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
-          </Card>
+          </div>
         );
       })}
     </div>
