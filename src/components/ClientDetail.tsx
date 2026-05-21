@@ -98,6 +98,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
     debit: "",
   });
   const [isSavingInline, setIsSavingInline] = useState(false);
+  const [isSubmittingTxn, setIsSubmittingTxn] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -326,10 +327,12 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
 
   const handleAddTransaction = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isSubmittingTxn) return;
     const formData = new FormData(e.currentTarget);
     const currency = formData.get("currency") as string;
     const transactionType = formData.get("transaction_type") as string;
     const amount = Number(formData.get("amount"));
+    setIsSubmittingTxn(true);
     try {
       const transactionData = {
         client_id: clientId,
@@ -376,10 +379,13 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
     } catch (error) {
       console.error("Unexpected error:", error);
       toast.error("An unexpected error occurred");
+    } finally {
+      setIsSubmittingTxn(false);
     }
   };
 
   const handleInlineAdd = async () => {
+    if (isSavingInline) return;
     if (!newRow.description.trim()) return;
     const creditAmount = parseFloat(newRow.credit) || 0;
     const debitAmount = parseFloat(newRow.debit) || 0;
@@ -830,6 +836,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                       className="w-full h-8 px-2.5 text-sm bg-white text-ink-900 border border-ink-200 rounded-md focus:outline-none focus:border-brand-500 focus:shadow-focus placeholder:text-ink-400"
                       disabled={isSavingInline}
                     />
+                    
                   </div>
                   <div className="col-span-2 pr-1">
                     <input
@@ -1100,7 +1107,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
             >
               Cancel
             </Button>
-            <Button variant="primary" type="submit" form="add-txn-form">
+            <Button variant="primary" type="submit" form="add-txn-form" loading={isSubmittingTxn}>
               Add transaction
             </Button>
           </>
