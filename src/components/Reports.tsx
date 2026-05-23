@@ -5,7 +5,6 @@ import { toast } from "react-toastify";
 import {
   FileText,
   TrendingUp,
-  Filter,
   BarChart3,
   DollarSign,
   Users,
@@ -16,6 +15,15 @@ import {
   FileSpreadsheet,
   Printer,
 } from "lucide-react";
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Input,
+  PageHeader,
+  StatTile,
+} from "./ui";
 
 interface ClientStats {
   totalClients: number;
@@ -46,6 +54,55 @@ interface MonthlyTrend {
 type ReportPeriod = "current" | "last3" | "last6" | "year" | "custom";
 type Currency = "KES" | "USD" | "BOTH";
 
+const PERIOD_OPTIONS: { id: ReportPeriod; label: string; short: string }[] = [
+  { id: "current", label: "This month", short: "This Mo" },
+  { id: "last3", label: "Last 3 months", short: "3 Mo" },
+  { id: "last6", label: "Last 6 months", short: "6 Mo" },
+  { id: "year", label: "This year", short: "Year" },
+  { id: "custom", label: "Custom", short: "Custom" },
+];
+
+const CURRENCY_OPTIONS: { id: Currency; label: string }[] = [
+  { id: "BOTH", label: "Both" },
+  { id: "KES", label: "KES" },
+  { id: "USD", label: "USD" },
+];
+
+// Avatar palette (same as ClientList)
+const AVATAR_BGS = [
+  "bg-rose-500",
+  "bg-amber-500",
+  "bg-emerald-500",
+  "bg-sky-500",
+  "bg-violet-500",
+  "bg-fuchsia-500",
+  "bg-cyan-500",
+  "bg-orange-500",
+  "bg-teal-500",
+  "bg-indigo-500",
+];
+
+function hashName(name: string): number {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = (hash << 5) - hash + name.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function formatMonth(yyyyMm: string) {
+  const d = new Date(yyyyMm + "-01");
+  return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+
 export default function Reports() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -73,7 +130,7 @@ export default function Reports() {
   const getDateRange = useMemo(() => {
     const today = new Date();
     let startDate = "";
-    let endDate = today.toISOString().split("T")[0];
+    let endDate = today.toLocaleDateString("en-CA");
 
     switch (selectedPeriod) {
       case "current":
@@ -81,16 +138,18 @@ export default function Reports() {
           today.getMonth() + 1,
         ).padStart(2, "0")}-01`;
         break;
-      case "last3":
-        const last3Months = new Date();
-        last3Months.setMonth(last3Months.getMonth() - 3);
-        startDate = last3Months.toISOString().split("T")[0];
+      case "last3": {
+        const d = new Date();
+        d.setMonth(d.getMonth() - 3);
+        startDate = d.toLocaleDateString("en-CA");
         break;
-      case "last6":
-        const last6Months = new Date();
-        last6Months.setMonth(last6Months.getMonth() - 6);
-        startDate = last6Months.toISOString().split("T")[0];
+      }
+      case "last6": {
+        const d = new Date();
+        d.setMonth(d.getMonth() - 6);
+        startDate = d.toLocaleDateString("en-CA");
         break;
+      }
       case "year":
         startDate = `${new Date().getFullYear()}-01-01`;
         break;
@@ -112,7 +171,6 @@ export default function Reports() {
     try {
       const { startDate, endDate } = getDateRange;
 
-      // Fetch client statistics - only get needed fields
       const { data: clients, error: clientsError } = await supabase
         .from("clients")
         .select("id, status")
@@ -120,23 +178,14 @@ export default function Reports() {
 
       if (clientsError) throw clientsError;
 
-      // Calculate stats
       const activeClients =
         clients?.filter((c) => c.status === "active").length || 0;
       const totalClients = clients?.length || 0;
 
-      // Fetch KES transactions - only needed fields
       const { data: kesTransactions, error: kesError } = await supabase
         .from("client_transactions_kes")
         .select(
-          `
-          id,
-          client_id,
-          debit,
-          credit,
-          transaction_date,
-          clients!inner(user_id, client_name, client_code)
-        `,
+          `id, client_id, debit, credit, transaction_date, clients!inner(user_id, client_name, client_code)`,
         )
         .eq("clients.user_id", user.id)
         .gte("transaction_date", startDate)
@@ -144,18 +193,10 @@ export default function Reports() {
 
       if (kesError) throw kesError;
 
-      // Fetch USD transactions - only needed fields
       const { data: usdTransactions, error: usdError } = await supabase
         .from("client_transactions_usd")
         .select(
-          `
-          id,
-          client_id,
-          debit,
-          credit,
-          transaction_date,
-          clients!inner(user_id, client_name, client_code)
-        `,
+          `id, client_id, debit, credit, transaction_date, clients!inner(user_id, client_name, client_code)`,
         )
         .eq("clients.user_id", user.id)
         .gte("transaction_date", startDate)
@@ -163,7 +204,6 @@ export default function Reports() {
 
       if (usdError) throw usdError;
 
-      // Calculate totals
       const totalKES =
         kesTransactions?.reduce(
           (sum, t) => sum + (t.credit || 0) - (t.debit || 0),
@@ -186,52 +226,47 @@ export default function Reports() {
           (kesTransactions?.length || 0) + (usdTransactions?.length || 0),
       });
 
-      // Calculate top clients
       const clientMap = new Map<string, TopClient>();
 
       kesTransactions?.forEach((t) => {
         const key = t.client_id;
         if (!clientMap.has(key)) {
-          const clientData = Array.isArray(t.clients)
-            ? t.clients[0]
-            : t.clients;
+          const cd = Array.isArray(t.clients) ? t.clients[0] : t.clients;
           clientMap.set(key, {
             client_id: t.client_id,
-            client_name: clientData?.client_name || "",
-            client_code: clientData?.client_code || "",
+            client_name: cd?.client_name || "",
+            client_code: cd?.client_code || "",
             total_balance_kes: 0,
             total_balance_usd: 0,
             transaction_count: 0,
           });
         }
-        const client = clientMap.get(key)!;
-        client.total_balance_kes += (t.credit || 0) - (t.debit || 0);
-        client.transaction_count += 1;
+        const c = clientMap.get(key)!;
+        c.total_balance_kes += (t.credit || 0) - (t.debit || 0);
+        c.transaction_count += 1;
       });
 
       usdTransactions?.forEach((t) => {
         const key = t.client_id;
         if (!clientMap.has(key)) {
-          const clientData = Array.isArray(t.clients)
-            ? t.clients[0]
-            : t.clients;
+          const cd = Array.isArray(t.clients) ? t.clients[0] : t.clients;
           clientMap.set(key, {
             client_id: t.client_id,
-            client_name: clientData?.client_name || "",
-            client_code: clientData?.client_code || "",
+            client_name: cd?.client_name || "",
+            client_code: cd?.client_code || "",
             total_balance_kes: 0,
             total_balance_usd: 0,
             transaction_count: 0,
           });
         }
-        const client = clientMap.get(key)!;
-        client.total_balance_usd += (t.credit || 0) - (t.debit || 0);
-        client.transaction_count += 1;
+        const c = clientMap.get(key)!;
+        c.total_balance_usd += (t.credit || 0) - (t.debit || 0);
+        c.transaction_count += 1;
       });
 
       const topClientsList = Array.from(clientMap.values())
         .sort((a, b) => {
-          const aTotal = a.total_balance_kes + a.total_balance_usd * 130; // Rough conversion
+          const aTotal = a.total_balance_kes + a.total_balance_usd * 130;
           const bTotal = b.total_balance_kes + b.total_balance_usd * 130;
           return bTotal - aTotal;
         })
@@ -239,11 +274,10 @@ export default function Reports() {
 
       setTopClients(topClientsList);
 
-      // Calculate monthly trends
       const monthlyMap = new Map<string, MonthlyTrend>();
 
       kesTransactions?.forEach((t) => {
-        const month = t.transaction_date.substring(0, 7); // YYYY-MM
+        const month = t.transaction_date.substring(0, 7);
         if (!monthlyMap.has(month)) {
           monthlyMap.set(month, {
             month,
@@ -288,9 +322,8 @@ export default function Reports() {
 
   const exportToPDF = async () => {
     try {
-      toast.info("Generating PDF report...");
+      toast.info("Generating PDF report…");
 
-      // Import jsPDF dynamically
       const jsPDF = (await import("jspdf")).default;
       const autoTable = (await import("jspdf-autotable")).default;
 
@@ -298,15 +331,13 @@ export default function Reports() {
       const pageWidth = doc.internal.pageSize.getWidth();
       let yPosition = 15;
 
-      // Header with gradient effect
-      doc.setFillColor(16, 185, 129);
+      doc.setFillColor(13, 148, 136);
       doc.rect(0, 0, pageWidth, 40, "F");
 
-      // Title
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(24);
+      doc.setFontSize(20);
       doc.setFont("helvetica", "bold");
-      doc.text("Ezary CMS - Financial Report", pageWidth / 2, 20, {
+      doc.text("Ezary CMS — Financial Report", pageWidth / 2, 20, {
         align: "center",
       });
 
@@ -315,37 +346,24 @@ export default function Reports() {
       const periodText =
         selectedPeriod === "custom"
           ? `${customStartDate} to ${customEndDate}`
-          : selectedPeriod === "current"
-            ? "Current Month"
-            : selectedPeriod === "last3"
-              ? "Last 3 Months"
-              : selectedPeriod === "last6"
-                ? "Last 6 Months"
-                : "This Year";
+          : PERIOD_OPTIONS.find((p) => p.id === selectedPeriod)?.label;
       doc.text(`Period: ${periodText}`, pageWidth / 2, 30, { align: "center" });
 
       yPosition = 50;
 
-      // Summary Statistics
       doc.setTextColor(0, 0, 0);
-      doc.setFontSize(16);
+      doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
       doc.text("Summary Statistics", 14, yPosition);
-      yPosition += 10;
+      yPosition += 8;
 
       const summaryData = [
         ["Metric", "Value"],
         ["Total Clients", clientStats.totalClients.toString()],
         ["Active Clients", clientStats.activeClients.toString()],
         ["Total Transactions", clientStats.totalTransactions.toString()],
-        [
-          "Balance (KES)",
-          `KES ${clientStats.totalBalanceKES.toLocaleString()}`,
-        ],
-        [
-          "Balance (USD)",
-          `USD ${clientStats.totalBalanceUSD.toLocaleString()}`,
-        ],
+        ["Balance (KES)", `KES ${clientStats.totalBalanceKES.toLocaleString()}`],
+        ["Balance (USD)", `USD ${clientStats.totalBalanceUSD.toLocaleString()}`],
       ];
 
       autoTable(doc, {
@@ -354,29 +372,28 @@ export default function Reports() {
         body: summaryData.slice(1),
         theme: "grid",
         headStyles: {
-          fillColor: [16, 185, 129],
+          fillColor: [13, 148, 136],
           textColor: 255,
           fontStyle: "bold",
         },
-        alternateRowStyles: { fillColor: [240, 253, 244] },
+        alternateRowStyles: { fillColor: [240, 253, 250] },
         margin: { left: 14, right: 14 },
       });
 
       yPosition = (doc as any).lastAutoTable.finalY + 15;
 
-      // Top Clients
       if (topClients.length > 0) {
-        doc.setFontSize(16);
+        doc.setFontSize(14);
         doc.setFont("helvetica", "bold");
-        doc.text("Top 10 Clients", 14, yPosition);
-        yPosition += 10;
+        doc.text("Top Clients", 14, yPosition);
+        yPosition += 8;
 
-        const topClientsData = topClients.map((client) => [
-          client.client_name,
-          client.client_code,
-          `KES ${client.total_balance_kes.toLocaleString()}`,
-          `USD ${client.total_balance_usd.toLocaleString()}`,
-          client.transaction_count.toString(),
+        const topClientsData = topClients.map((c) => [
+          c.client_name,
+          c.client_code,
+          `KES ${c.total_balance_kes.toLocaleString()}`,
+          `USD ${c.total_balance_usd.toLocaleString()}`,
+          c.transaction_count.toString(),
         ]);
 
         autoTable(doc, {
@@ -393,39 +410,36 @@ export default function Reports() {
           body: topClientsData,
           theme: "striped",
           headStyles: {
-            fillColor: [16, 185, 129],
+            fillColor: [13, 148, 136],
             textColor: 255,
             fontStyle: "bold",
           },
-          alternateRowStyles: { fillColor: [240, 253, 244] },
+          alternateRowStyles: { fillColor: [240, 253, 250] },
           margin: { left: 14, right: 14 },
         });
       }
 
-      // Footer
       const pageCount = (doc as any).internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setTextColor(128, 128, 128);
         doc.text(
-          `Generated on ${new Date().toLocaleDateString()} | Page ${i} of ${pageCount}`,
+          `Generated ${new Date().toLocaleDateString()} · Page ${i} of ${pageCount}`,
           pageWidth / 2,
           doc.internal.pageSize.getHeight() - 10,
           { align: "center" },
         );
       }
 
-      // Save PDF
-      const filename = `Ezary_Financial_Report_${
-        new Date().toISOString().split("T")[0]
-      }.pdf`;
+      const filename = `Ezary_Financial_Report_${new Date()
+        .toLocaleDateString("en-CA")}.pdf`;
       doc.save(filename);
-      toast.success(`PDF report exported successfully: ${filename}`);
+      toast.success(`Exported ${filename}`);
     } catch (error) {
       console.error("Error generating PDF:", error);
       toast.error(
-        `Failed to generate PDF report: ${
+        `Failed to generate PDF: ${
           error instanceof Error ? error.message : "Unknown error"
         }`,
       );
@@ -434,57 +448,53 @@ export default function Reports() {
 
   const exportToExcel = () => {
     try {
-      // Create CSV content
-      let csvContent = "Ezary CMS - Financial Report\n";
-      csvContent += `Generated: ${new Date().toLocaleString()}\n\n`;
+      let csv = "Ezary CMS - Financial Report\n";
+      csv += `Generated: ${new Date().toLocaleString()}\n\n`;
 
-      // Summary section
-      csvContent += "SUMMARY STATISTICS\n";
-      csvContent += `Total Clients,${clientStats.totalClients}\n`;
-      csvContent += `Active Clients,${clientStats.activeClients}\n`;
-      csvContent += `Inactive Clients,${clientStats.inactiveClients}\n`;
-      csvContent += `Total Transactions,${clientStats.totalTransactions}\n`;
-      csvContent += `Total Balance (KES),${clientStats.totalBalanceKES}\n`;
-      csvContent += `Total Balance (USD),${clientStats.totalBalanceUSD}\n\n`;
+      csv += "SUMMARY STATISTICS\n";
+      csv += `Total Clients,${clientStats.totalClients}\n`;
+      csv += `Active Clients,${clientStats.activeClients}\n`;
+      csv += `Inactive Clients,${clientStats.inactiveClients}\n`;
+      csv += `Total Transactions,${clientStats.totalTransactions}\n`;
+      csv += `Total Balance (KES),${clientStats.totalBalanceKES}\n`;
+      csv += `Total Balance (USD),${clientStats.totalBalanceUSD}\n\n`;
 
-      // Top clients section
       if (topClients.length > 0) {
-        csvContent += "TOP CLIENTS\n";
-        csvContent +=
+        csv += "TOP CLIENTS\n";
+        csv +=
           "Client Name,Client Code,Balance (KES),Balance (USD),Transaction Count\n";
-        topClients.forEach((client) => {
-          csvContent += `"${client.client_name}",${client.client_code},${client.total_balance_kes},${client.total_balance_usd},${client.transaction_count}\n`;
+        topClients.forEach((c) => {
+          csv += `"${c.client_name}",${c.client_code},${c.total_balance_kes},${c.total_balance_usd},${c.transaction_count}\n`;
         });
-        csvContent += "\n";
+        csv += "\n";
       }
 
-      // Monthly trends section
       if (monthlyTrends.length > 0) {
-        csvContent += "MONTHLY TRENDS\n";
-        csvContent +=
+        csv += "MONTHLY TRENDS\n";
+        csv +=
           "Month,Transactions (KES),Transactions (USD),Balance (KES),Balance (USD)\n";
-        monthlyTrends.forEach((trend) => {
-          csvContent += `${trend.month},${trend.transactions_kes},${trend.transactions_usd},${trend.balance_kes},${trend.balance_usd}\n`;
+        monthlyTrends.forEach((t) => {
+          csv += `${t.month},${t.transactions_kes},${t.transactions_usd},${t.balance_kes},${t.balance_usd}\n`;
         });
       }
 
-      // Create and download
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
       link.setAttribute("href", url);
       link.setAttribute(
         "download",
-        `Ezary_Report_${new Date().toISOString().split("T")[0]}.csv`,
+        `Ezary_Report_${new Date().toLocaleDateString("en-CA")}.csv`,
       );
       link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      toast.success("Exported CSV file");
     } catch (error) {
-      console.error("Error exporting to Excel:", error);
+      console.error("Error exporting to CSV:", error);
       toast.error(
-        `Failed to export to Excel: ${
+        `Failed to export CSV: ${
           error instanceof Error ? error.message : "Unknown error"
         }`,
       );
@@ -497,447 +507,424 @@ export default function Reports() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-600 border-t-transparent"></div>
+      <div className="space-y-3">
+        <div className="h-10 w-48 skeleton rounded-md" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-20 skeleton rounded-xl" />
+          ))}
+        </div>
+        <div className="h-32 skeleton rounded-2xl" />
+        <div className="h-96 skeleton rounded-2xl" />
       </div>
     );
   }
 
+  const showKES = selectedCurrency === "BOTH" || selectedCurrency === "KES";
+  const showUSD = selectedCurrency === "BOTH" || selectedCurrency === "USD";
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50 pb-8">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
-        {/* Ezary CMS Branded Header */}
-        <div className="bg-white rounded-2xl sm:rounded-2xl shadow-lg overflow-hidden border border-ink-200 transform hover:shadow-3xl transition-all duration-300">
-          <div className="bg-brand-600 p-6 sm:p-8 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-ink-100 rounded-full -mr-32 -mt-32 animate-pulse"></div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 sm:gap-4 mb-3">
-                  <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg border-2 border-white/30">
-                    <span className="text-white font-bold text-2xl">E</span>
-                  </div>
-                  <div>
-                    <h1 className="text-3xl sm:text-4xl font-bold text-ink-900 flex items-center gap-3">
-                      Analytics & Reports
-                    </h1>
-                    <p className="text-ink-600 text-sm sm:text-base mt-1 font-medium">
-                      Ezary CMS • Comprehensive Client Analytics
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <FileText className="w-16 h-16 text-white/30" />
+    <div className="space-y-4">
+      {/* Page header */}
+      <PageHeader
+        title="Analytics & reports"
+        description="Insights across clients, balances and transaction activity."
+        icon={<BarChart3 className="w-4 h-4" />}
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              leadingIcon={<Printer className="w-4 h-4" />}
+              onClick={printReport}
+            >
+              <span className="hidden sm:inline">Print</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              leadingIcon={<FileSpreadsheet className="w-4 h-4" />}
+              onClick={exportToExcel}
+            >
+              <span className="hidden sm:inline">CSV</span>
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              leadingIcon={<Download className="w-4 h-4" />}
+              onClick={exportToPDF}
+            >
+              <span className="hidden sm:inline">Export PDF</span>
+              <span className="sm:hidden">PDF</span>
+            </Button>
+          </>
+        }
+      />
+
+      {/* Filters */}
+      <Card className="p-3 sm:p-4">
+        <div className="flex flex-col gap-3">
+          {/* Period segmented control */}
+          <div>
+            <p className="text-[10px] uppercase tracking-wide font-semibold text-ink-500 mb-1.5">
+              Period
+            </p>
+            <div className="inline-flex flex-wrap items-center bg-ink-100 rounded-lg p-0.5 gap-0.5">
+              {PERIOD_OPTIONS.map((p) => {
+                const active = selectedPeriod === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => setSelectedPeriod(p.id)}
+                    className={[
+                      "h-8 px-3 inline-flex items-center rounded-md text-xs transition-colors focus-ring",
+                      active
+                        ? "bg-white text-brand-700 shadow-xs font-semibold"
+                        : "text-ink-500 hover:text-ink-700 font-medium",
+                    ].join(" ")}
+                  >
+                    <span className="hidden sm:inline">{p.label}</span>
+                    <span className="sm:hidden">{p.short}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
-        </div>
 
-        {/* Period Filter */}
-        <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 border border-ink-200">
-          <div className="flex items-center gap-2 mb-4">
-            <Filter className="h-5 w-5 text-brand-700" />
-            <h3 className="font-semibold text-ink-900">Report Period</h3>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">
-            <button
-              onClick={() => setSelectedPeriod("current")}
-              className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold transition-all duration-300 active:scale-95 ${
-                selectedPeriod === "current"
-                  ? "bg-ink-900 text-white"
-                  : "bg-ink-100 text-ink-700 hover:bg-ink-50 hover:shadow-lg border border-ink-200 hover:border-emerald-400"
-              }`}
-            >
-              This Month
-            </button>
-            <button
-              onClick={() => setSelectedPeriod("last3")}
-              className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold transition-all duration-300 active:scale-95 ${
-                selectedPeriod === "last3"
-                  ? "bg-ink-900 text-white"
-                  : "bg-ink-100 text-ink-700 hover:bg-ink-50 hover:shadow-lg border border-ink-200 hover:border-emerald-400"
-              }`}
-            >
-              <span className="hidden sm:inline">Last 3 Months</span>
-              <span className="sm:hidden">3 Mo</span>
-            </button>
-            <button
-              onClick={() => setSelectedPeriod("last6")}
-              className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold transition-all duration-300 active:scale-95 ${
-                selectedPeriod === "last6"
-                  ? "bg-ink-900 text-white"
-                  : "bg-ink-100 text-ink-700 hover:bg-ink-50 hover:shadow-lg border border-ink-200 hover:border-emerald-400"
-              }`}
-            >
-              <span className="hidden sm:inline">Last 6 Months</span>
-              <span className="sm:hidden">6 Mo</span>
-            </button>
-            <button
-              onClick={() => setSelectedPeriod("year")}
-              className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold transition-all duration-300 active:scale-95 ${
-                selectedPeriod === "year"
-                  ? "bg-ink-900 text-white"
-                  : "bg-ink-100 text-ink-700 hover:bg-ink-50 hover:shadow-lg border border-ink-200 hover:border-emerald-400"
-              }`}
-            >
-              This Year
-            </button>
-            <button
-              onClick={() => setSelectedPeriod("custom")}
-              className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold transition-all duration-300 active:scale-95 ${
-                selectedPeriod === "custom"
-                  ? "bg-ink-900 text-white"
-                  : "bg-ink-100 text-ink-700 hover:bg-ink-50 hover:shadow-lg border border-ink-200 hover:border-emerald-400"
-              }`}
-            >
-              Custom
-            </button>
-          </div>
-
+          {/* Custom date range */}
           {selectedPeriod === "custom" && (
-            <div className="grid grid-cols-2 gap-3 mt-4 p-4 bg-white/80 backdrop-blur-sm rounded-xl border border-ink-200">
-              <div>
-                <label className="block text-sm font-medium text-ink-600 mb-2">
-                  <Calendar className="inline-block w-4 h-4 mr-1" />
-                  Start Date
-                </label>
-                <input
-                  type="date"
-                  value={customStartDate}
-                  onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="w-full px-4 py-3 bg-white text-ink-900 placeholder-ink-400 border border-ink-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-ink-600 mb-2">
-                  <Calendar className="inline-block w-4 h-4 mr-1" />
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  value={customEndDate}
-                  onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="w-full px-4 py-3 bg-white text-ink-900 placeholder-ink-400 border border-ink-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
-                />
-              </div>
+            <div className="grid grid-cols-2 gap-3 max-w-md">
+              <Input
+                label="Start date"
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                leadingIcon={<Calendar className="w-4 h-4" />}
+              />
+              <Input
+                label="End date"
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                leadingIcon={<Calendar className="w-4 h-4" />}
+              />
             </div>
           )}
-        </div>
 
-        {/* Export Actions - NEW */}
-        <div className="bg-white rounded-2xl shadow-lg border border-ink-200 p-4 sm:p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg">
-              <Download className="h-5 w-5 text-white" />
+          {/* Currency segmented control */}
+          <div>
+            <p className="text-[10px] uppercase tracking-wide font-semibold text-ink-500 mb-1.5">
+              Currency view
+            </p>
+            <div className="inline-flex items-center bg-ink-100 rounded-lg p-0.5 gap-0.5">
+              {CURRENCY_OPTIONS.map((c) => {
+                const active = selectedCurrency === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => setSelectedCurrency(c.id)}
+                    className={[
+                      "h-8 px-3 inline-flex items-center rounded-md text-xs transition-colors focus-ring",
+                      active
+                        ? "bg-white text-brand-700 shadow-xs font-semibold"
+                        : "text-ink-500 hover:text-ink-700 font-medium",
+                    ].join(" ")}
+                  >
+                    {c.label}
+                  </button>
+                );
+              })}
             </div>
-            <h3 className="text-lg sm:text-xl font-bold text-ink-900">
-              Export Options
-            </h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <button
-              onClick={exportToPDF}
-              className="flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-200 active:scale-95"
-            >
-              <FileText className="w-5 h-5" />
-              Export PDF
-            </button>
-            <button
-              onClick={exportToExcel}
-              className="flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-200 active:scale-95"
-            >
-              <FileSpreadsheet className="w-5 h-5" />
-              Export Excel
-            </button>
-            <button
-              onClick={printReport}
-              className="flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-200 active:scale-95"
-            >
-              <Printer className="w-5 h-5" />
-              Print Report
-            </button>
           </div>
         </div>
+      </Card>
 
-        {/* Currency Filter - Ultra Modern */}
-        <div className="bg-white rounded-2xl sm:rounded-2xl shadow-xl border border-ink-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-300">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl shadow-lg">
-              <DollarSign className="h-5 w-5 text-white" />
-            </div>
-            <h3 className="text-lg sm:text-xl font-bold text-ink-900">
-              Currency View
-            </h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-            <button
-              onClick={() => setSelectedCurrency("BOTH")}
-              className={`px-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl text-sm sm:text-base font-bold transition-all duration-300 active:scale-95 ${
-                selectedCurrency === "BOTH"
-                  ? "bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 text-white shadow-lg shadow-blue-300/50 scale-105"
-                  : "bg-ink-100 text-ink-700 hover:bg-ink-50 hover:shadow-lg border border-ink-200 hover:border-blue-400"
-              }`}
-            >
-              🌍 Both Currencies
-            </button>
-            <button
-              onClick={() => setSelectedCurrency("KES")}
-              className={`px-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl text-sm sm:text-base font-bold transition-all duration-300 active:scale-95 ${
-                selectedCurrency === "KES"
-                  ? "bg-ink-900 text-white"
-                  : "bg-ink-100 text-ink-700 hover:bg-ink-50 hover:shadow-lg border border-ink-200 hover:border-emerald-400"
-              }`}
-            >
-              🇰🇪 KES Only
-            </button>
-            <button
-              onClick={() => setSelectedCurrency("USD")}
-              className={`px-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl text-sm sm:text-base font-bold transition-all duration-300 active:scale-95 ${
-                selectedCurrency === "USD"
-                  ? "bg-gradient-to-r from-purple-500 via-indigo-500 to-purple-600 text-white shadow-lg shadow-purple-300/50 scale-105"
-                  : "bg-ink-100 text-ink-700 hover:bg-ink-50 hover:shadow-lg border border-ink-200 hover:border-purple-400"
-              }`}
-            >
-              🇺🇸 USD Only
-            </button>
-          </div>
-        </div>
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+        <StatTile
+          label="Total clients"
+          value={clientStats.totalClients}
+          hint={`${clientStats.activeClients} active · ${clientStats.inactiveClients} inactive`}
+          icon={<Users className="w-4 h-4" />}
+          tone="brand"
+        />
+        {showKES && (
+          <StatTile
+            label="Net balance (KES)"
+            value={`KES ${clientStats.totalBalanceKES.toLocaleString()}`}
+            icon={<CreditCard className="w-4 h-4" />}
+            tone={clientStats.totalBalanceKES >= 0 ? "positive" : "negative"}
+          />
+        )}
+        {showUSD && (
+          <StatTile
+            label="Net balance (USD)"
+            value={`$${clientStats.totalBalanceUSD.toLocaleString()}`}
+            icon={<DollarSign className="w-4 h-4" />}
+            tone={clientStats.totalBalanceUSD >= 0 ? "positive" : "negative"}
+          />
+        )}
+        <StatTile
+          label="Transactions"
+          value={clientStats.totalTransactions}
+          hint="In selected period"
+          icon={<Activity className="w-4 h-4" />}
+          tone="info"
+        />
+      </div>
 
-        {/* Summary Stats - Ultra Modern 3D Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 xl:gap-6">
-          <div className="group relative overflow-hidden bg-brand-600 rounded-2xl sm:rounded-2xl p-5 sm:p-6 text-white shadow-lg hover:shadow-3xl hover:shadow-emerald-300/50 transition-all duration-300 transform active:scale-100">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-ink-100 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500"></div>
-            <div className="relative">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl group-hover:rotate-12 transition-transform">
-                  <Users className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                </div>
-                <span className="text-3xl sm:text-4xl font-semibold opacity-30">
-                  {clientStats.totalClients}
-                </span>
+      {/* Top clients */}
+      {topClients.length > 0 && (
+        <Card className="overflow-hidden">
+          <div className="px-4 sm:px-5 py-3 border-b border-ink-100 bg-ink-50/50 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-md bg-brand-50 text-brand-600 inline-flex items-center justify-center">
+                <TrendingUp className="w-4 h-4" />
               </div>
-              <p className="text-white/90 text-xs sm:text-sm font-semibold uppercase tracking-wide">
-                Total Clients
-              </p>
-              <p className="text-2xl sm:text-3xl font-semibold mt-2">
-                {clientStats.totalClients}
-              </p>
-              <p className="text-xs sm:text-sm text-white/80 mt-3 font-medium">
-                ✓ {clientStats.activeClients} active • ⊘{" "}
-                {clientStats.inactiveClients} inactive
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-5 text-white shadow-xl">
-            <div className="flex items-center justify-between mb-3">
-              <CreditCard className="w-10 h-10 opacity-80" />
-              <span className="text-xs bg-white/20 px-3 py-1 rounded-full font-semibold">
-                KES
-              </span>
-            </div>
-            <p className="text-blue-100 text-sm">Total Balance (KES)</p>
-            <p className="text-2xl font-bold mt-1">
-              KSh {clientStats.totalBalanceKES.toLocaleString()}
-            </p>
-          </div>
-
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-5 text-white shadow-xl">
-            <div className="flex items-center justify-between mb-3">
-              <DollarSign className="w-10 h-10 opacity-80" />
-              <span className="text-xs bg-white/20 px-3 py-1 rounded-full font-semibold">
-                USD
-              </span>
-            </div>
-            <p className="text-purple-100 text-sm">Total Balance (USD)</p>
-            <p className="text-2xl font-bold mt-1">
-              ${clientStats.totalBalanceUSD.toLocaleString()}
-            </p>
-          </div>
-
-          <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl p-5 text-white shadow-xl">
-            <div className="flex items-center justify-between mb-3">
-              <Activity className="w-10 h-10 opacity-80" />
-              <BarChart3 className="w-8 h-8 opacity-20" />
-            </div>
-            <p className="text-cyan-100 text-sm">Total Transactions</p>
-            <p className="text-2xl font-bold mt-1">
-              {clientStats.totalTransactions}
-            </p>
-            <p className="text-xs text-cyan-100 mt-2">In selected period</p>
-          </div>
-        </div>
-
-        {/* Top Clients */}
-        {topClients.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-lg p-5 sm:p-6 border border-ink-200">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <TrendingUp className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-xl font-bold text-ink-900">
-                  Top Clients by Balance
+              <div>
+                <h3 className="text-sm font-semibold text-ink-900 tracking-tight">
+                  Top clients by balance
                 </h3>
+                <p className="text-[11px] text-ink-500">
+                  Ranked across the selected period
+                </p>
               </div>
             </div>
-
-            <div className="space-y-3">
-              {topClients.map((client, index) => (
+            <Badge tone="brand" size="sm">
+              Top {topClients.length}
+            </Badge>
+          </div>
+          <div className="divide-y divide-ink-100">
+            {topClients.map((client, index) => {
+              const bg = AVATAR_BGS[hashName(client.client_name) % AVATAR_BGS.length];
+              return (
                 <div
                   key={client.client_id}
-                  className="flex items-center gap-4 p-4 bg-white/80 backdrop-blur-sm rounded-xl hover:shadow-md transition-all border border-ink-200"
+                  className="flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-ink-50/50 transition-colors"
                 >
-                  <div className="flex-shrink-0">
-                    <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-lg ${
-                        index === 0
-                          ? "bg-gradient-to-br from-yellow-400 to-yellow-500"
-                          : index === 1
-                            ? "bg-gradient-to-br from-gray-400 to-gray-500"
-                            : index === 2
-                              ? "bg-gradient-to-br from-orange-400 to-orange-500"
-                              : "bg-gradient-to-br from-emerald-400 to-emerald-500"
-                      }`}
-                    >
-                      #{index + 1}
-                    </div>
+                  {/* Rank pill */}
+                  <span
+                    className={[
+                      "shrink-0 w-7 h-7 rounded-md inline-flex items-center justify-center text-[11px] font-bold tabular-nums",
+                      index === 0
+                        ? "bg-amber-100 text-amber-700 ring-1 ring-amber-200"
+                        : index === 1
+                          ? "bg-ink-100 text-ink-700 ring-1 ring-ink-200"
+                          : index === 2
+                            ? "bg-orange-100 text-orange-700 ring-1 ring-orange-200"
+                            : "bg-brand-50 text-brand-700 ring-1 ring-brand-100",
+                    ].join(" ")}
+                  >
+                    {index + 1}
+                  </span>
+                  {/* Avatar */}
+                  <div
+                    className={[
+                      "shrink-0 w-9 h-9 rounded-xl text-white font-bold text-xs flex items-center justify-center shadow-sm",
+                      bg,
+                    ].join(" ")}
+                  >
+                    {getInitials(client.client_name)}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-ink-900">
+                  {/* Identity */}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-ink-900 truncate">
                       {client.client_name}
                     </p>
-                    <p className="text-sm text-ink-600">
-                      {client.client_code}
+                    <p className="text-[11px] text-ink-500 font-mono truncate">
+                      {client.client_code || "—"}
                     </p>
                   </div>
-                  <div className="flex-shrink-0 text-right">
-                    {(selectedCurrency === "BOTH" ||
-                      selectedCurrency === "KES") &&
-                      client.total_balance_kes !== 0 && (
-                        <p className="font-bold text-brand-700">
-                          KSh {client.total_balance_kes.toLocaleString()}
-                        </p>
-                      )}
-                    {(selectedCurrency === "BOTH" ||
-                      selectedCurrency === "USD") &&
-                      client.total_balance_usd !== 0 && (
-                        <p className="font-bold text-purple-600">
-                          ${client.total_balance_usd.toLocaleString()}
-                        </p>
-                      )}
-                    <p className="text-xs text-ink-500 mt-1">
+                  {/* Balances */}
+                  <div className="shrink-0 text-right">
+                    {showKES && client.total_balance_kes !== 0 && (
+                      <p className="text-sm font-semibold text-positive-700 tabular-nums">
+                        KES {client.total_balance_kes.toLocaleString()}
+                      </p>
+                    )}
+                    {showUSD && client.total_balance_usd !== 0 && (
+                      <p className="text-sm font-semibold text-info-600 tabular-nums">
+                        ${client.total_balance_usd.toLocaleString()}
+                      </p>
+                    )}
+                    <p className="text-[10px] text-ink-500 mt-0.5">
                       {client.transaction_count}{" "}
-                      {client.transaction_count === 1
-                        ? "transaction"
-                        : "transactions"}
+                      {client.transaction_count === 1 ? "txn" : "txns"}
                     </p>
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        )}
+        </Card>
+      )}
 
-        {/* Monthly Trends */}
-        {monthlyTrends.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-lg p-5 sm:p-6 border border-ink-200">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                <BarChart3 className="w-6 h-6 text-white" />
+      {/* Monthly trends */}
+      {monthlyTrends.length > 0 && (
+        <Card className="overflow-hidden">
+          <div className="px-4 sm:px-5 py-3 border-b border-ink-100 bg-ink-50/50 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-md bg-info-50 text-info-600 inline-flex items-center justify-center">
+                <BarChart3 className="w-4 h-4" />
               </div>
-              <h3 className="text-xl font-bold text-ink-900">
-                Monthly Transaction Trends
-              </h3>
+              <div>
+                <h3 className="text-sm font-semibold text-ink-900 tracking-tight">
+                  Monthly transaction trends
+                </h3>
+                <p className="text-[11px] text-ink-500">
+                  Volume and net flow per month
+                </p>
+              </div>
             </div>
+            <Badge tone="info" size="sm">
+              {monthlyTrends.length}{" "}
+              {monthlyTrends.length === 1 ? "month" : "months"}
+            </Badge>
+          </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b-2 border-ink-200">
-                    <th className="text-left py-3 px-4 font-semibold text-ink-600">
-                      Month
-                    </th>
-                    {(selectedCurrency === "BOTH" ||
-                      selectedCurrency === "KES") && (
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-ink-50 border-b border-ink-100 text-[11px] uppercase tracking-wide text-ink-500 font-semibold">
+                  <th className="text-left py-2.5 px-4">Month</th>
+                  {showKES && (
+                    <>
+                      <th className="text-right py-2.5 px-4">KES txns</th>
+                      <th className="text-right py-2.5 px-4">KES net</th>
+                    </>
+                  )}
+                  {showUSD && (
+                    <>
+                      <th className="text-right py-2.5 px-4">USD txns</th>
+                      <th className="text-right py-2.5 px-4">USD net</th>
+                    </>
+                  )}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-ink-100">
+                {monthlyTrends.map((t) => (
+                  <tr
+                    key={t.month}
+                    className="hover:bg-brand-50/20 transition-colors"
+                  >
+                    <td className="py-2.5 px-4 font-medium text-ink-900">
+                      {formatMonth(t.month)}
+                    </td>
+                    {showKES && (
                       <>
-                        <th className="text-right py-3 px-4 font-semibold text-brand-700">
-                          KES Trans.
-                        </th>
-                        <th className="text-right py-3 px-4 font-semibold text-brand-700">
-                          KES Balance
-                        </th>
+                        <td className="text-right py-2.5 px-4 text-ink-600 tabular-nums">
+                          {t.transactions_kes}
+                        </td>
+                        <td
+                          className={[
+                            "text-right py-2.5 px-4 font-semibold tabular-nums",
+                            t.balance_kes >= 0
+                              ? "text-positive-700"
+                              : "text-negative-700",
+                          ].join(" ")}
+                        >
+                          {t.balance_kes >= 0 ? "" : "−"}
+                          KES {Math.abs(t.balance_kes).toLocaleString()}
+                        </td>
                       </>
                     )}
-                    {(selectedCurrency === "BOTH" ||
-                      selectedCurrency === "USD") && (
+                    {showUSD && (
                       <>
-                        <th className="text-right py-3 px-4 font-semibold text-purple-400">
-                          USD Trans.
-                        </th>
-                        <th className="text-right py-3 px-4 font-semibold text-purple-400">
-                          USD Balance
-                        </th>
+                        <td className="text-right py-2.5 px-4 text-ink-600 tabular-nums">
+                          {t.transactions_usd}
+                        </td>
+                        <td
+                          className={[
+                            "text-right py-2.5 px-4 font-semibold tabular-nums",
+                            t.balance_usd >= 0
+                              ? "text-positive-700"
+                              : "text-negative-700",
+                          ].join(" ")}
+                        >
+                          {t.balance_usd >= 0 ? "" : "−"}$
+                          {Math.abs(t.balance_usd).toLocaleString()}
+                        </td>
                       </>
                     )}
                   </tr>
-                </thead>
-                <tbody>
-                  {monthlyTrends.map((trend) => (
-                    <tr
-                      key={trend.month}
-                      className="border-b border-ink-200 hover:bg-white/80 transition-colors"
-                    >
-                      <td className="py-3 px-4 font-medium text-white">
-                        {new Date(trend.month + "-01").toLocaleDateString(
-                          "en-US",
-                          {
-                            month: "short",
-                            year: "numeric",
-                          },
-                        )}
-                      </td>
-                      {(selectedCurrency === "BOTH" ||
-                        selectedCurrency === "KES") && (
-                        <>
-                          <td className="text-right py-3 px-4 text-ink-600">
-                            {trend.transactions_kes}
-                          </td>
-                          <td className="text-right py-3 px-4 font-semibold text-brand-700">
-                            KSh {trend.balance_kes.toLocaleString()}
-                          </td>
-                        </>
-                      )}
-                      {(selectedCurrency === "BOTH" ||
-                        selectedCurrency === "USD") && (
-                        <>
-                          <td className="text-right py-3 px-4 text-ink-600">
-                            {trend.transactions_usd}
-                          </td>
-                          <td className="text-right py-3 px-4 font-semibold text-purple-400">
-                            ${trend.balance_usd.toLocaleString()}
-                          </td>
-                        </>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
 
-        {/* Empty State */}
-        {clientStats.totalClients === 0 && (
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-12 text-center border-2 border-dashed border-ink-200">
-            <FileText className="w-16 h-16 text-ink-500 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">
-              No Data Available
-            </h3>
-            <p className="text-ink-600 mb-6">
-              Start adding clients and transactions to see analytics and reports
-            </p>
+          {/* Mobile cards */}
+          <div className="md:hidden divide-y divide-ink-100">
+            {monthlyTrends.map((t) => (
+              <div key={t.month} className="px-4 py-3">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-semibold text-ink-900">
+                    {formatMonth(t.month)}
+                  </p>
+                  <p className="text-[11px] text-ink-500 tabular-nums">
+                    {t.transactions_kes + t.transactions_usd} txns
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {showKES && (
+                    <div className="rounded-lg bg-ink-50 p-2">
+                      <p className="text-[10px] uppercase tracking-wide font-semibold text-ink-500">
+                        KES
+                      </p>
+                      <p
+                        className={[
+                          "mt-0.5 text-sm font-bold tabular-nums truncate",
+                          t.balance_kes >= 0
+                            ? "text-positive-700"
+                            : "text-negative-700",
+                        ].join(" ")}
+                      >
+                        {t.balance_kes >= 0 ? "" : "−"}KES{" "}
+                        {Math.abs(t.balance_kes).toLocaleString()}
+                      </p>
+                      <p className="text-[10px] text-ink-500 mt-0.5">
+                        {t.transactions_kes} txns
+                      </p>
+                    </div>
+                  )}
+                  {showUSD && (
+                    <div className="rounded-lg bg-ink-50 p-2">
+                      <p className="text-[10px] uppercase tracking-wide font-semibold text-ink-500">
+                        USD
+                      </p>
+                      <p
+                        className={[
+                          "mt-0.5 text-sm font-bold tabular-nums truncate",
+                          t.balance_usd >= 0
+                            ? "text-positive-700"
+                            : "text-negative-700",
+                        ].join(" ")}
+                      >
+                        {t.balance_usd >= 0 ? "" : "−"}$
+                        {Math.abs(t.balance_usd).toLocaleString()}
+                      </p>
+                      <p className="text-[10px] text-ink-500 mt-0.5">
+                        {t.transactions_usd} txns
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-        )}
-      </div>
+        </Card>
+      )}
+
+      {/* Empty state */}
+      {clientStats.totalClients === 0 && (
+        <Card>
+          <EmptyState
+            icon={<FileText className="w-6 h-6" />}
+            title="No data yet"
+            description="Start by adding clients and transactions, then come back here to see analytics and trends."
+          />
+        </Card>
+      )}
     </div>
   );
 }
