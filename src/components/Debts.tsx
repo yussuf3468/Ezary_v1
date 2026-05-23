@@ -22,6 +22,7 @@ import {
   EmptyState,
   Input,
   Modal,
+  PageHeader,
   Select,
   StatTile,
 } from "./ui";
@@ -454,6 +455,23 @@ export default function Debts() {
 
   return (
     <div className="space-y-3 sm:space-y-4">
+      {/* Page header */}
+      <PageHeader
+        title="Debts"
+        description="Track and manage outstanding debts"
+        icon={<Wallet className="w-4 h-4" />}
+        actions={
+          <Button
+            variant="primary"
+            size="md"
+            leadingIcon={<Plus className="w-4 h-4" />}
+            onClick={() => setShowAddModal(true)}
+          >
+            Add debt
+          </Button>
+        }
+      />
+
       {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
         <StatTile
@@ -534,18 +552,6 @@ export default function Debts() {
             <option value="pending">Pending</option>
             <option value="paid">Paid</option>
           </Select>
-
-          {/* Add Debt */}
-          <Button
-            variant="primary"
-            size="md"
-            leadingIcon={<Plus className="w-4 h-4" />}
-            onClick={() => setShowAddModal(true)}
-            className="shrink-0"
-          >
-            <span className="hidden sm:inline">Add debt</span>
-            <span className="sm:hidden">Add</span>
-          </Button>
         </div>
       </Card>
 
