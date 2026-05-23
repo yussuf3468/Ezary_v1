@@ -1055,7 +1055,7 @@ function ClientGrid({
               <div className="flex items-center gap-3 min-w-0">
                 <div
                   className={[
-                    "w-11 h-11 rounded-xl flex items-center justify-center shrink-0",
+                    "w-11 h-11 rounded-full flex items-center justify-center shrink-0",
                     "text-white text-base font-bold shadow-sm",
                     avatarBg,
                   ].join(" ")}
