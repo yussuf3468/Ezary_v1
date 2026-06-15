@@ -19,6 +19,7 @@ interface Transaction {
   payment_method: string | null;
   reference_number: string | null;
   notes: string | null;
+  highlight_color?: string | null;
 }
 
 interface ReportOptions {
@@ -42,6 +43,13 @@ const GREEN: [number, number, number]    = [4, 120, 87];
 const RED: [number, number, number]      = [185, 28, 28];
 
 const M = 16; // page margin mm
+
+const hexToRgb = (hex: string): [number, number, number] | null => {
+  const m = /^#?([0-9a-fA-F]{6})$/.exec(hex.trim());
+  if (!m) return null;
+  const int = parseInt(m[1], 16);
+  return [(int >> 16) & 255, (int >> 8) & 255, int & 255];
+};
 
 const t = (doc: jsPDF, c: [number,number,number]) => doc.setTextColor(c[0], c[1], c[2]);
 const f = (doc: jsPDF, c: [number,number,number]) => doc.setFillColor(c[0], c[1], c[2]);
@@ -161,11 +169,18 @@ function drawSummary(
   doc: jsPDF,
   y: number,
   pw: number,
+  ph: number,
   showKES: boolean,
   showUSD: boolean,
   sKES: ReportOptions["summaryKES"],
   sUSD: ReportOptions["summaryUSD"],
 ): number {
+  // Keep the whole summary block together — break to a new page if it won't fit
+  if (y > ph - 60) {
+    doc.addPage();
+    y = 18;
+  }
+
   // Section label
   t(doc, INK_400);
   doc.setFont("helvetica", "bold");
@@ -382,8 +397,15 @@ function drawLedger(
     showHead: "everyPage",
     rowPageBreak: "avoid",
     didParseCell(data) {
+      if (data.section !== "body") return;
+      // Excel-style row fill — overrides zebra striping for flagged rows
+      const hl = rows[data.row.index]?.highlight_color;
+      if (hl) {
+        const rgb = hexToRgb(hl);
+        if (rgb) data.cell.styles.fillColor = rgb;
+      }
       // Make balance column slightly tinted when negative
-      if (data.section === "body" && data.column.index === 4) {
+      if (data.column.index === 4) {
         const val = String(data.cell.raw ?? "");
         if (val.startsWith("(")) data.cell.styles.textColor = RED;
       }
@@ -438,12 +460,14 @@ export const generateClientPDFReport = (options: ReportOptions) => {
   const showKES = reportType !== "usd-only";
   const showUSD = reportType !== "kes-only";
 
-  y = drawSummary(doc, y, pw, showKES, showUSD, summaryKES, summaryUSD);
-
+  // Transaction ledgers first…
   if (reportType !== "summary") {
     if (showKES) y = drawLedger(doc, y, pw, ph, "KES", transactionsKES);
     if (showUSD) y = drawLedger(doc, y, pw, ph, "USD", transactionsUSD);
   }
+
+  // …then the account summary as a closing block at the bottom
+  y = drawSummary(doc, y, pw, ph, showKES, showUSD, summaryKES, summaryUSD);
 
   drawFooters(doc, client, pw, ph);
 

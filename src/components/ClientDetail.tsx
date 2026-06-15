@@ -13,9 +13,12 @@ import {
   Trash2,
   Edit2,
   Lock,
+  Highlighter,
+  Ban,
 } from "lucide-react";
 import { formatCurrency } from "../lib/currency";
 import { generateClientPDFReport } from "../lib/pdfGenerator";
+import { getBusinessProfile } from "../lib/businessProfiles";
 import {
   Avatar,
   Badge,
@@ -51,7 +54,28 @@ interface Transaction {
   payment_method: string | null;
   reference_number: string | null;
   notes: string | null;
+  highlight_color?: string | null;
 }
+
+// Excel-style fill palette — a broad, vivid spectrum that still stays legible
+// under the dark ledger text, and renders identically in the PDF statement.
+const HIGHLIGHT_COLORS: { name: string; hex: string }[] = [
+  { name: "Red", hex: "#FCA5A5" },
+  { name: "Orange", hex: "#FDBA74" },
+  { name: "Amber", hex: "#FCD34D" },
+  { name: "Yellow", hex: "#FDE047" },
+  { name: "Lime", hex: "#BEF264" },
+  { name: "Green", hex: "#86EFAC" },
+  { name: "Teal", hex: "#5EEAD4" },
+  { name: "Cyan", hex: "#67E8F9" },
+  { name: "Sky", hex: "#7DD3FC" },
+  { name: "Blue", hex: "#93C5FD" },
+  { name: "Indigo", hex: "#A5B4FC" },
+  { name: "Violet", hex: "#C4B5FD" },
+  { name: "Purple", hex: "#D8B4FE" },
+  { name: "Pink", hex: "#F9A8D4" },
+  { name: "Slate", hex: "#CBD5E1" },
+];
 
 interface ClientDetailProps {
   clientId: string;
@@ -65,6 +89,10 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
   const [transactionsUSD, setTransactionsUSD] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"kes" | "usd">("kes");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const dragging = useRef(false);
+  const dragAnchor = useRef<number | null>(null);
+  const [showStatementModal, setShowStatementModal] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showEditTransaction, setShowEditTransaction] = useState(false);
   const [editingTransaction, setEditingTransaction] =
@@ -115,6 +143,28 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
     }
   }, [loading, activeTab, client]);
 
+  // End drag-select on mouse release anywhere; Escape clears the selection
+  useEffect(() => {
+    const onUp = () => {
+      dragging.current = false;
+      dragAnchor.current = null;
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedIds(new Set());
+    };
+    window.addEventListener("mouseup", onUp);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, []);
+
+  // Switching currency tabs clears the cross-tab selection
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [activeTab]);
+
   const calculateSummary = useCallback(
     (transactions: Transaction[], setSummary: Function) => {
       const receivable = transactions.reduce(
@@ -159,7 +209,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         supabase
           .from("client_transactions_kes")
           .select(
-            "id, transaction_date, description, credit, debit, reference_number, payment_method, notes, created_at",
+            "id, transaction_date, description, credit, debit, reference_number, payment_method, notes, highlight_color, created_at",
           )
           .eq("client_id", clientId)
           .eq("user_id", user.id)
@@ -168,7 +218,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         supabase
           .from("client_transactions_usd")
           .select(
-            "id, transaction_date, description, credit, debit, reference_number, payment_method, notes, created_at",
+            "id, transaction_date, description, credit, debit, reference_number, payment_method, notes, highlight_color, created_at",
           )
           .eq("client_id", clientId)
           .eq("user_id", user.id)
@@ -458,8 +508,78 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
     }
   };
 
-  const generatePDFReport = () => {
+  // ── Excel-style row selection ────────────────────────────────────────────
+  const rowMouseDown = (
+    e: React.MouseEvent<HTMLDivElement>,
+    index: number,
+  ) => {
+    // Don't start a drag when the click lands on an action button
+    if ((e.target as HTMLElement).closest("button")) return;
+    e.preventDefault(); // suppress native text selection while dragging
+    dragging.current = true;
+    dragAnchor.current = index;
+    const id = currentTransactions[index].id;
+    if (e.ctrlKey || e.metaKey) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.has(id) ? next.delete(id) : next.add(id);
+        return next;
+      });
+    } else {
+      setSelectedIds(new Set([id]));
+    }
+  };
+
+  const rowMouseEnter = (index: number) => {
+    if (!dragging.current || dragAnchor.current === null) return;
+    const a = Math.min(dragAnchor.current, index);
+    const b = Math.max(dragAnchor.current, index);
+    setSelectedIds(
+      new Set(currentTransactions.slice(a, b + 1).map((x) => x.id)),
+    );
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const applyHighlightToSelected = async (color: string | null) => {
+    if (selectedIds.size === 0) return;
+    const ids = [...selectedIds];
+    const table =
+      activeTab === "kes"
+        ? "client_transactions_kes"
+        : "client_transactions_usd";
+
+    // Optimistic update
+    const apply = (list: Transaction[]) =>
+      list.map((x) =>
+        ids.includes(x.id) ? { ...x, highlight_color: color } : x,
+      );
+    if (activeTab === "kes") setTransactionsKES((prev) => apply(prev));
+    else setTransactionsUSD((prev) => apply(prev));
+
+    const { error } = await supabase
+      .from(table)
+      .update({ highlight_color: color })
+      .in("id", ids);
+
+    if (error) {
+      console.error("Error saving highlight:", error);
+      toast.error("Couldn't save highlight");
+      loadClientData();
+    }
+  };
+
+  const generatePDFReport = (
+    reportType: "full" | "kes-only" | "usd-only" = "full",
+  ) => {
     if (!client) return;
+    setShowStatementModal(false);
     try {
       generateClientPDFReport({
         client: {
@@ -474,7 +594,8 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         transactionsUSD,
         summaryKES,
         summaryUSD,
-        reportType: "full",
+        reportType,
+        business: getBusinessProfile(user?.email),
       });
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -591,29 +712,35 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
             </div>
           </div>
 
-          {/* Currency tabs */}
-          <div className="inline-flex items-center bg-ink-100 rounded-lg p-0.5 shrink-0">
+          {/* Currency switcher */}
+          <div
+            role="tablist"
+            aria-label="Currency"
+            className="inline-flex items-center bg-ink-100 rounded-lg p-0.5 shrink-0"
+          >
             {tabs.map((t) => {
               const active = activeTab === t.id;
               return (
                 <button
                   key={t.id}
+                  role="tab"
+                  aria-selected={active}
                   onClick={() => setActiveTab(t.id)}
                   className={[
-                    "h-7 px-2 sm:px-2.5 inline-flex items-center gap-1.5 rounded-md text-xs font-medium",
-                    "transition-colors duration-150 focus-ring",
+                    "h-8 px-3 inline-flex items-center gap-1.5 rounded-md text-xs font-semibold",
+                    "transition-all duration-150 focus-ring",
                     active
-                      ? "bg-white text-brand-700 shadow-xs font-semibold"
-                      : "text-ink-500 hover:text-ink-700",
+                      ? "bg-brand-600 text-white shadow-sm"
+                      : "text-ink-500 hover:text-ink-800",
                   ].join(" ")}
                 >
-                  <span>{t.label}</span>
+                  {t.label}
                   <span
                     className={[
                       "tabular-nums text-[10px] px-1.5 py-0.5 rounded-full",
                       active
-                        ? "bg-ink-100 text-ink-600"
-                        : "bg-ink-200/70 text-ink-500",
+                        ? "bg-white/25 text-white"
+                        : "bg-ink-200 text-ink-500",
                     ].join(" ")}
                   >
                     {t.count}
@@ -644,7 +771,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
             </button>
 
             <button
-              onClick={generatePDFReport}
+              onClick={() => setShowStatementModal(true)}
               className="h-8 w-8 sm:w-auto sm:px-3 rounded-md border border-ink-200 bg-white text-ink-700 hover:bg-ink-50 hover:text-ink-900 inline-flex items-center justify-center gap-1.5 transition-colors press focus-ring"
               title="Download statement"
               aria-label="Download statement"
@@ -719,7 +846,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                 <div className="col-span-1 text-right">Balance</div>
                 <div className="col-span-1 text-right" />
               </div>
-              <div className="divide-y divide-ink-100">
+              <div className="divide-y divide-black/[0.07]">
                 {currentTransactions.map((t, index) => {
                   const runningBalance = currentTransactions
                     .slice(0, index + 1)
@@ -728,11 +855,27 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                         sum + Number(x.credit || 0) - Number(x.debit || 0),
                       0,
                     );
+                  const isSelected = selectedIds.has(t.id);
                   return (
                     <div
                       key={t.id}
+                      onMouseDown={(e) => rowMouseDown(e, index)}
+                      onMouseEnter={() => rowMouseEnter(index)}
+                      style={
+                        t.highlight_color
+                          ? { backgroundColor: t.highlight_color }
+                          : undefined
+                      }
                       className={[
-                        "grid grid-cols-12 items-center px-4 py-2.5 group transition-colors hover:bg-brand-50/20",
+                        "grid grid-cols-12 items-center px-4 py-2.5 group transition-colors select-none cursor-default relative",
+                        t.highlight_color
+                          ? ""
+                          : isSelected
+                            ? "bg-brand-50/60"
+                            : "hover:bg-brand-50/20",
+                        isSelected
+                          ? "outline outline-2 -outline-offset-2 outline-brand-500 z-10"
+                          : "",
                         t.credit > 0
                           ? "shadow-[inset_3px_0_0_#10b981]"
                           : t.debit > 0
@@ -787,7 +930,33 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                           )}
                         </span>
                       </div>
-                      <div className="col-span-1 flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div
+                        className={[
+                          "col-span-1 flex items-center justify-end gap-0.5 transition-opacity",
+                          t.highlight_color || isSelected
+                            ? "opacity-100"
+                            : "opacity-0 group-hover:opacity-100",
+                        ].join(" ")}
+                      >
+                        <button
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSelect(t.id);
+                          }}
+                          className={[
+                            "p-1 rounded-md focus-ring transition-colors",
+                            isSelected
+                              ? "text-brand-700 bg-brand-100"
+                              : t.highlight_color
+                                ? "text-ink-700 hover:bg-black/5"
+                                : "text-ink-400 hover:bg-ink-100 hover:text-ink-700",
+                          ].join(" ")}
+                          title={isSelected ? "Deselect row" : "Select row"}
+                          aria-label={isSelected ? "Deselect row" : "Select row"}
+                        >
+                          <Highlighter className="w-3.5 h-3.5" />
+                        </button>
                         <button
                           onClick={() =>
                             handlePinProtectedAction("edit", {
@@ -915,7 +1084,7 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
             </div>
 
             {/* Mobile cards */}
-            <div className="md:hidden divide-y divide-ink-100">
+            <div className="md:hidden divide-y divide-black/[0.07]">
               {currentTransactions.map((t, index) => {
                 const runningBalance = currentTransactions
                   .slice(0, index + 1)
@@ -924,11 +1093,21 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                       sum + Number(x.credit || 0) - Number(x.debit || 0),
                     0,
                   );
+                const isSelected = selectedIds.has(t.id);
                 return (
                   <div
                     key={t.id}
+                    style={
+                      t.highlight_color
+                        ? { backgroundColor: t.highlight_color }
+                        : undefined
+                    }
                     className={[
-                      "px-4 py-3",
+                      "px-4 py-3 relative",
+                      !t.highlight_color && isSelected ? "bg-brand-50/60" : "",
+                      isSelected
+                        ? "outline outline-2 -outline-offset-2 outline-brand-500 z-10"
+                        : "",
                       t.credit > 0
                         ? "shadow-[inset_3px_0_0_#10b981]"
                         : t.debit > 0
@@ -953,6 +1132,21 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
                         </div>
                       </div>
                       <div className="flex items-center gap-0.5 shrink-0">
+                        <button
+                          onClick={() => toggleSelect(t.id)}
+                          className={[
+                            "p-1.5 rounded-md transition-colors",
+                            isSelected
+                              ? "text-brand-700 bg-brand-100"
+                              : t.highlight_color
+                                ? "text-ink-700 hover:bg-black/5"
+                                : "text-ink-400 hover:bg-ink-100 hover:text-ink-700",
+                          ].join(" ")}
+                          title={isSelected ? "Deselect row" : "Select row"}
+                          aria-label={isSelected ? "Deselect row" : "Select row"}
+                        >
+                          <Highlighter className="w-3.5 h-3.5" />
+                        </button>
                         <button
                           onClick={() =>
                             handlePinProtectedAction("edit", {
@@ -1125,6 +1319,122 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
       </div>
 
       <div ref={bottomRef} className="scroll-mb-20 md:scroll-mb-4" />
+
+      {/* Floating highlight toolbar — appears when rows are selected */}
+      {selectedIds.size > 0 && (
+        <div className="fixed left-1/2 -translate-x-1/2 bottom-4 z-50 animate-slide-up w-[calc(100%-1.5rem)] max-w-md">
+          <div className="rounded-2xl border border-ink-200 bg-white shadow-xl p-2.5 flex items-center gap-2.5">
+            <span className="shrink-0 inline-flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-lg bg-brand-50 text-brand-700 text-xs font-semibold">
+              <Highlighter className="w-3.5 h-3.5" />
+              {selectedIds.size}
+            </span>
+
+            <div className="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto no-scrollbar">
+              {HIGHLIGHT_COLORS.map((c) => (
+                <button
+                  key={c.hex}
+                  onClick={() => applyHighlightToSelected(c.hex)}
+                  title={c.name}
+                  aria-label={`Fill ${c.name}`}
+                  className="shrink-0 h-7 w-7 rounded-md border border-ink-200 transition-transform hover:scale-110 focus-ring"
+                  style={{ backgroundColor: c.hex }}
+                />
+              ))}
+              <button
+                onClick={() => applyHighlightToSelected(null)}
+                title="No fill"
+                aria-label="No fill"
+                className="shrink-0 h-7 w-7 rounded-md border border-ink-200 inline-flex items-center justify-center text-ink-500 hover:bg-ink-50 focus-ring"
+              >
+                <Ban className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="shrink-0 h-7 px-2.5 rounded-lg text-xs font-medium text-ink-600 hover:bg-ink-100 focus-ring"
+            >
+              Done
+            </button>
+          </div>
+          <p className="mt-1.5 text-center text-[10px] text-ink-400">
+            Drag across rows or tap the highlighter to select · Esc to cancel
+          </p>
+        </div>
+      )}
+
+      {/* Statement scope picker */}
+      <Modal
+        isOpen={showStatementModal}
+        onClose={() => setShowStatementModal(false)}
+        title="Download statement"
+        description="Choose which currency to include in the PDF."
+        size="sm"
+        footer={
+          <Button
+            variant="ghost"
+            onClick={() => setShowStatementModal(false)}
+          >
+            Cancel
+          </Button>
+        }
+      >
+        <div className="space-y-2">
+          {(
+            [
+              {
+                type: "full" as const,
+                label: "Both currencies",
+                sub: `${transactionsKES.length} KES · ${transactionsUSD.length} USD entries`,
+                badge: "KES + USD",
+                disabled:
+                  transactionsKES.length === 0 &&
+                  transactionsUSD.length === 0,
+              },
+              {
+                type: "kes-only" as const,
+                label: "KES only",
+                sub: `${transactionsKES.length} ${
+                  transactionsKES.length === 1 ? "entry" : "entries"
+                }`,
+                badge: "KES",
+                disabled: transactionsKES.length === 0,
+              },
+              {
+                type: "usd-only" as const,
+                label: "USD only",
+                sub: `${transactionsUSD.length} ${
+                  transactionsUSD.length === 1 ? "entry" : "entries"
+                }`,
+                badge: "USD",
+                disabled: transactionsUSD.length === 0,
+              },
+            ] as const
+          ).map((opt) => (
+            <button
+              key={opt.type}
+              onClick={() => generatePDFReport(opt.type)}
+              disabled={opt.disabled}
+              className="w-full flex items-center justify-between gap-3 p-3 rounded-xl border-2 border-ink-200 bg-white text-left transition-all hover:border-brand-400 hover:bg-brand-50/40 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-ink-200 disabled:hover:bg-white focus-ring group"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="shrink-0 w-9 h-9 rounded-lg bg-brand-50 text-brand-700 inline-flex items-center justify-center group-hover:bg-brand-600 group-hover:text-white transition-colors">
+                  <Download className="w-4 h-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-ink-900">
+                    {opt.label}
+                  </p>
+                  <p className="text-xs text-ink-500">{opt.sub}</p>
+                </div>
+              </div>
+              <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-md bg-ink-100 text-ink-600">
+                {opt.badge}
+              </span>
+            </button>
+          ))}
+        </div>
+      </Modal>
 
       {/* Add Transaction Modal */}
       <Modal
