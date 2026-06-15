@@ -575,13 +575,13 @@ export default function ClientDetail({ clientId, onBack }: ClientDetailProps) {
     }
   };
 
-  const generatePDFReport = (
+  const generatePDFReport = async (
     reportType: "full" | "kes-only" | "usd-only" = "full",
   ) => {
     if (!client) return;
     setShowStatementModal(false);
     try {
-      generateClientPDFReport({
+      await generateClientPDFReport({
         client: {
           client_name: client.client_name,
           client_code: client.client_code,

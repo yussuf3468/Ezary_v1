@@ -447,7 +447,7 @@ function drawFooters(doc: jsPDF, client: Client, pw: number, ph: number) {
 
 // ─── PUBLIC API ───────────────────────────────────────────────────────────────
 
-export const generateClientPDFReport = (options: ReportOptions) => {
+export const generateClientPDFReport = async (options: ReportOptions) => {
   const { client, transactionsKES, transactionsUSD, summaryKES, summaryUSD, reportType, business } = options;
 
   const doc = new jsPDF();
@@ -471,7 +471,42 @@ export const generateClientPDFReport = (options: ReportOptions) => {
 
   drawFooters(doc, client, pw, ph);
 
-  doc.save(`Statement_${client.client_code}_${new Date().toLocaleDateString("en-CA")}.pdf`);
+  // Name the file after the client so downloads and the mobile share sheet
+  // show a real name instead of "blob".
+  const safeName =
+    (client.client_name || client.client_code || "Statement")
+      .replace(/[^\w\s-]+/g, "")
+      .trim()
+      .replace(/\s+/g, "_") || "Statement";
+  const fileName = `${safeName}_Statement_${new Date().toLocaleDateString("en-CA")}.pdf`;
+
+  // On mobile, share an actual named File so the recipient gets the client name.
+  const nav = typeof navigator !== "undefined" ? navigator : undefined;
+  const isMobile =
+    !!nav &&
+    (/Android|iPhone|iPad|iPod/i.test(nav.userAgent) ||
+      (nav.maxTouchPoints ?? 0) > 1);
+
+  if (isMobile && nav?.canShare) {
+    try {
+      const file = new File([doc.output("blob")], fileName, {
+        type: "application/pdf",
+      });
+      if (nav.canShare({ files: [file] })) {
+        await nav.share({
+          files: [file],
+          title: fileName,
+          text: `Statement for ${client.client_name}`,
+        });
+        return;
+      }
+    } catch (err: any) {
+      if (err?.name === "AbortError") return; // user dismissed the share sheet
+      // any other failure → fall through to a normal download
+    }
+  }
+
+  doc.save(fileName);
 };
 
 // ─── ALL-CLIENTS OVERVIEW ─────────────────────────────────────────────────────
