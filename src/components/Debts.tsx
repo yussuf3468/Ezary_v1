@@ -134,7 +134,7 @@ export default function Debts() {
         .select(
           "id, debtor_name, debtor_phone, amount, amount_paid, currency, balance, description, reference_number, notes, debt_date, due_date, paid_date, status, priority, created_at",
         )
-        .order("due_date", { ascending: true });
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
