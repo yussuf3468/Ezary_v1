@@ -10,7 +10,7 @@ export interface BusinessProfile {
 
 // Keys MUST be lowercase — lookups are normalised to lowercase.
 const PROFILES: Record<string, BusinessProfile> = {
-  "cdinix14@gmail.com": { name: "DINIX GENERAL TRADING" },
+  "cdinix14@gmail.com": { name: "Tokio Travel Solutions" },
 };
 
 // Fallback used for any account without a specific profile.
